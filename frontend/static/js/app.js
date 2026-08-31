@@ -195,6 +195,84 @@ async function loginUser(email, password) {
   }
 }
 
+async function registerUser(fullName, email, password, role) {
+  try {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: fullName, email, password, role })
+    });
+
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const body = await res.json();
+        detail = body?.detail || body?.message || '';
+      } catch (_) { /* non-JSON error body */ }
+      return {
+        ok: false,
+        error: detail || `Registration failed (HTTP ${res.status}).`
+      };
+    }
+
+    const data = await res.json();
+    appState.authToken = data.access_token;
+    appState.currentUser = {
+      user_id: data.user_id,
+      email: data.email,
+      full_name: data.full_name,
+      role: data.role,
+      org_id: data.org_id
+    };
+    localStorage.setItem('fin_jwt_token', data.access_token);
+    localStorage.setItem('fin_user_profile', JSON.stringify(appState.currentUser));
+    updateUserBadge();
+    return { ok: true };
+  } catch (err) {
+    console.error('Registration error:', err);
+    return { ok: false, error: 'Could not reach the authentication service. Is the backend running?' };
+  }
+}
+
+window.currentAuthTab = 'signin';
+
+window.switchAuthTab = function (mode) {
+  window.currentAuthTab = mode;
+  const tabSignIn = document.getElementById('auth-tab-signin');
+  const tabSignUp = document.getElementById('auth-tab-signup');
+  const signinHeader = document.getElementById('auth-signin-header');
+  const signupHeader = document.getElementById('auth-signup-header');
+  const nameGroup = document.getElementById('auth-name-group');
+  const roleGroup = document.getElementById('auth-role-group');
+  const footnote = document.getElementById('auth-footnote');
+  const submitBtn = document.getElementById('auth-submit');
+  const errEl = document.getElementById('auth-error');
+
+  if (errEl) errEl.hidden = true;
+
+  if (mode === 'signup') {
+    tabSignIn?.classList.remove('active');
+    tabSignUp?.classList.add('active');
+    if (signinHeader) signinHeader.style.display = 'none';
+    if (signupHeader) signupHeader.style.display = 'block';
+    if (nameGroup) nameGroup.style.display = 'block';
+    if (roleGroup) roleGroup.style.display = 'block';
+    if (footnote) footnote.style.display = 'none';
+    if (submitBtn) submitBtn.textContent = 'Create account';
+    document.getElementById('auth-fullname')?.focus();
+  } else {
+    tabSignUp?.classList.remove('active');
+    tabSignIn?.classList.add('active');
+    if (signupHeader) signupHeader.style.display = 'none';
+    if (signinHeader) signinHeader.style.display = 'block';
+    if (nameGroup) nameGroup.style.display = 'none';
+    if (roleGroup) roleGroup.style.display = 'none';
+    if (footnote) footnote.style.display = 'block';
+    if (submitBtn) submitBtn.textContent = 'Sign in';
+    document.getElementById('auth-email')?.focus();
+  }
+};
+
 function showAuthGate(message) {
   const gate = document.getElementById('auth-gate');
   const errEl = document.getElementById('auth-error');
@@ -250,26 +328,31 @@ function initAuthGate() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const isSignUp = window.currentAuthTab === 'signup';
+    const fullName = document.getElementById('auth-fullname')?.value.trim() || '';
     const email = document.getElementById('auth-email')?.value.trim() || '';
     const password = document.getElementById('auth-password')?.value || '';
+    const role = document.getElementById('auth-role')?.value || 'analyst';
     const errEl = document.getElementById('auth-error');
 
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Signing in...';
+      submitBtn.textContent = isSignUp ? 'Creating account...' : 'Signing in...';
     }
     if (errEl) errEl.hidden = true;
 
-    const result = await loginUser(email, password);
+    const result = isSignUp 
+      ? await registerUser(fullName, email, password, role)
+      : await loginUser(email, password);
 
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Sign in';
+      submitBtn.textContent = isSignUp ? 'Create account' : 'Sign in';
     }
 
     if (result.ok) {
       hideAuthGate();
-      showToast(`Signed in as ${appState.currentUser?.full_name || email}.`, 'success');
+      showToast(isSignUp ? `Account created! Welcome, ${appState.currentUser?.full_name || email}.` : `Signed in as ${appState.currentUser?.full_name || email}.`, 'success');
       updateOverviewVisibility();
       fetchInitialData();
     } else if (errEl) {
@@ -2450,12 +2533,12 @@ function renderExceptionsQueue() {
           <td class="mono-text" style="font-weight: 700;">${amt}</td>
           <td style="color: var(--text-secondary);">${escapeHtml(proposal)}</td>
           <td>
-            <div style="display: flex; gap: 0.4rem;">
-              <button class="btn btn-secondary btn-sm" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')" style="display: inline-flex; align-items: center; gap: 0.3rem;">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.5 2.1-1.3 2.8L19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6l4.3-4.2C8.5 8.1 8 7.1 8 6a4 4 0 0 1 4-4z"/></svg>
-                AI Proof
+            <div style="display: flex; align-items: center; gap: 0.45rem; white-space: nowrap;">
+              <button class="btn btn-secondary btn-xs" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')" style="display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; height: 28px; padding: 0 0.65rem;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.5 2.1-1.3 2.8L19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6l4.3-4.2C8.5 8.1 8 7.1 8 6a4 4 0 0 1 4-4z"/></svg>
+                <span>AI Proof</span>
               </button>
-              <button class="btn ${isCritical ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="approveProposal('${escapeHtml(excId)}', '${escapeHtml(propId)}')">
+              <button class="btn ${isCritical ? 'btn-secondary' : 'btn-primary'} btn-xs" onclick="approveProposal('${escapeHtml(excId)}', '${escapeHtml(propId)}')" style="white-space: nowrap; height: 28px; padding: 0 0.8rem;">
                 ${isCritical ? 'Escalate' : 'Approve'}
               </button>
             </div>

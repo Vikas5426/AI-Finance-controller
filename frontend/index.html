@@ -38,8 +38,32 @@
         </div>
       </div>
 
-      <h1 class="auth-title" id="auth-gate-title">Sign in</h1>
-      <p class="auth-subtitle">Dual-control reconciliation and exception approvals require an authenticated session.</p>
+      <div class="auth-tab-bar" id="auth-tab-bar">
+        <button type="button" class="auth-tab-btn active" id="auth-tab-signin" onclick="switchAuthTab('signin')">Sign in</button>
+        <button type="button" class="auth-tab-btn" id="auth-tab-signup" onclick="switchAuthTab('signup')">Create account</button>
+      </div>
+
+      <div id="auth-signin-header">
+        <h1 class="auth-title" id="auth-gate-title">Welcome back</h1>
+        <p class="auth-subtitle">Dual-control reconciliation and exception approvals require an authenticated session.</p>
+      </div>
+
+      <div id="auth-signup-header" style="display: none;">
+        <h1 class="auth-title">Create an account</h1>
+        <p class="auth-subtitle">Join your organization's three-way financial reconciliation team.</p>
+      </div>
+
+      <div class="auth-field-group" id="auth-name-group" style="display: none;">
+        <label class="auth-label" for="auth-fullname">Full Name</label>
+        <div class="auth-input-wrapper">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M20 21a8 8 0 1 0-16 0"/>
+          </svg>
+          <input class="auth-input with-left-icon" id="auth-fullname" name="fullname" type="text" autocomplete="name"
+            placeholder="Jane Doe" />
+        </div>
+      </div>
 
       <div class="auth-field-group">
         <label class="auth-label" for="auth-email">Work Email</label>
@@ -50,6 +74,20 @@
           </svg>
           <input class="auth-input with-left-icon" id="auth-email" name="email" type="email" autocomplete="username"
             placeholder="you@company.com" required />
+        </div>
+      </div>
+
+      <div class="auth-field-group" id="auth-role-group" style="display: none;">
+        <label class="auth-label" for="auth-role">Organization Role</label>
+        <div class="auth-input-wrapper">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <select class="auth-input with-left-icon" id="auth-role" name="role" style="cursor: pointer; appearance: auto;">
+            <option value="analyst" selected>Reconciliation Analyst (Maker)</option>
+            <option value="approver">Financial Approver (Checker)</option>
+            <option value="admin">System Controller (Admin)</option>
+          </select>
         </div>
       </div>
 

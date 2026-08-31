@@ -72,6 +72,64 @@ def login(req: LoginRequest):
             full_name=user.full_name
         )
 
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    password: str
+    role: Optional[str] = "analyst"
+
+@router.post("/register", response_model=TokenResponse)
+def register(req: RegisterRequest):
+    import uuid
+    email_clean = req.email.strip().lower()
+    if not email_clean or "@" not in email_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide a valid work email address."
+        )
+    if len(req.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters long."
+        )
+
+    with get_db_context() as db:
+        existing = db.query(schema.User).filter(schema.User.email == email_clean).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An account with this email address already exists. Please sign in."
+            )
+
+        user_id = str(uuid.uuid4())
+        role_clean = req.role if req.role in ["admin", "approver", "analyst"] else "analyst"
+        new_user = schema.User(
+            id=user_id,
+            org_id=settings.DEFAULT_ORG_ID,
+            email=email_clean,
+            password_hash=get_password_hash(req.password),
+            full_name=req.full_name.strip() or email_clean.split("@")[0].capitalize(),
+            role=role_clean,
+            is_active=True
+        )
+        db.add(new_user)
+        db.commit()
+
+        token = create_access_token(
+            subject=user_id,
+            org_id=settings.DEFAULT_ORG_ID,
+            role=role_clean
+        )
+
+        return TokenResponse(
+            access_token=token,
+            role=role_clean,
+            user_id=user_id,
+            org_id=settings.DEFAULT_ORG_ID,
+            email=email_clean,
+            full_name=new_user.full_name
+        )
+
 @router.get("/me")
 def get_current_user_profile(user: Dict[str, Any] = Depends(get_current_user)):
     """Returns the profile of the current authenticated user."""

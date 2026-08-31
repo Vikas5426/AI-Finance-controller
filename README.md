@@ -373,6 +373,8 @@ d:\AI Finance controller\
 │       ├── test_accounting_semantics.py     # Double-entry ledger semantics & audit chain tests
 │       ├── test_ai_layer_verification.py    # Deterministic verifier gate & math checks
 │       ├── test_auth_security.py            # JWT and RBAC permission tests
+│       ├── test_agent_runtime.py            # Agent runtime diagnostic & execution tests
+│       ├── test_api_key.py                  # API key connectivity & diagnostic tests
 │       └── test_benchmark_2000.py           # 2,000-record empirical accuracy benchmark
 ├── frontend/
 │   ├── Dockerfile                           # Nginx static file container manifest
@@ -385,21 +387,19 @@ d:\AI Finance controller\
 │   ├── gateway.csv                          # Payment gateway transactions
 │   ├── bank.csv                             # Bank settlement credits and debits
 │   ├── general_ledger.csv                   # ERP double-entry journal records
-│   └── ground_truth_links.json              # Verified 1:1 and N:1 matching ground truth
-├── docs/                                    # Comprehensive technical specifications & reports
-│   ├── 00-product-and-scope.md              # Product definition and scope
-│   ├── 01-architecture.md                   # 17-layer architecture topology
-│   ├── 02-reconciliation-engine.md          # Multi-pass matching pipeline deep-dive
-│   ├── 03-data-models-and-agent-runtime.md  # DDL schemas & agent contracts
-│   ├── 04-exception-management-and-rules.md # 16-type exception taxonomy
-│   ├── 05-frontend-ui-and-rag-policy.md     # UI layout & SOP policy retrieval
-│   ├── 06-security-threat-model-and-audit.md# Threat modeling & audit chain
-│   ├── 07-synthetic-data-and-evaluation.md  # Evaluation harness & benchmarks
-│   ├── 08-deployment-and-execution-plan.md  # Deployment & demo procedures
-│   └── CORE_LOGIC_AND_ARCHITECTURE_DOCUMENT.md
+│   ├── ground_truth_links.json              # Verified 1:1 and N:1 matching ground truth
+│   ├── benchmark_2000.json                  # 2,000-record synthetic ground truth benchmark
+│   └── uploads/.gitkeep                     # Ingested upload directory anchor
 ├── docker-compose.yml                       # Multi-service stack (API, Postgres, Redis, Frontend)
+├── init-db.sql                              # PostgreSQL database initialization script
 ├── run_demo.py                              # One-click demo initialization and web runner
 ├── run_csv_reconciliation.py                # Command-line CSV batch reconciliation runner
+├── run_external_csv_reconciliation.py       # Custom external CSV reconciliation processor
+├── test_full_regression.py                  # Full regression test suite
+├── test_e2e_upload.py                       # End-to-end file upload validation
+├── requirements.txt                         # Root Python dependencies forwarder
+├── HOW_TO_START_AND_RUN.md                  # Quick-start execution guide
+├── README.md                                # Platform documentation & architecture reference
 └── .env.example                             # Environment variable template
 ```
 

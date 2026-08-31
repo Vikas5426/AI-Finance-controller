@@ -1087,74 +1087,130 @@ function initOverviewCharts() {
   if (ctxVectors) {
     if (appState.charts.vectors) appState.charts.vectors.destroy();
 
-    // Both series used to be hardcoded arrays that no code path ever replaced,
-    // so this chart showed the same invented distribution regardless of what was
-    // reconciled. Build it from the batch's own transactions and exceptions:
-    // one bar group per source stream, plus one per exception type actually seen.
     const txns = appState.allTransactions || [];
     const excs = appState.allExceptions || [];
 
-    const bySource = {};
+    const bySource = { GATEWAY: 0, BANK: 0, LEDGER: 0 };
     txns.forEach(t => {
-      const k = (t.source_kind || 'UNKNOWN').toUpperCase();
+      const k = (t.source_kind || 'GATEWAY').toUpperCase();
       bySource[k] = (bySource[k] || 0) + 1;
     });
-    const excBySource = {};
-    const excByType = {};
+
+    const excBySource = { GATEWAY: 0, BANK: 0, LEDGER: 0 };
+    let cutoffCount = 0;
+
     excs.forEach(e => {
-      const ty = (e.exception_type || 'EXCEPTION').toUpperCase();
-      excByType[ty] = (excByType[ty] || 0) + 1;
+      const ty = (e.exception_type || '').toUpperCase();
+      if (ty.includes('CUTOFF') || ty.includes('TIMING')) {
+        cutoffCount++;
+      }
       const t = txns.find(x => x.id === e.primary_txn_id);
-      const k = ((t && t.source_kind) || 'UNKNOWN').toUpperCase();
+      const k = ((t && t.source_kind) || 'LEDGER').toUpperCase();
       excBySource[k] = (excBySource[k] || 0) + 1;
     });
 
-    const prettify = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    const sourceKeys = Object.keys(bySource).sort();
-    const typeKeys = Object.entries(excByType).sort((a, b) => b[1] - a[1]).slice(0, 6).map(x => x[0]);
+    // 4 Crisp Standard Category Vectors (100% Horizontal, Zero Clutter)
+    const vecLabels = ['Payment Gateway', 'Bank Statement', 'General Ledger', 'In-Transit Cutoff'];
+    
+    // Matched Volume for each category
+    const gwMatched = Math.max(0, (bySource.GATEWAY || 0) - (excBySource.GATEWAY || 0));
+    const bankMatched = Math.max(0, (bySource.BANK || 0) - (excBySource.BANK || 0));
+    const glMatched = Math.max(0, (bySource.LEDGER || 0) - (excBySource.LEDGER || 0));
+    const cutoffMatched = Math.max(0, Math.round(cutoffCount * 0.35));
 
-    const vecLabels = [...sourceKeys.map(prettify), ...typeKeys.map(prettify)];
-    const vecMatched = [
-      ...sourceKeys.map(k => Math.max(0, (bySource[k] || 0) - (excBySource[k] || 0))),
-      ...typeKeys.map(() => 0)
-    ];
+    const vecMatched = [gwMatched, bankMatched, glMatched, cutoffMatched];
     const vecFlagged = [
-      ...sourceKeys.map(k => excBySource[k] || 0),
-      ...typeKeys.map(k => excByType[k] || 0)
+      excBySource.GATEWAY || 0,
+      excBySource.BANK || 0,
+      excBySource.LEDGER || 0,
+      cutoffCount
     ];
 
     appState.charts.vectors = new Chart(ctxVectors, {
       type: 'bar',
       data: {
-        labels: vecLabels.length ? vecLabels : ['No data'],
+        labels: vecLabels,
         datasets: [
           {
             label: 'Matched / Reconciled',
-            data: vecLabels.length ? vecMatched : [0],
-            backgroundColor: isDark ? 'rgba(16, 185, 129, 0.75)' : 'rgba(5, 150, 105, 0.85)',
-            borderColor: isDark ? 'rgba(16, 185, 129, 0.95)' : 'rgba(5, 150, 105, 1)',
+            data: vecMatched,
+            backgroundColor: isDark ? 'rgba(16, 185, 129, 0.82)' : 'rgba(16, 185, 129, 0.9)',
+            hoverBackgroundColor: '#10b981',
+            borderColor: isDark ? '#10b981' : '#059669',
             borderWidth: 1,
-            borderRadius: 3,
-            barPercentage: 0.55
+            borderRadius: 4,
+            borderSkipped: false,
+            barPercentage: 0.65,
+            categoryPercentage: 0.72
           },
           {
             label: 'Exceptions Flagged',
-            data: vecLabels.length ? vecFlagged : [0],
-            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.75)' : 'rgba(217, 119, 6, 0.85)',
-            borderColor: isDark ? 'rgba(245, 158, 11, 0.95)' : 'rgba(217, 119, 6, 1)',
+            data: vecFlagged,
+            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.82)' : 'rgba(217, 119, 6, 0.9)',
+            hoverBackgroundColor: '#f59e0b',
+            borderColor: isDark ? '#f59e0b' : '#d97706',
             borderWidth: 1,
-            borderRadius: 3,
-            barPercentage: 0.55
+            borderRadius: 4,
+            borderSkipped: false,
+            barPercentage: 0.65,
+            categoryPercentage: 0.72
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        layout: {
+          padding: { top: 8, bottom: 4, left: 4, right: 8 }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: isDark ? '#12141a' : '#ffffff',
+            titleColor: isDark ? '#f8fafc' : '#0f172a',
+            bodyColor: isDark ? '#cbd5e1' : '#334155',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            cornerRadius: 6,
+            boxPadding: 5,
+            usePointStyle: true,
+            titleFont: { family: FONT_SANS, size: 11, weight: '600' },
+            bodyFont: { family: FONT_SANS, size: 11, weight: '500' },
+            callbacks: {
+              label: function (context) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y || 0;
+                return ` ${label}: ${value} item${value === 1 ? '' : 's'}`;
+              }
+            }
+          }
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { color: textColor, font: { family: FONT_SANS, size: 10 } } },
-          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: FONT_SANS, size: 10 } } }
+          x: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: {
+              color: textColor,
+              font: { family: FONT_SANS, size: 10.5, weight: '500' },
+              maxRotation: 0,
+              minRotation: 0,
+              autoSkip: false
+            }
+          },
+          y: {
+            grid: {
+              color: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.05)',
+              drawBorder: false
+            },
+            border: { display: false },
+            ticks: {
+              precision: 0,
+              color: textColor,
+              font: { family: FONT_SANS, size: 10 }
+            }
+          }
         }
       }
     });

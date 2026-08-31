@@ -1,0 +1,124 @@
+import csv
+import hashlib
+import io
+import json
+import os
+from typing import Any, Dict, List, Optional, Tuple
+import polars as pl
+from app.models.schemas import SourceKind, CanonicalTransaction
+from app.services.normalizer import NormalizerService
+
+class IngestionService:
+    @staticmethod
+    def compute_file_hash(content: bytes) -> str:
+        return hashlib.sha256(content).hexdigest()
+
+    @staticmethod
+    def compute_row_hash(source_id: str, row_payload: Dict[str, Any]) -> str:
+        canonical_str = json.dumps(row_payload, sort_keys=True, separators=(',', ':'), default=str)
+        preimage = f"{source_id}|{canonical_str}"
+        return hashlib.sha256(preimage.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def parse_file(
+        cls,
+        file_path: str,
+        source_kind: SourceKind,
+        column_map: Optional[Dict[str, str]] = None,
+        amount_scale: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Parses CSV/TSV/JSON file using Polars and robust Python fallback."""
+        ext = os.path.splitext(file_path)[1].lower()
+        records: List[Dict[str, Any]] = []
+
+        if ext == ".json":
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    raw_rows = data
+                else:
+                    raw_rows = [data]
+            for row in raw_rows:
+                records.append(row)
+            return records
+
+        # Try Polars first
+        try:
+            df = pl.read_csv(file_path, infer_schema_length=10000, ignore_errors=True)
+            for row in df.iter_rows(named=True):
+                # Clean None or null values
+                cleaned_row = {k: ("" if v is None else v) for k, v in row.items()}
+                if any(str(v).strip() for v in cleaned_row.values()):
+                    records.append(cleaned_row)
+        except Exception:
+            # Robust Python CSV reader fallback
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                sample = f.read(2048)
+                f.seek(0)
+                try:
+                    dialect = csv.Sniffer().sniff(sample)
+                except Exception:
+                    dialect = csv.excel
+                reader = csv.DictReader(f, dialect=dialect)
+                for row in reader:
+                    cleaned_row = {k: ("" if v is None else v) for k, v in row.items()}
+                    if any(str(v).strip() for v in cleaned_row.values()):
+                        records.append(cleaned_row)
+
+        return records
+
+    @classmethod
+    def validate_schema(cls, headers: List[str], source_kind: SourceKind, file_path: str):
+        """Validates that uploaded CSV has minimum viable financial columns for normalization."""
+        norm_headers = {h.strip().lower() for h in headers if h}
+        if not norm_headers:
+            return
+
+        if source_kind == SourceKind.GATEWAY:
+            has_id = any(h in norm_headers for h in ("payment_id", "id", "order_id", "txn_id", "ref_no", "transaction_id"))
+            has_amt = any(any(k in h for k in ("amount", "gross", "net", "total")) for h in norm_headers)
+            if not has_id or not has_amt:
+                raise ValueError(f"SCHEMA_VALIDATION_FAILED: Gateway CSV '{file_path}' is missing essential columns (requires payment_id/order_id and amount). Found: {list(norm_headers)}")
+
+        elif source_kind == SourceKind.BANK:
+            has_amt = any(h in norm_headers for h in ("credit", "debit", "amount", "withdrawal", "deposit"))
+            has_ref = any(h in norm_headers for h in ("description", "desc", "memo", "ref_no", "utr", "txn_id", "narrative"))
+            if not has_amt and not has_ref:
+                raise ValueError(f"SCHEMA_VALIDATION_FAILED: Bank CSV '{file_path}' is missing essential columns (requires credit/debit and description/ref_no). Found: {list(norm_headers)}")
+
+        elif source_kind == SourceKind.LEDGER:
+            has_amt = any(h in norm_headers for h in ("debit", "credit", "amount", "debit_amount", "credit_amount"))
+            has_ref = any(h in norm_headers for h in ("doc_ref", "je_id", "journal_id", "memo", "account_code", "account", "account_name", "reference", "description"))
+            if not has_amt or not has_ref:
+                raise ValueError(f"SCHEMA_VALIDATION_FAILED: General Ledger CSV '{file_path}' is missing essential columns (requires debit/credit and doc_ref/memo/account_code). Found: {list(norm_headers)}")
+
+    @classmethod
+    def ingest_and_normalize(
+        cls,
+        file_path: str,
+        source_kind: SourceKind,
+        org_id: str,
+        batch_id: str,
+        amount_scale: Optional[int] = None
+    ) -> Tuple[List[CanonicalTransaction], int]:
+        """
+        Parses a file, validates schema, and converts rows into CanonicalTransactions.
+
+        ``amount_scale`` overrides the per-source minor-unit multiplier; leave it
+        None to use the documented default for this source kind.
+        """
+        raw_rows = cls.parse_file(file_path, source_kind)
+        if raw_rows:
+            headers = list(raw_rows[0].keys())
+            cls.validate_schema(headers, source_kind, file_path)
+
+        canonical_txns: List[CanonicalTransaction] = []
+        for row in raw_rows:
+            if not any(str(v).strip() for v in row.values() if v is not None):
+                continue
+            txn = NormalizerService.normalize_row(
+                row, source_kind, org_id, batch_id, amount_scale=amount_scale
+            )
+            canonical_txns.append(txn)
+
+        return canonical_txns, len(canonical_txns)

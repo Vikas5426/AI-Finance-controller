@@ -1,0 +1,3774 @@
+{
+  "execution_metadata": {
+    "harness_name": "External CSV Reconciliation Test Harness",
+    "execution_mode": "EXTERNAL_USER_FILES_ONLY",
+    "synthetic_generator": "DISABLED",
+    "batch_id": "BATCH-EXT-20260824161259",
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "timestamp": "2026-08-24T16:13:23.706306+00:00",
+    "wall_clock_seconds": 24.11,
+    "files": {
+      "gateway": {
+        "path": "D:\\AI Finance controller\\data\\gateway.csv",
+        "sha256": "b92b199b03d1ce88fbc740c0cb8a94459aa9ac9f1d4b1b775859053a8a603dd1",
+        "file_size_bytes": 1884,
+        "raw_rows": 12,
+        "normalized_count": 12,
+        "sample_ids": [
+          "pay_EXT_1001",
+          "pay_EXT_1002",
+          "pay_EXT_1003"
+        ]
+      },
+      "bank": {
+        "path": "D:\\AI Finance controller\\data\\bank.csv",
+        "sha256": "0c053ad74b5a3675f93255e3e55dbb63d1a6651e9c2382f87cad9dd1d009f4e3",
+        "file_size_bytes": 1038,
+        "raw_rows": 10,
+        "normalized_count": 10,
+        "sample_ids": [
+          "UTR-EXT-0001",
+          "pay_1002",
+          "UTR-EXT-0003"
+        ]
+      },
+      "ledger": {
+        "path": "D:\\AI Finance controller\\data\\general_ledger.csv",
+        "sha256": "8535321052e6c36d2bf19f859b4d87a1c658467ec6fb4fe70ac173691151ed44",
+        "file_size_bytes": 3714,
+        "raw_rows": 42,
+        "normalized_count": 42,
+        "sample_ids": [
+          "JE-EXT-1001:1",
+          "JE-EXT-1001:2",
+          "JE-EXT-1001:3"
+        ]
+      }
+    }
+  },
+  "reconciliation_summary": {
+    "total_input_rows": 64,
+    "total_canonical_transactions": 64,
+    "matched_pairs_count": 15,
+    "exact_matches": 12,
+    "contextual_matches": 3,
+    "exceptions_count": 35,
+    "proposals_count": 35,
+    "deterministic_match_rate": 0.4688,
+    "audit_blocks_chained": 4,
+    "audit_chain_tamper_proof": true
+  },
+  "ai_usage_audit": {
+    "total_exceptions": 35,
+    "deterministically_resolved": 0,
+    "ai_investigated": 24,
+    "manual_review": 11,
+    "ai_avoided": 11,
+    "cache_hits": 0
+  },
+  "matches": [
+    {
+      "id": "ec0b0186-99c8-4253-b493-4f14153acff3",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "c34a1d18-2a5b-47b0-bcc2-376c5d16b89a",
+          "role": "PRIMARY",
+          "signed_amount_minor": 49900
+        },
+        {
+          "transaction_id": "3233bc2c-af64-49cb-8572-64de0935aa35",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -49900
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "4c4e439e-7b1e-46fa-b5c0-05784dd5f4c8",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "81bf7249-6720-47d8-b041-4c834ec10f07",
+          "role": "PRIMARY",
+          "signed_amount_minor": 1000000
+        },
+        {
+          "transaction_id": "47d53cd1-0653-4e7b-9359-3fdee4ee41eb",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -1000000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "f3779bb3-fadf-4a96-bcf8-5a73c40fc998",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "6e2e96fb-91c1-4981-8f48-f705708b8103",
+          "role": "PRIMARY",
+          "signed_amount_minor": 99900
+        },
+        {
+          "transaction_id": "fa77bcde-857f-47ce-b970-d602c3ce4664",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -99900
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "52706ee7-8333-4e7f-888e-14a813edd234",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "4ce61cc7-f768-4f14-b70f-94a014b8639a",
+          "role": "PRIMARY",
+          "signed_amount_minor": 118000
+        },
+        {
+          "transaction_id": "0efbfeca-991c-426f-87d2-ae1f636d75a3",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -118000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "ec19d18f-78f4-4aa9-8ce9-327964fa752b",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "7d09efdb-6ff8-4614-8644-985d48346f4b",
+          "role": "PRIMARY",
+          "signed_amount_minor": 236000
+        },
+        {
+          "transaction_id": "77690ef2-1cb3-4c01-b302-a3767bbd208a",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -236000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "38d328c8-808d-4908-9364-07a19e520c38",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "4d40480c-1e3a-4d16-b463-ca3e722291d9",
+          "role": "PRIMARY",
+          "signed_amount_minor": 500000
+        },
+        {
+          "transaction_id": "8cc8a7c9-e91f-4333-9d5e-f686a044267e",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -500000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "d18fec76-71ff-4bc5-acb0-202b8a5ef2a3",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "3640b87b-45ca-4047-bd01-c6e66bd66eea",
+          "role": "PRIMARY",
+          "signed_amount_minor": 149900
+        },
+        {
+          "transaction_id": "8e0f71b7-cbb7-414b-b63d-4ebac9edc787",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -149900
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "c70bf73a-0304-4aa8-8f7a-97df618fb8af",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "28364b66-c48b-4670-aa89-d58c4004614e",
+          "role": "PRIMARY",
+          "signed_amount_minor": 118000
+        },
+        {
+          "transaction_id": "45a5e6a1-b1e9-4b01-9e83-9421db90af39",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -118000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "f17e1ec0-d16b-4419-9d46-2672bb025dcf",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "99f9ceb5-ea42-4fb3-bfe3-883cab0914a4",
+          "role": "PRIMARY",
+          "signed_amount_minor": 850000
+        },
+        {
+          "transaction_id": "b710910a-7223-4f69-9a43-ce97e5785738",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -850000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "c63021a2-3d76-4cf7-a4c9-581b77a79cb9",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "7621f6d8-9c2d-42d7-834e-ecfae709e31e",
+          "role": "PRIMARY",
+          "signed_amount_minor": 99900
+        },
+        {
+          "transaction_id": "6557aa32-2e4b-43dc-a26e-c63804371575",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -99900
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "71342302-acbb-4fc3-a66f-a6a6ecbc9788",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "RULE_GATE",
+      "score": 0.92,
+      "confidence": 0.9,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "0eca6418-d931-484e-a15b-c085d92fc7a8",
+          "role": "PRIMARY",
+          "signed_amount_minor": 99900
+        },
+        {
+          "transaction_id": "a9f3343e-59e4-4919-865f-7fd85ab1228e",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -97542
+        }
+      ],
+      "decision_tier": "RESOLVED_WITH_EXPLANATION"
+    },
+    {
+      "id": "8468352a-c460-4f05-82af-9f75b1423b70",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "92c3ddda-f4b0-4741-b999-4144165ede5b",
+          "role": "PRIMARY",
+          "signed_amount_minor": 500000
+        },
+        {
+          "transaction_id": "2f5cee7b-25ae-4760-baf7-c6c08dac7617",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -500000
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "5b2b28dc-31f4-41db-b7b7-214f0f60c1f5",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "1ddb70b9-fa60-4abe-8d78-32188e84f1c9",
+          "role": "PRIMARY",
+          "signed_amount_minor": 976400
+        },
+        {
+          "transaction_id": "3c33de70-dd65-487e-bda4-ea4c85bad036",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -976400
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    },
+    {
+      "id": "a3204d2c-cf09-48cc-8ced-bed2693e9f37",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "match_type": "1:1",
+      "method": "RULE_GATE",
+      "score": 0.92,
+      "confidence": 0.9,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "9b0124ff-9ff5-445a-8607-d3795ef5fe12",
+          "role": "PRIMARY",
+          "signed_amount_minor": 15000
+        },
+        {
+          "transaction_id": "acc8bb20-8d48-4b17-b3c7-805bc9a410eb",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -15239
+        }
+      ],
+      "decision_tier": "RESOLVED_WITH_EXPLANATION"
+    },
+    {
+      "id": "91bdadce-ddd9-42a4-a120-b8f538872414",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "match_type": "1:1",
+      "method": "RULE_GATE",
+      "score": 0.92,
+      "confidence": 0.9,
+      "solver_evidence": null,
+      "legs": [
+        {
+          "transaction_id": "5b555e56-9bde-4994-a1b4-ace25af8b625",
+          "role": "PRIMARY",
+          "signed_amount_minor": 236000
+        },
+        {
+          "transaction_id": "2bd30d18-19bb-410a-b4b2-a8b5913c1d11",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -230430
+        }
+      ],
+      "decision_tier": "RESOLVED_WITH_EXPLANATION"
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "EXC-9bf67cc4",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "9bf67cc4-8cbf-4849-a89f-a34bbe3cb655",
+      "counterpart_txn_id": "c34a1d18-2a5b-47b0-bcc2-376c5d16b89a",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 48722,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-9bf67cc4",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9487.22 is attributable to MDR fee (\u20b99.74) and GST (\u20b91.75) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "9bf67cc4-8cbf-4849-a89f-a34bbe3cb655",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 974,
+              "gst": 175,
+              "surcharge": 47573
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609120+00:00"
+    },
+    {
+      "id": "EXC-f3b0e331",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "f3b0e331-aa57-4fdd-b326-c79349f5cafc",
+      "counterpart_txn_id": "4ce61cc7-f768-4f14-b70f-94a014b8639a",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 115215,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-f3b0e331",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91152.15 is attributable to MDR fee (\u20b923.04) and GST (\u20b94.15) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "f3b0e331-aa57-4fdd-b326-c79349f5cafc",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2304,
+              "gst": 415,
+              "surcharge": 112496
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609287+00:00"
+    },
+    {
+      "id": "EXC-2bd30d18",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "2bd30d18-19bb-410a-b4b2-a8b5913c1d11",
+      "counterpart_txn_id": "7d09efdb-6ff8-4614-8644-985d48346f4b",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 230430,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-2bd30d18",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b92304.30 is attributable to MDR fee (\u20b946.09) and GST (\u20b98.30) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "2bd30d18-19bb-410a-b4b2-a8b5913c1d11",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 4609,
+              "gst": 830,
+              "surcharge": 224991
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609394+00:00"
+    },
+    {
+      "id": "EXC-7a323e6b",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "7a323e6b-ef16-4733-b7b3-09b508bd9604",
+      "counterpart_txn_id": "4d40480c-1e3a-4d16-b463-ca3e722291d9",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 488200,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-7a323e6b",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b94882.00 is attributable to MDR fee (\u20b997.64) and GST (\u20b917.58) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "7a323e6b-ef16-4733-b7b3-09b508bd9604",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 9764,
+              "gst": 1758,
+              "surcharge": 476678
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609480+00:00"
+    },
+    {
+      "id": "EXC-8f6c79f9",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "8f6c79f9-7af6-4818-a154-6a8381a5d105",
+      "counterpart_txn_id": "3640b87b-45ca-4047-bd01-c6e66bd66eea",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 146362,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-8f6c79f9",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91463.62 is attributable to MDR fee (\u20b929.27) and GST (\u20b95.27) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "8f6c79f9-7af6-4818-a154-6a8381a5d105",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2927,
+              "gst": 527,
+              "surcharge": 142908
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609555+00:00"
+    },
+    {
+      "id": "EXC-b1b58dca",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "b1b58dca-4b14-4695-846d-1e5e66022c8e",
+      "counterpart_txn_id": "4ce61cc7-f768-4f14-b70f-94a014b8639a",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 115215,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-b1b58dca",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91152.15 is attributable to MDR fee (\u20b923.04) and GST (\u20b94.15) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "b1b58dca-4b14-4695-846d-1e5e66022c8e",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2304,
+              "gst": 415,
+              "surcharge": 112496
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609632+00:00"
+    },
+    {
+      "id": "EXC-6fadba23",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "6fadba23-5896-4a07-acdf-50aa28f72b8f",
+      "counterpart_txn_id": "99f9ceb5-ea42-4fb3-bfe3-883cab0914a4",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "CRITICAL",
+      "state": "DETECTED",
+      "impact_minor": 829940,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-6fadba23",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b98299.40 is attributable to MDR fee (\u20b9165.99) and GST (\u20b929.88) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "6fadba23-5896-4a07-acdf-50aa28f72b8f",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 16599,
+              "gst": 2988,
+              "surcharge": 810353
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609714+00:00"
+    },
+    {
+      "id": "EXC-99eb9927",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-01",
+      "primary_txn_id": "99eb9927-3949-495e-aaad-07b89056e557",
+      "counterpart_txn_id": "c34a1d18-2a5b-47b0-bcc2-376c5d16b89a",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 42288,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-99eb9927",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9422.88 is attributable to MDR fee (\u20b98.46) and GST (\u20b91.52) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "99eb9927-3949-495e-aaad-07b89056e557",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 846,
+              "gst": 152,
+              "surcharge": 41290
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.609867+00:00"
+    },
+    {
+      "id": "EXC-da034e2d",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "da034e2d-448c-4ef0-a138-3aa3bb5dc7fc",
+      "counterpart_txn_id": "c34a1d18-2a5b-47b0-bcc2-376c5d16b89a",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 7612,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-da034e2d",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b976.12 is attributable to MDR fee (\u20b91.52) and GST (\u20b90.27) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "da034e2d-448c-4ef0-a138-3aa3bb5dc7fc",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 152,
+              "gst": 27,
+              "surcharge": 7433
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610022+00:00"
+    },
+    {
+      "id": "EXC-9fe07676",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "9fe07676-0945-4ecb-b4cc-599da382256e",
+      "counterpart_txn_id": "81bf7249-6720-47d8-b041-4c834ec10f07",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 23600,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-9fe07676",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9236.00 is attributable to MDR fee (\u20b94.72) and GST (\u20b90.85) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "9fe07676-0945-4ecb-b4cc-599da382256e",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 472,
+              "gst": 85,
+              "surcharge": 23043
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610139+00:00"
+    },
+    {
+      "id": "EXC-4af46134",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "4af46134-5ab6-4774-bc2c-28fe9587e405",
+      "counterpart_txn_id": "81bf7249-6720-47d8-b041-4c834ec10f07",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "CRITICAL",
+      "state": "DETECTED",
+      "impact_minor": 1000000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-4af46134",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b910000.00 is attributable to MDR fee (\u20b9200.00) and GST (\u20b936.00) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "4af46134-5ab6-4774-bc2c-28fe9587e405",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 20000,
+              "gst": 3600,
+              "surcharge": 976400
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610259+00:00"
+    },
+    {
+      "id": "EXC-562b0fc7",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "562b0fc7-a0b8-4602-b503-5382e87e36c9",
+      "counterpart_txn_id": "6e2e96fb-91c1-4981-8f48-f705708b8103",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 84661,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-562b0fc7",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9846.61 is attributable to MDR fee (\u20b916.93) and GST (\u20b93.05) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "562b0fc7-a0b8-4602-b503-5382e87e36c9",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 1693,
+              "gst": 305,
+              "surcharge": 82663
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610316+00:00"
+    },
+    {
+      "id": "EXC-a366c46c",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "a366c46c-0902-4265-98c5-d7ad501f7eb2",
+      "counterpart_txn_id": "6e2e96fb-91c1-4981-8f48-f705708b8103",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 100000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-a366c46c",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91000.00 is attributable to MDR fee (\u20b920.00) and GST (\u20b93.60) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "a366c46c-0902-4265-98c5-d7ad501f7eb2",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2000,
+              "gst": 360,
+              "surcharge": 97640
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610374+00:00"
+    },
+    {
+      "id": "EXC-08cd3ad5",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "08cd3ad5-881b-4e0d-b796-b372aa62e8d4",
+      "counterpart_txn_id": "4ce61cc7-f768-4f14-b70f-94a014b8639a",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 18000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-08cd3ad5",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9180.00 is attributable to MDR fee (\u20b93.60) and GST (\u20b90.65) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "08cd3ad5-881b-4e0d-b796-b372aa62e8d4",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 360,
+              "gst": 65,
+              "surcharge": 17575
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610422+00:00"
+    },
+    {
+      "id": "EXC-bc673017",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "bc673017-6350-46bd-877a-936eda835458",
+      "counterpart_txn_id": "7d09efdb-6ff8-4614-8644-985d48346f4b",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 200000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-bc673017",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b92000.00 is attributable to MDR fee (\u20b940.00) and GST (\u20b97.20) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "bc673017-6350-46bd-877a-936eda835458",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 4000,
+              "gst": 720,
+              "surcharge": 195280
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610470+00:00"
+    },
+    {
+      "id": "EXC-3fccba93",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "3fccba93-95ef-4e0e-8cd4-d34931262027",
+      "counterpart_txn_id": "7d09efdb-6ff8-4614-8644-985d48346f4b",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 36000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-3fccba93",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9360.00 is attributable to MDR fee (\u20b97.20) and GST (\u20b91.30) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "3fccba93-95ef-4e0e-8cd4-d34931262027",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 720,
+              "gst": 130,
+              "surcharge": 35150
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610520+00:00"
+    },
+    {
+      "id": "EXC-26c145f2",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "26c145f2-1cdb-45dc-bdb9-8c09fc344c3b",
+      "counterpart_txn_id": "4d40480c-1e3a-4d16-b463-ca3e722291d9",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 423729,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-26c145f2",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b94237.29 is attributable to MDR fee (\u20b984.75) and GST (\u20b915.26) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "26c145f2-1cdb-45dc-bdb9-8c09fc344c3b",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 8475,
+              "gst": 1526,
+              "surcharge": 413728
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610568+00:00"
+    },
+    {
+      "id": "EXC-2d8c147c",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "2d8c147c-89e3-489e-99b2-6b774c338f54",
+      "counterpart_txn_id": "4d40480c-1e3a-4d16-b463-ca3e722291d9",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 76271,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-2d8c147c",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9762.71 is attributable to MDR fee (\u20b915.25) and GST (\u20b92.74) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "2d8c147c-89e3-489e-99b2-6b774c338f54",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 1525,
+              "gst": 274,
+              "surcharge": 74472
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610616+00:00"
+    },
+    {
+      "id": "EXC-89da8993",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "89da8993-af3b-473f-b4a3-8da4e553bc5f",
+      "counterpart_txn_id": "3640b87b-45ca-4047-bd01-c6e66bd66eea",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 127034,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-89da8993",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91270.34 is attributable to MDR fee (\u20b925.41) and GST (\u20b94.57) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "89da8993-af3b-473f-b4a3-8da4e553bc5f",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2541,
+              "gst": 457,
+              "surcharge": 124036
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610663+00:00"
+    },
+    {
+      "id": "EXC-4072a5da",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "4072a5da-187a-447d-9a54-ff027240c361",
+      "counterpart_txn_id": "3640b87b-45ca-4047-bd01-c6e66bd66eea",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 22866,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-4072a5da",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9228.66 is attributable to MDR fee (\u20b94.57) and GST (\u20b90.82) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "4072a5da-187a-447d-9a54-ff027240c361",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 457,
+              "gst": 82,
+              "surcharge": 22327
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610710+00:00"
+    },
+    {
+      "id": "EXC-d76638c9",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "d76638c9-375a-4d17-ae66-3d454e04c252",
+      "counterpart_txn_id": "6e2e96fb-91c1-4981-8f48-f705708b8103",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 100000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-d76638c9",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91000.00 is attributable to MDR fee (\u20b920.00) and GST (\u20b93.60) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "d76638c9-375a-4d17-ae66-3d454e04c252",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2000,
+              "gst": 360,
+              "surcharge": 97640
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610763+00:00"
+    },
+    {
+      "id": "EXC-4b696c64",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-02",
+      "primary_txn_id": "4b696c64-3b19-49bc-b494-4accac21bb93",
+      "counterpart_txn_id": "28364b66-c48b-4670-aa89-d58c4004614e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 18000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-4b696c64",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9180.00 is attributable to MDR fee (\u20b93.60) and GST (\u20b90.65) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "4b696c64-3b19-49bc-b494-4accac21bb93",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 360,
+              "gst": 65,
+              "surcharge": 17575
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610811+00:00"
+    },
+    {
+      "id": "EXC-e06e111f",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "e06e111f-86c9-4631-b580-39345ce2bcc2",
+      "counterpart_txn_id": "99f9ceb5-ea42-4fb3-bfe3-883cab0914a4",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "CRITICAL",
+      "state": "DETECTED",
+      "impact_minor": 720339,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-e06e111f",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b97203.39 is attributable to MDR fee (\u20b9144.07) and GST (\u20b925.93) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "e06e111f-86c9-4631-b580-39345ce2bcc2",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 14407,
+              "gst": 2593,
+              "surcharge": 703339
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610920+00:00"
+    },
+    {
+      "id": "EXC-40f7ee1e",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "40f7ee1e-b6f4-4187-ac2e-31f6f5c8122f",
+      "counterpart_txn_id": "99f9ceb5-ea42-4fb3-bfe3-883cab0914a4",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 129661,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-40f7ee1e",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b91296.61 is attributable to MDR fee (\u20b925.93) and GST (\u20b94.67) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "40f7ee1e-b6f4-4187-ac2e-31f6f5c8122f",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 2593,
+              "gst": 467,
+              "surcharge": 126601
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.610972+00:00"
+    },
+    {
+      "id": "EXC-23c20fdb",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "23c20fdb-fe18-45ff-b664-1281b3a29692",
+      "counterpart_txn_id": "7621f6d8-9c2d-42d7-834e-ecfae709e31e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 84661,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-23c20fdb",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9846.61 is attributable to MDR fee (\u20b916.93) and GST (\u20b93.05) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "23c20fdb-fe18-45ff-b664-1281b3a29692",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 1693,
+              "gst": 305,
+              "surcharge": 82663
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611024+00:00"
+    },
+    {
+      "id": "EXC-9a3719d0",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "9a3719d0-e11c-47e3-bd6a-87ca5a08d325",
+      "counterpart_txn_id": "7621f6d8-9c2d-42d7-834e-ecfae709e31e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 15239,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-9a3719d0",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9152.39 is attributable to MDR fee (\u20b93.05) and GST (\u20b90.55) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "9a3719d0-e11c-47e3-bd6a-87ca5a08d325",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 305,
+              "gst": 55,
+              "surcharge": 14879
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611079+00:00"
+    },
+    {
+      "id": "EXC-5b745411",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "5b745411-0808-4694-b949-16671502c839",
+      "counterpart_txn_id": "6e2e96fb-91c1-4981-8f48-f705708b8103",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 99900,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-5b745411",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9999.00 is attributable to MDR fee (\u20b919.98) and GST (\u20b93.60) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "5b745411-0808-4694-b949-16671502c839",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 1998,
+              "gst": 360,
+              "surcharge": 97542
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611133+00:00"
+    },
+    {
+      "id": "EXC-9ae39aec",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "9ae39aec-3dda-43c3-b02f-29eb85cdf7fc",
+      "counterpart_txn_id": "7621f6d8-9c2d-42d7-834e-ecfae709e31e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 84661,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-9ae39aec",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9846.61 is attributable to MDR fee (\u20b916.93) and GST (\u20b93.05) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "9ae39aec-3dda-43c3-b02f-29eb85cdf7fc",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 1693,
+              "gst": 305,
+              "surcharge": 82663
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611183+00:00"
+    },
+    {
+      "id": "EXC-ac5cf3b6",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "ac5cf3b6-0de9-4c10-bb7e-199801e5faef",
+      "counterpart_txn_id": "7621f6d8-9c2d-42d7-834e-ecfae709e31e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 15239,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-ac5cf3b6",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9152.39 is attributable to MDR fee (\u20b93.05) and GST (\u20b90.55) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "ac5cf3b6-0de9-4c10-bb7e-199801e5faef",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 305,
+              "gst": 55,
+              "surcharge": 14879
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611239+00:00"
+    },
+    {
+      "id": "EXC-e8098640",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "e8098640-b6d1-4ed4-887f-2155113e1706",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 423729,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-e8098640",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b94237.29 is attributable to MDR fee (\u20b984.75) and GST (\u20b915.26) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "e8098640-b6d1-4ed4-887f-2155113e1706",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 8475,
+              "gst": 1526,
+              "surcharge": 413728
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611293+00:00"
+    },
+    {
+      "id": "EXC-a07c5679",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "a07c5679-e44b-4425-8cef-d99d291a7b64",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 76271,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-a07c5679",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9762.71 is attributable to MDR fee (\u20b915.25) and GST (\u20b92.74) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "a07c5679-e44b-4425-8cef-d99d291a7b64",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 1525,
+              "gst": 274,
+              "surcharge": 74472
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611348+00:00"
+    },
+    {
+      "id": "EXC-39da9e68",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "39da9e68-c08b-41cc-8da8-72cf5a49a4a3",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 200000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-39da9e68",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b92000.00 is attributable to MDR fee (\u20b940.00) and GST (\u20b97.20) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "39da9e68-c08b-41cc-8da8-72cf5a49a4a3",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 4000,
+              "gst": 720,
+              "surcharge": 195280
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611467+00:00"
+    },
+    {
+      "id": "EXC-5446781e",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "5446781e-ce69-4132-8bd1-fc92b4b059b5",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "MEDIUM",
+      "state": "DETECTED",
+      "impact_minor": 36000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-5446781e",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b9360.00 is attributable to MDR fee (\u20b97.20) and GST (\u20b91.30) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "5446781e-ce69-4132-8bd1-fc92b4b059b5",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 720,
+              "gst": 130,
+              "surcharge": 35150
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": false,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611516+00:00"
+    },
+    {
+      "id": "EXC-1abc32e0",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "1abc32e0-d6c4-4685-8953-3c98d1927559",
+      "counterpart_txn_id": "7d09efdb-6ff8-4614-8644-985d48346f4b",
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 236000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-1abc32e0",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b92360.00 is attributable to MDR fee (\u20b947.20) and GST (\u20b98.50) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "1abc32e0-d6c4-4685-8953-3c98d1927559",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 4720,
+              "gst": 850,
+              "surcharge": 230430
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611568+00:00"
+    },
+    {
+      "id": "EXC-63cb955e",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-EXT-20260824161259",
+      "window_id": "WIN-03",
+      "primary_txn_id": "63cb955e-3a41-44b3-aa7a-140df609cda0",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_SETTLEMENT",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 200000,
+      "currency": "INR",
+      "checks_performed": [
+        "Exact Reference Key Lookup (Invoice/UTR/Payment/Settlement)",
+        "Direct Amount & Sign Comparison",
+        "Timestamp & Period Boundary Cutoff Analysis (T+2 lag)",
+        "Counterparty & Merchant Profile Lookup",
+        "MDR Fee & GST Schedule Computation (1.5% and 2.0% tiers)",
+        "Duplicate Record & Fingerprint Scan",
+        "Cross-Source Double-Entry Account Verification"
+      ],
+      "findings": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "resolution_confidence": 0.7,
+      "recommended_action": "ESCALATE_TO_CONTROLLER",
+      "investigation": {
+        "exception_id": "EXC-63cb955e",
+        "classification": "FEE_AND_TAX_BOOKED_NET",
+        "likely_cause": "Discrepancy of \u20b92000.00 is attributable to MDR fee (\u20b940.00) and GST (\u20b97.20) booked net in ledger.",
+        "candidate_match_ids": [],
+        "recommended_action": "ADJUST_LEDGER_FEE_SPLIT",
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "tool": "get_transaction_details",
+            "rule_id": null,
+            "record_id": "63cb955e-3a41-44b3-aa7a-140df609cda0",
+            "field": "fee_breakup",
+            "value": {
+              "mdr": 4000,
+              "gst": 720,
+              "surcharge": 195280
+            }
+          },
+          {
+            "tool": "get_reconciliation_rules",
+            "rule_id": "R-FEE-RAZORPAY-STD",
+            "record_id": null,
+            "field": null,
+            "value": null
+          }
+        ],
+        "risk_flags": [],
+        "requires_human_review": true,
+        "citations": [
+          "SOP-04 \u00a72: Merchant Discount Rate Accounting"
+        ]
+      },
+      "detected_at": "2026-08-24 16:12:59.611620+00:00"
+    }
+  ],
+  "proposals": [
+    {
+      "id": "PROP-9bf67cc4",
+      "exception_id": "EXC-9bf67cc4",
+      "window_id": "WIN-01",
+      "transaction_id": "9bf67cc4-8cbf-4849-a89f-a34bbe3cb655",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 48722,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609126+00:00"
+    },
+    {
+      "id": "PROP-f3b0e331",
+      "exception_id": "EXC-f3b0e331",
+      "window_id": "WIN-01",
+      "transaction_id": "f3b0e331-aa57-4fdd-b326-c79349f5cafc",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 115215,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609292+00:00"
+    },
+    {
+      "id": "PROP-2bd30d18",
+      "exception_id": "EXC-2bd30d18",
+      "window_id": "WIN-01",
+      "transaction_id": "2bd30d18-19bb-410a-b4b2-a8b5913c1d11",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 230430,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609397+00:00"
+    },
+    {
+      "id": "PROP-7a323e6b",
+      "exception_id": "EXC-7a323e6b",
+      "window_id": "WIN-01",
+      "transaction_id": "7a323e6b-ef16-4733-b7b3-09b508bd9604",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 488200,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609482+00:00"
+    },
+    {
+      "id": "PROP-8f6c79f9",
+      "exception_id": "EXC-8f6c79f9",
+      "window_id": "WIN-01",
+      "transaction_id": "8f6c79f9-7af6-4818-a154-6a8381a5d105",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 146362,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609557+00:00"
+    },
+    {
+      "id": "PROP-b1b58dca",
+      "exception_id": "EXC-b1b58dca",
+      "window_id": "WIN-01",
+      "transaction_id": "b1b58dca-4b14-4695-846d-1e5e66022c8e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 115215,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609642+00:00"
+    },
+    {
+      "id": "PROP-6fadba23",
+      "exception_id": "EXC-6fadba23",
+      "window_id": "WIN-01",
+      "transaction_id": "6fadba23-5896-4a07-acdf-50aa28f72b8f",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 829940,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609716+00:00"
+    },
+    {
+      "id": "PROP-99eb9927",
+      "exception_id": "EXC-99eb9927",
+      "window_id": "WIN-01",
+      "transaction_id": "99eb9927-3949-495e-aaad-07b89056e557",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 42288,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.609870+00:00"
+    },
+    {
+      "id": "PROP-da034e2d",
+      "exception_id": "EXC-da034e2d",
+      "window_id": "WIN-02",
+      "transaction_id": "da034e2d-448c-4ef0-a138-3aa3bb5dc7fc",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 7612,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610026+00:00"
+    },
+    {
+      "id": "PROP-9fe07676",
+      "exception_id": "EXC-9fe07676",
+      "window_id": "WIN-02",
+      "transaction_id": "9fe07676-0945-4ecb-b4cc-599da382256e",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 23600,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610143+00:00"
+    },
+    {
+      "id": "PROP-4af46134",
+      "exception_id": "EXC-4af46134",
+      "window_id": "WIN-02",
+      "transaction_id": "4af46134-5ab6-4774-bc2c-28fe9587e405",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 1000000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610261+00:00"
+    },
+    {
+      "id": "PROP-562b0fc7",
+      "exception_id": "EXC-562b0fc7",
+      "window_id": "WIN-02",
+      "transaction_id": "562b0fc7-a0b8-4602-b503-5382e87e36c9",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 84661,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610319+00:00"
+    },
+    {
+      "id": "PROP-a366c46c",
+      "exception_id": "EXC-a366c46c",
+      "window_id": "WIN-02",
+      "transaction_id": "a366c46c-0902-4265-98c5-d7ad501f7eb2",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 100000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610376+00:00"
+    },
+    {
+      "id": "PROP-08cd3ad5",
+      "exception_id": "EXC-08cd3ad5",
+      "window_id": "WIN-02",
+      "transaction_id": "08cd3ad5-881b-4e0d-b796-b372aa62e8d4",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 18000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610424+00:00"
+    },
+    {
+      "id": "PROP-bc673017",
+      "exception_id": "EXC-bc673017",
+      "window_id": "WIN-02",
+      "transaction_id": "bc673017-6350-46bd-877a-936eda835458",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 200000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610471+00:00"
+    },
+    {
+      "id": "PROP-3fccba93",
+      "exception_id": "EXC-3fccba93",
+      "window_id": "WIN-02",
+      "transaction_id": "3fccba93-95ef-4e0e-8cd4-d34931262027",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 36000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610522+00:00"
+    },
+    {
+      "id": "PROP-26c145f2",
+      "exception_id": "EXC-26c145f2",
+      "window_id": "WIN-02",
+      "transaction_id": "26c145f2-1cdb-45dc-bdb9-8c09fc344c3b",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 423729,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610570+00:00"
+    },
+    {
+      "id": "PROP-2d8c147c",
+      "exception_id": "EXC-2d8c147c",
+      "window_id": "WIN-02",
+      "transaction_id": "2d8c147c-89e3-489e-99b2-6b774c338f54",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 76271,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610618+00:00"
+    },
+    {
+      "id": "PROP-89da8993",
+      "exception_id": "EXC-89da8993",
+      "window_id": "WIN-02",
+      "transaction_id": "89da8993-af3b-473f-b4a3-8da4e553bc5f",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 127034,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610665+00:00"
+    },
+    {
+      "id": "PROP-4072a5da",
+      "exception_id": "EXC-4072a5da",
+      "window_id": "WIN-02",
+      "transaction_id": "4072a5da-187a-447d-9a54-ff027240c361",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 22866,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610712+00:00"
+    },
+    {
+      "id": "PROP-d76638c9",
+      "exception_id": "EXC-d76638c9",
+      "window_id": "WIN-02",
+      "transaction_id": "d76638c9-375a-4d17-ae66-3d454e04c252",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 100000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610765+00:00"
+    },
+    {
+      "id": "PROP-4b696c64",
+      "exception_id": "EXC-4b696c64",
+      "window_id": "WIN-02",
+      "transaction_id": "4b696c64-3b19-49bc-b494-4accac21bb93",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 18000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610814+00:00"
+    },
+    {
+      "id": "PROP-e06e111f",
+      "exception_id": "EXC-e06e111f",
+      "window_id": "WIN-03",
+      "transaction_id": "e06e111f-86c9-4631-b580-39345ce2bcc2",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 720339,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610922+00:00"
+    },
+    {
+      "id": "PROP-40f7ee1e",
+      "exception_id": "EXC-40f7ee1e",
+      "window_id": "WIN-03",
+      "transaction_id": "40f7ee1e-b6f4-4187-ac2e-31f6f5c8122f",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 129661,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.610974+00:00"
+    },
+    {
+      "id": "PROP-23c20fdb",
+      "exception_id": "EXC-23c20fdb",
+      "window_id": "WIN-03",
+      "transaction_id": "23c20fdb-fe18-45ff-b664-1281b3a29692",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 84661,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611026+00:00"
+    },
+    {
+      "id": "PROP-9a3719d0",
+      "exception_id": "EXC-9a3719d0",
+      "window_id": "WIN-03",
+      "transaction_id": "9a3719d0-e11c-47e3-bd6a-87ca5a08d325",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 15239,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611081+00:00"
+    },
+    {
+      "id": "PROP-5b745411",
+      "exception_id": "EXC-5b745411",
+      "window_id": "WIN-03",
+      "transaction_id": "5b745411-0808-4694-b949-16671502c839",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 99900,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611135+00:00"
+    },
+    {
+      "id": "PROP-9ae39aec",
+      "exception_id": "EXC-9ae39aec",
+      "window_id": "WIN-03",
+      "transaction_id": "9ae39aec-3dda-43c3-b02f-29eb85cdf7fc",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 84661,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611185+00:00"
+    },
+    {
+      "id": "PROP-ac5cf3b6",
+      "exception_id": "EXC-ac5cf3b6",
+      "window_id": "WIN-03",
+      "transaction_id": "ac5cf3b6-0de9-4c10-bb7e-199801e5faef",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 15239,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611241+00:00"
+    },
+    {
+      "id": "PROP-e8098640",
+      "exception_id": "EXC-e8098640",
+      "window_id": "WIN-03",
+      "transaction_id": "e8098640-b6d1-4ed4-887f-2155113e1706",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 423729,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611295+00:00"
+    },
+    {
+      "id": "PROP-a07c5679",
+      "exception_id": "EXC-a07c5679",
+      "window_id": "WIN-03",
+      "transaction_id": "a07c5679-e44b-4425-8cef-d99d291a7b64",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 76271,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611350+00:00"
+    },
+    {
+      "id": "PROP-39da9e68",
+      "exception_id": "EXC-39da9e68",
+      "window_id": "WIN-03",
+      "transaction_id": "39da9e68-c08b-41cc-8da8-72cf5a49a4a3",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 200000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611469+00:00"
+    },
+    {
+      "id": "PROP-5446781e",
+      "exception_id": "EXC-5446781e",
+      "window_id": "WIN-03",
+      "transaction_id": "5446781e-ce69-4132-8bd1-fc92b4b059b5",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 36000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611519+00:00"
+    },
+    {
+      "id": "PROP-1abc32e0",
+      "exception_id": "EXC-1abc32e0",
+      "window_id": "WIN-03",
+      "transaction_id": "1abc32e0-d6c4-4685-8953-3c98d1927559",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 236000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611570+00:00"
+    },
+    {
+      "id": "PROP-63cb955e",
+      "exception_id": "EXC-63cb955e",
+      "window_id": "WIN-03",
+      "transaction_id": "63cb955e-3a41-44b3-aa7a-140df609cda0",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 200000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "No counterpart record found within configured tolerance gates.",
+      "confidence": 0.7,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-24T16:12:59.611625+00:00"
+    }
+  ],
+  "ai_investigations": [
+    {
+      "exception_id": "EXC-9bf67cc4",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-f3b0e331",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-2bd30d18",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-7a323e6b",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-8f6c79f9",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-b1b58dca",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-6fadba23",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-99eb9927",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-da034e2d",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-9fe07676",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-4af46134",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-562b0fc7",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-a366c46c",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-08cd3ad5",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-bc673017",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-3fccba93",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-26c145f2",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-2d8c147c",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-89da8993",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-4072a5da",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-d76638c9",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-4b696c64",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-e06e111f",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-40f7ee1e",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-23c20fdb",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-9a3719d0",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-5b745411",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-9ae39aec",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-ac5cf3b6",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-e8098640",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-a07c5679",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-39da9e68",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-5446781e",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-1abc32e0",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-63cb955e",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    }
+  ],
+  "cash_forecast": [
+    {
+      "week_number": 1,
+      "period_start": "2026-04-01",
+      "period_end": "2026-04-07",
+      "confirmed_inflow_minor": 51791882,
+      "probable_inflow_minor": 13060781,
+      "at_risk_inflow_minor": 0,
+      "unknown_inflow_minor": 6575845,
+      "risk_narrative": "Week 1 includes \u20b90.00K at-risk cash due to 0 missing bank settlement credits pending gateway escalation."
+    },
+    {
+      "week_number": 2,
+      "period_start": "2026-04-08",
+      "period_end": "2026-04-14",
+      "confirmed_inflow_minor": 49500000,
+      "probable_inflow_minor": 5500000,
+      "at_risk_inflow_minor": 0,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 2 reflects normal T+2 billing cycle with 90% confirmed receivables."
+    },
+    {
+      "week_number": 3,
+      "period_start": "2026-04-15",
+      "period_end": "2026-04-21",
+      "confirmed_inflow_minor": 52877000,
+      "probable_inflow_minor": 4598000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 3 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 4,
+      "period_start": "2026-04-22",
+      "period_end": "2026-04-28",
+      "confirmed_inflow_minor": 53636000,
+      "probable_inflow_minor": 4664000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 4 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 5,
+      "period_start": "2026-04-29",
+      "period_end": "2026-05-05",
+      "confirmed_inflow_minor": 54395000,
+      "probable_inflow_minor": 4730000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 5 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 6,
+      "period_start": "2026-05-06",
+      "period_end": "2026-05-12",
+      "confirmed_inflow_minor": 55154000,
+      "probable_inflow_minor": 4796000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 6 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 7,
+      "period_start": "2026-05-13",
+      "period_end": "2026-05-19",
+      "confirmed_inflow_minor": 55913000,
+      "probable_inflow_minor": 4862000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 7 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 8,
+      "period_start": "2026-05-20",
+      "period_end": "2026-05-26",
+      "confirmed_inflow_minor": 56672000,
+      "probable_inflow_minor": 4928000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 8 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 9,
+      "period_start": "2026-05-27",
+      "period_end": "2026-06-02",
+      "confirmed_inflow_minor": 57431000,
+      "probable_inflow_minor": 4994000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 9 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 10,
+      "period_start": "2026-06-03",
+      "period_end": "2026-06-09",
+      "confirmed_inflow_minor": 58189999,
+      "probable_inflow_minor": 5060000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 10 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 11,
+      "period_start": "2026-06-10",
+      "period_end": "2026-06-16",
+      "confirmed_inflow_minor": 58949000,
+      "probable_inflow_minor": 5126000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 11 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 12,
+      "period_start": "2026-06-17",
+      "period_end": "2026-06-23",
+      "confirmed_inflow_minor": 59708000,
+      "probable_inflow_minor": 5192000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 12 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 13,
+      "period_start": "2026-06-24",
+      "period_end": "2026-06-30",
+      "confirmed_inflow_minor": 60467000,
+      "probable_inflow_minor": 5258000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 13 steady-state SaaS subscription runway projection."
+    }
+  ]
+}

@@ -1,0 +1,764 @@
+{
+  "execution_meta": {
+    "timestamp": "2026-08-28T17:49:26.890338+00:00",
+    "batch_id": "BATCH-USER-20260828-01",
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "execution_mode": "USER_UPLOAD",
+    "wall_clock_seconds": 24.61,
+    "provenance_manifest": {
+      "batch_id": "BATCH-USER-20260828-01",
+      "execution_mode": "USER_UPLOAD",
+      "overall_source_type": "USER_UPLOAD",
+      "sources": {
+        "GATEWAY": {
+          "batch_id": "BATCH-USER-20260828-01",
+          "source_kind": "GATEWAY",
+          "source_type": "USER_UPLOAD",
+          "original_filename": "gateway.csv",
+          "absolute_file_path": "D:\\AI Finance controller\\data\\gateway.csv",
+          "sha256_hash": "b92b199b03d1ce88fbc740c0cb8a94459aa9ac9f1d4b1b775859053a8a603dd1",
+          "file_size_bytes": 1884,
+          "raw_rows_count": 12,
+          "parsed_rows_count": 12,
+          "normalized_rows_count": 12,
+          "first_3_record_ids": [
+            "pay_EXT_1001",
+            "pay_EXT_1002",
+            "pay_EXT_1003"
+          ],
+          "last_3_record_ids": [
+            "pay_EXT_1010",
+            "pay_EXT_1010",
+            "pay_EXT_1012"
+          ]
+        },
+        "BANK": {
+          "batch_id": "BATCH-USER-20260828-01",
+          "source_kind": "BANK",
+          "source_type": "USER_UPLOAD",
+          "original_filename": "bank.csv",
+          "absolute_file_path": "D:\\AI Finance controller\\data\\bank.csv",
+          "sha256_hash": "0c053ad74b5a3675f93255e3e55dbb63d1a6651e9c2382f87cad9dd1d009f4e3",
+          "file_size_bytes": 1038,
+          "raw_rows_count": 10,
+          "parsed_rows_count": 10,
+          "normalized_rows_count": 10,
+          "first_3_record_ids": [
+            "UTR-EXT-0001",
+            "pay_1002",
+            "UTR-EXT-0003"
+          ],
+          "last_3_record_ids": [
+            "UTR-CUT-0008",
+            "UTR-EXT-0009",
+            "UTR-ANON-0001"
+          ]
+        },
+        "LEDGER": {
+          "batch_id": "BATCH-USER-20260828-01",
+          "source_kind": "LEDGER",
+          "source_type": "USER_UPLOAD",
+          "original_filename": "general_ledger.csv",
+          "absolute_file_path": "D:\\AI Finance controller\\data\\general_ledger.csv",
+          "sha256_hash": "8535321052e6c36d2bf19f859b4d87a1c658467ec6fb4fe70ac173691151ed44",
+          "file_size_bytes": 3714,
+          "raw_rows_count": 42,
+          "parsed_rows_count": 42,
+          "normalized_rows_count": 42,
+          "first_3_record_ids": [
+            "JE-EXT-1001:1",
+            "JE-EXT-1001:2",
+            "JE-EXT-1001:3"
+          ],
+          "last_3_record_ids": [
+            "JE-EXT-1013:3",
+            "JE-EXT-1014:1",
+            "JE-EXT-1014:2"
+          ]
+        }
+      },
+      "total_raw_rows": 64,
+      "total_normalized_records": 64,
+      "created_at": "2026-08-28 17:49:02.383697+00:00"
+    }
+  },
+  "summary": {
+    "batch_id": "BATCH-USER-20260828-01",
+    "total_records": 64,
+    "total_windows": 3,
+    "exact_matches": 1,
+    "contextual_matches": 0,
+    "matched_records": 1,
+    "needs_review_count": 1,
+    "total_unresolved_records": 63,
+    "critical_high_unresolved": 21,
+    "unresolved_exceptions": 21,
+    "total_exceptions": 63,
+    "match_rate": 0.0156,
+    "reconciliation_graph": {
+      "three_way_matches_count": 0,
+      "three_way_records_count": 0,
+      "three_way_match_rate": 0.0,
+      "pairwise_matches_count": 1,
+      "pairwise_records_count": 2,
+      "pairwise_match_rate": 0.0312,
+      "n1_settlement_clusters_count": 0,
+      "overall_reconciled_records": 2,
+      "overall_reconciliation_rate": 0.0312,
+      "source_breakdown": {
+        "gateway": {
+          "total": 12,
+          "matched": 0,
+          "rate": 0.0
+        },
+        "bank": {
+          "total": 10,
+          "matched": 1,
+          "rate": 0.1
+        },
+        "ledger": {
+          "total": 42,
+          "matched": 1,
+          "rate": 0.0238
+        }
+      }
+    },
+    "three_way_matches_count": 0,
+    "three_way_records_count": 0,
+    "three_way_match_rate": 0.0,
+    "pairwise_matches_count": 1,
+    "pairwise_match_rate": 0.0312,
+    "n1_settlement_clusters_count": 0,
+    "overall_reconciliation_rate": 0.0312,
+    "source_breakdown": {
+      "gateway": {
+        "total": 12,
+        "matched": 0,
+        "rate": 0.0
+      },
+      "bank": {
+        "total": 10,
+        "matched": 1,
+        "rate": 0.1
+      },
+      "ledger": {
+        "total": 42,
+        "matched": 1,
+        "rate": 0.0238
+      }
+    },
+    "tier_breakdown": {
+      "tier_1_exact": 1,
+      "tier_2_contextual": 0,
+      "tier_3_needs_review": 0,
+      "tier_4_honest_exceptions": 62
+    },
+    "safeguards_triggered_count": 1,
+    "safeguards_breakdown": [
+      {
+        "safeguard": "INTRA_SOURCE_DEDUPLICATION",
+        "reason": "Duplicate record 'pay_EXT_1010' in GATEWAY detected and isolated",
+        "record_id": "f123deb0-5ba5-43ea-831b-1bfc681181ff",
+        "external_id": "pay_EXT_1010",
+        "impact_minor": 9990000
+      }
+    ],
+    "average_match_confidence": 1.0,
+    "avg_confidence": 1.0,
+    "false_match_risk": 0.0,
+    "avg_investigation_depth": 3.0,
+    "wall_clock_seconds": 0.02,
+    "windows": [
+      {
+        "window_index": 1,
+        "window_id": "WIN-01",
+        "records_count": 24,
+        "start_index": 0,
+        "end_index": 24,
+        "status": "COMPLETED",
+        "exact_matches": 0,
+        "contextual_matches": 0,
+        "ai_investigated": 0,
+        "exceptions_count": 23,
+        "started_at": "2026-08-28 17:49:02.432654+00:00",
+        "completed_at": "2026-08-28 17:49:02.432655+00:00"
+      },
+      {
+        "window_index": 2,
+        "window_id": "WIN-02",
+        "records_count": 24,
+        "start_index": 24,
+        "end_index": 48,
+        "status": "COMPLETED",
+        "exact_matches": 0,
+        "contextual_matches": 0,
+        "ai_investigated": 0,
+        "exceptions_count": 23,
+        "started_at": "2026-08-28 17:49:02.432719+00:00",
+        "completed_at": "2026-08-28 17:49:02.432720+00:00"
+      },
+      {
+        "window_index": 3,
+        "window_id": "WIN-03",
+        "records_count": 16,
+        "start_index": 48,
+        "end_index": 64,
+        "status": "COMPLETED",
+        "exact_matches": 0,
+        "contextual_matches": 0,
+        "ai_investigated": 0,
+        "exceptions_count": 16,
+        "started_at": "2026-08-28 17:49:02.432743+00:00",
+        "completed_at": "2026-08-28 17:49:02.432743+00:00"
+      }
+    ]
+  },
+  "counts": {
+    "total_records": 64,
+    "matches_count": 1,
+    "exceptions_count": 63,
+    "proposals_count": 63,
+    "audit_blocks": 4
+  },
+  "provenance": {
+    "batch_id": "BATCH-USER-20260828-01",
+    "execution_mode": "USER_UPLOAD",
+    "overall_source_type": "USER_UPLOAD",
+    "sources": {
+      "GATEWAY": {
+        "batch_id": "BATCH-USER-20260828-01",
+        "source_kind": "GATEWAY",
+        "source_type": "USER_UPLOAD",
+        "original_filename": "gateway.csv",
+        "absolute_file_path": "D:\\AI Finance controller\\data\\gateway.csv",
+        "sha256_hash": "b92b199b03d1ce88fbc740c0cb8a94459aa9ac9f1d4b1b775859053a8a603dd1",
+        "file_size_bytes": 1884,
+        "raw_rows_count": 12,
+        "parsed_rows_count": 12,
+        "normalized_rows_count": 12,
+        "first_3_record_ids": [
+          "pay_EXT_1001",
+          "pay_EXT_1002",
+          "pay_EXT_1003"
+        ],
+        "last_3_record_ids": [
+          "pay_EXT_1010",
+          "pay_EXT_1010",
+          "pay_EXT_1012"
+        ]
+      },
+      "BANK": {
+        "batch_id": "BATCH-USER-20260828-01",
+        "source_kind": "BANK",
+        "source_type": "USER_UPLOAD",
+        "original_filename": "bank.csv",
+        "absolute_file_path": "D:\\AI Finance controller\\data\\bank.csv",
+        "sha256_hash": "0c053ad74b5a3675f93255e3e55dbb63d1a6651e9c2382f87cad9dd1d009f4e3",
+        "file_size_bytes": 1038,
+        "raw_rows_count": 10,
+        "parsed_rows_count": 10,
+        "normalized_rows_count": 10,
+        "first_3_record_ids": [
+          "UTR-EXT-0001",
+          "pay_1002",
+          "UTR-EXT-0003"
+        ],
+        "last_3_record_ids": [
+          "UTR-CUT-0008",
+          "UTR-EXT-0009",
+          "UTR-ANON-0001"
+        ]
+      },
+      "LEDGER": {
+        "batch_id": "BATCH-USER-20260828-01",
+        "source_kind": "LEDGER",
+        "source_type": "USER_UPLOAD",
+        "original_filename": "general_ledger.csv",
+        "absolute_file_path": "D:\\AI Finance controller\\data\\general_ledger.csv",
+        "sha256_hash": "8535321052e6c36d2bf19f859b4d87a1c658467ec6fb4fe70ac173691151ed44",
+        "file_size_bytes": 3714,
+        "raw_rows_count": 42,
+        "parsed_rows_count": 42,
+        "normalized_rows_count": 42,
+        "first_3_record_ids": [
+          "JE-EXT-1001:1",
+          "JE-EXT-1001:2",
+          "JE-EXT-1001:3"
+        ],
+        "last_3_record_ids": [
+          "JE-EXT-1013:3",
+          "JE-EXT-1014:1",
+          "JE-EXT-1014:2"
+        ]
+      }
+    },
+    "total_raw_rows": 64,
+    "total_normalized_records": 64,
+    "created_at": "2026-08-28 17:49:02.383697+00:00"
+  },
+  "sample_matches": [
+    {
+      "id": "72f2460e-0be5-4994-b34c-139d462d7966",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "match_type": "1:1",
+      "method": "EXACT_ID",
+      "score": 1.0,
+      "confidence": 1.0,
+      "solver_evidence": {
+        "matched_key": "pay_1002",
+        "tier": "Tier 1: Exact Match"
+      },
+      "legs": [
+        {
+          "transaction_id": "0920af41-be89-4bd8-88f4-dc6fce5d2f24",
+          "role": "PRIMARY",
+          "signed_amount_minor": 976400
+        },
+        {
+          "transaction_id": "84831b58-4876-4d87-9473-e4feb78c5a91",
+          "role": "COUNTERPART",
+          "signed_amount_minor": -976400
+        }
+      ],
+      "decision_tier": "RESOLVED"
+    }
+  ],
+  "sample_exceptions": [
+    {
+      "id": "EXC-f123deb0",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "f123deb0-5ba5-43ea-831b-1bfc681181ff",
+      "counterpart_txn_id": null,
+      "exception_type": "DUPLICATE_RECORD",
+      "severity": "LOW",
+      "state": "DETECTED",
+      "impact_minor": 9990000,
+      "currency": "INR",
+      "checks_performed": [
+        "Intra-Source Fingerprint & Reference Deduplication"
+      ],
+      "findings": [
+        "Duplicate transaction 'pay_EXT_1010' ingested from GATEWAY."
+      ],
+      "resolution_confidence": 0.99,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.411141"
+    },
+    {
+      "id": "EXC-adfdc0e8",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "adfdc0e8-fab3-462a-97aa-1287ca76e22c",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 4990000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 49900.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419404+00:00"
+    },
+    {
+      "id": "EXC-2c22edee",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "2c22edee-0c0c-4b75-88aa-6b3f247d3a7c",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 100000000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 1000000.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419430+00:00"
+    },
+    {
+      "id": "EXC-00626d57",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "00626d57-b184-4f07-9805-e95e2e1959ff",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 9990000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 99900.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419439+00:00"
+    },
+    {
+      "id": "EXC-b5443188",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "b5443188-50ba-4cc8-b884-521600375a14",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 11800000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 118000.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419445+00:00"
+    },
+    {
+      "id": "EXC-b5b5e590",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "b5b5e590-3441-489e-98f3-d97986e476b1",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 23600000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 236000.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419450+00:00"
+    },
+    {
+      "id": "EXC-52d816de",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "52d816de-5554-41c3-8a5b-47bb49427db0",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 50000000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 500000.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419455+00:00"
+    },
+    {
+      "id": "EXC-0543cc59",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "0543cc59-8651-43e6-85bb-3f2085f7db85",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 14990000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 149900.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419460+00:00"
+    },
+    {
+      "id": "EXC-6221ef8f",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "6221ef8f-0294-4aa4-95c4-a8859e9fb529",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 11800000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 118000.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419464+00:00"
+    },
+    {
+      "id": "EXC-651a89c3",
+      "org_id": "00000000-0000-0000-0000-000000000001",
+      "batch_id": "BATCH-USER-20260828-01",
+      "window_id": null,
+      "primary_txn_id": "651a89c3-5e8f-428b-955f-7f4a29aa15b4",
+      "counterpart_txn_id": null,
+      "exception_type": "MISSING_BANK_RECORD",
+      "severity": "HIGH",
+      "state": "DETECTED",
+      "impact_minor": 85000000,
+      "currency": "INR",
+      "checks_performed": [
+        "Cross-Source Control Lookup",
+        "Fee Tolerance Gate",
+        "Period Cutoff Gate"
+      ],
+      "findings": [
+        "Unreconciled GATEWAY entry of Rs. 850000.00. Classification: MISSING_BANK_RECORD."
+      ],
+      "resolution_confidence": 0.6,
+      "recommended_action": null,
+      "investigation": null,
+      "detected_at": "2026-08-28 17:49:02.419470+00:00"
+    }
+  ],
+  "sample_proposals": [
+    {
+      "id": "PROP-adfdc0e8",
+      "exception_id": "EXC-adfdc0e8",
+      "window_id": "WIN-01",
+      "transaction_id": "adfdc0e8-fab3-462a-97aa-1287ca76e22c",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 4990000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "Unmatched residual entry. No counterpart record found within configured tolerance gates.",
+      "confidence": 0.6,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "Unmatched residual entry. No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-28T17:49:02.420609+00:00"
+    },
+    {
+      "id": "PROP-2c22edee",
+      "exception_id": "EXC-2c22edee",
+      "window_id": "WIN-01",
+      "transaction_id": "2c22edee-0c0c-4b75-88aa-6b3f247d3a7c",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 100000000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "Unmatched residual entry. No counterpart record found within configured tolerance gates.",
+      "confidence": 0.6,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "Unmatched residual entry. No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-28T17:49:02.420824+00:00"
+    },
+    {
+      "id": "PROP-00626d57",
+      "exception_id": "EXC-00626d57",
+      "window_id": "WIN-01",
+      "transaction_id": "00626d57-b184-4f07-9805-e95e2e1959ff",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 9990000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "Unmatched residual entry. No counterpart record found within configured tolerance gates.",
+      "confidence": 0.6,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "Unmatched residual entry. No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-28T17:49:02.420982+00:00"
+    },
+    {
+      "id": "PROP-b5443188",
+      "exception_id": "EXC-b5443188",
+      "window_id": "WIN-01",
+      "transaction_id": "b5443188-50ba-4cc8-b884-521600375a14",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 11800000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "Unmatched residual entry. No counterpart record found within configured tolerance gates.",
+      "confidence": 0.6,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "Unmatched residual entry. No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-28T17:49:02.421126+00:00"
+    },
+    {
+      "id": "PROP-b5b5e590",
+      "exception_id": "EXC-b5b5e590",
+      "window_id": "WIN-01",
+      "transaction_id": "b5b5e590-3441-489e-98f3-d97986e476b1",
+      "exception_type": "MISSING_SETTLEMENT",
+      "impact_minor": 23600000,
+      "action": "INVESTIGATE_MISSING_WIRE",
+      "justification": "Unmatched residual entry. No counterpart record found within configured tolerance gates.",
+      "confidence": 0.6,
+      "status": "PENDING_APPROVAL",
+      "tier": "UNRESOLVED_EXCEPTION",
+      "evidence": [
+        "Unmatched residual entry. No counterpart record found within configured tolerance gates."
+      ],
+      "created_at": "2026-08-28T17:49:02.421268+00:00"
+    }
+  ],
+  "cash_forecast_preview": [
+    {
+      "week_number": 1,
+      "period_start": "2026-04-01",
+      "period_end": "2026-04-07",
+      "confirmed_inflow_minor": 47726400,
+      "probable_inflow_minor": 20050000,
+      "at_risk_inflow_minor": 0,
+      "unknown_inflow_minor": 381987626,
+      "risk_narrative": "Week 1 includes \u20b90.00K at-risk cash due to 0 missing bank settlement credits pending gateway escalation."
+    },
+    {
+      "week_number": 2,
+      "period_start": "2026-04-08",
+      "period_end": "2026-04-14",
+      "confirmed_inflow_minor": 49500000,
+      "probable_inflow_minor": 5500000,
+      "at_risk_inflow_minor": 0,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 2 reflects normal T+2 billing cycle with 90% confirmed receivables."
+    },
+    {
+      "week_number": 3,
+      "period_start": "2026-04-15",
+      "period_end": "2026-04-21",
+      "confirmed_inflow_minor": 52877000,
+      "probable_inflow_minor": 4598000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 3 steady-state SaaS subscription runway projection."
+    },
+    {
+      "week_number": 4,
+      "period_start": "2026-04-22",
+      "period_end": "2026-04-28",
+      "confirmed_inflow_minor": 53636000,
+      "probable_inflow_minor": 4664000,
+      "at_risk_inflow_minor": 1100000,
+      "unknown_inflow_minor": 0,
+      "risk_narrative": "Week 4 steady-state SaaS subscription runway projection."
+    }
+  ],
+  "ai_investigations": [
+    {
+      "exception_id": "EXC-f123deb0",
+      "classification": "DUPLICATE_INGESTION_ROW",
+      "likely_cause": "Identical payment ID / reference detected within the source stream (duplicate webhook replay).",
+      "candidate_match_ids": [],
+      "recommended_action": "AUTO_RESOLVE_TOLERANCE",
+      "confidence": 0.99,
+      "evidence": [
+        {
+          "tool": "get_transaction_details",
+          "rule_id": null,
+          "record_id": null,
+          "field": "fingerprint_match",
+          "value": true
+        }
+      ],
+      "risk_flags": [],
+      "requires_human_review": false,
+      "citations": [
+        "SOP-01 \u00a73: Deduplication Controls"
+      ]
+    },
+    {
+      "exception_id": "EXC-adfdc0e8",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    },
+    {
+      "exception_id": "EXC-2c22edee",
+      "classification": "UNMATCHED_RESIDUAL",
+      "likely_cause": "Transaction could not be linked within configured tolerance gates and requires operational review.",
+      "candidate_match_ids": [],
+      "recommended_action": "MANUAL_JOURNAL_ENTRY",
+      "confidence": 0.75,
+      "evidence": [],
+      "risk_flags": [],
+      "requires_human_review": true,
+      "citations": [
+        "SOP-05 \u00a71: Unresolved Exceptions Protocol"
+      ]
+    }
+  ],
+  "audit_chain_status": {
+    "is_valid": true,
+    "total_blocks": 4,
+    "first_block_hash": "bdc9068c4d62a2a91359b84bd8dc3738e1edd29cd345bbe2a516b7fbd3c14698",
+    "last_block_hash": "35e0e99c4b17477c984d4f48e7324d6820d843f0c670e984c51ff1082f54cccb"
+  }
+}

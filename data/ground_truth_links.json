@@ -1,0 +1,362 @@
+[
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0001",
+    "target_id": "JE-5001_1",
+    "key": "INV-2026-1001"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0002",
+    "target_id": "JE-5002_1",
+    "key": "INV-2026-1002"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0003",
+    "target_id": "JE-5003_1",
+    "key": "INV-2026-1003"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0004",
+    "target_id": "JE-5004_1",
+    "key": "INV-2026-1004"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0005",
+    "target_id": "JE-5005_1",
+    "key": "INV-2026-1005"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0006",
+    "target_id": "JE-5006_1",
+    "key": "INV-2026-1006"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0007",
+    "target_id": "JE-5007_1",
+    "key": "INV-2026-1007"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0008",
+    "target_id": "JE-5008_1",
+    "key": "INV-2026-1008"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0009",
+    "target_id": "JE-5009_1",
+    "key": "INV-2026-1009"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0010",
+    "target_id": "JE-5010_1",
+    "key": "INV-2026-1010"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0011",
+    "target_id": "JE-5011_1",
+    "key": "INV-2026-1011"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0012",
+    "target_id": "JE-5012_1",
+    "key": "INV-2026-1012"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0013",
+    "target_id": "JE-5013_1",
+    "key": "INV-2026-1013"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0014",
+    "target_id": "JE-5014_1",
+    "key": "INV-2026-1014"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0015",
+    "target_id": "JE-5015_1",
+    "key": "INV-2026-1015"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0016",
+    "target_id": "JE-5016_1",
+    "key": "INV-2026-1016"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0017",
+    "target_id": "JE-5017_1",
+    "key": "INV-2026-1017"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0018",
+    "target_id": "JE-5018_1",
+    "key": "INV-2026-1018"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0019",
+    "target_id": "JE-5019_1",
+    "key": "INV-2026-1019"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0020",
+    "target_id": "JE-5020_1",
+    "key": "INV-2026-1020"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0021",
+    "target_id": "JE-5021_1",
+    "key": "INV-2026-1021"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0022",
+    "target_id": "JE-5022_1",
+    "key": "INV-2026-1022"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0023",
+    "target_id": "JE-5023_1",
+    "key": "INV-2026-1023"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0024",
+    "target_id": "JE-5024_1",
+    "key": "INV-2026-1024"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0025",
+    "target_id": "JE-5025_1",
+    "key": "INV-2026-1025"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0026",
+    "target_id": "JE-5026_1",
+    "key": "INV-2026-1026"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0027",
+    "target_id": "JE-5027_1",
+    "key": "INV-2026-1027"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0028",
+    "target_id": "JE-5028_1",
+    "key": "INV-2026-1028"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0029",
+    "target_id": "JE-5029_1",
+    "key": "INV-2026-1029"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0030",
+    "target_id": "JE-5030_1",
+    "key": "INV-2026-1030"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0031",
+    "target_id": "JE-5031_1",
+    "key": "INV-2026-1031"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0032",
+    "target_id": "JE-5032_1",
+    "key": "INV-2026-1032"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0033",
+    "target_id": "JE-5033_1",
+    "key": "INV-2026-1033"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0034",
+    "target_id": "JE-5034_1",
+    "key": "INV-2026-1034"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0035",
+    "target_id": "JE-5035_1",
+    "key": "INV-2026-1035"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0036",
+    "target_id": "JE-5036_1",
+    "key": "INV-2026-1036"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0037",
+    "target_id": "JE-5037_1",
+    "key": "INV-2026-1037"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0038",
+    "target_id": "JE-5038_1",
+    "key": "INV-2026-1038"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0039",
+    "target_id": "JE-5039_1",
+    "key": "INV-2026-1039"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0040",
+    "target_id": "JE-5040_1",
+    "key": "INV-2026-1040"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0041",
+    "target_id": "JE-5041_1",
+    "key": "INV-2026-1041"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0042",
+    "target_id": "JE-5042_1",
+    "key": "INV-2026-1042"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0043",
+    "target_id": "JE-5043_1",
+    "key": "INV-2026-1043"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0044",
+    "target_id": "JE-5044_1",
+    "key": "INV-2026-1044"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0045",
+    "target_id": "JE-5045_1",
+    "key": "INV-2026-1045"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0046",
+    "target_id": "JE-5046_1",
+    "key": "INV-2026-1046"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0047",
+    "target_id": "JE-5047_1",
+    "key": "INV-2026-1047"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0048",
+    "target_id": "JE-5048_1",
+    "key": "INV-2026-1048"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0049",
+    "target_id": "JE-5049_1",
+    "key": "INV-2026-1049"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0050",
+    "target_id": "JE-5050_1",
+    "key": "INV-2026-1050"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0051",
+    "target_id": "JE-5051_1",
+    "key": "INV-2026-1051"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0052",
+    "target_id": "JE-5052_1",
+    "key": "INV-2026-1052"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0053",
+    "target_id": "JE-5053_1",
+    "key": "INV-2026-1053"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0054",
+    "target_id": "JE-5054_1",
+    "key": "INV-2026-1054"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0055",
+    "target_id": "JE-5055_1",
+    "key": "INV-2026-1055"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0056",
+    "target_id": "JE-5056_1",
+    "key": "INV-2026-1056"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0057",
+    "target_id": "JE-5057_1",
+    "key": "INV-2026-1057"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0058",
+    "target_id": "JE-5058_1",
+    "key": "INV-2026-1058"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0059",
+    "target_id": "JE-5059_1",
+    "key": "INV-2026-1059"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "pay_G8x0060",
+    "target_id": "JE-5060_1",
+    "key": "INV-2026-1060"
+  }
+]

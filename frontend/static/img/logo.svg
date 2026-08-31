@@ -1,0 +1,17 @@
+<svg viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <!-- Smooth Organic Bridge connecting the 4 path nodes -->
+  <path d="M10 50 L30 70 L70 30" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- 4 Connected Nodes -->
+  <rect x="1" y="41" width="18" height="18" rx="5.5" />
+  <rect x="21" y="61" width="18" height="18" rx="5.5" />
+  <rect x="41" y="41" width="18" height="18" rx="5.5" />
+  <rect x="61" y="21" width="18" height="18" rx="5.5" />
+  
+  <!-- 5 Discrete Matrix Nodes -->
+  <rect x="41" y="1" width="18" height="18" rx="5.5" />
+  <rect x="21" y="21" width="18" height="18" rx="5.5" />
+  <rect x="81" y="41" width="18" height="18" rx="5.5" />
+  <rect x="61" y="61" width="18" height="18" rx="5.5" />
+  <rect x="41" y="81" width="18" height="18" rx="5.5" />
+</svg>

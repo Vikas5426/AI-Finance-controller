@@ -257,7 +257,7 @@ The system incorporates five specialized reasoning agents (Agents 9–13) built 
 
 ### 1. Integer Minor-Unit Arithmetic (Paise Quantization)
 Floating-point arithmetic in standard programming languages causes IEEE-754 rounding artifacts (e.g., `0.1 + 0.2 = 0.30000000000000004`). The controller quantizes all monetary values into integer minor units (paise for INR, cents for USD) immediately upon ingestion:
-$$\text{amount\_minor} = \operatorname{round}(\text{amount\_float} \times 100)$$
+$$\text{amount\_minor} = \text{round}(\text{amount\_float} \times 100)$$
 
 ### 2. Regular-Expression Reference Key Extraction
 The `NormalizerService` extracts domain keys from unstructured narrative strings:
@@ -277,17 +277,17 @@ Rather than evaluating pairs in greedy sequence, the engine constructs a weighte
 $$\text{Score} = w_{\text{id}} S_{\text{id}} + w_{\text{amt}} S_{\text{amt}} + w_{\text{date}} S_{\text{date}} + w_{\text{desc}} S_{\text{desc}} + w_{\text{cp}} S_{\text{cp}} + w_{\text{ctx}} S_{\text{ctx}}$$
 
 Global minimum cost is solved in polynomial time:
-$$\min_{\pi} \sum_{i=1}^n C_{i, \pi(i)} \quad \text{via } \texttt{scipy.optimize.linear\_sum\_assignment}$$
+$$\min_{\pi} \sum_{i=1}^n C_{i, \pi(i)} \quad \text{via } \text{scipy.optimize.linear\_sum\_assignment}$$
 
 ### 4. Bounded N:1 Settlement Subset-Sum Dynamic Programming
 When aggregated bank payouts lack explicit settlement identifiers, the engine models the net payout formula:
-$$\text{Net} = \sum_{i \in S} \left( \text{Gross}_i - \lfloor \text{Gross}_i \times \text{MDR} \rceil - \lfloor (\lfloor \text{Gross}_i \times \text{MDR} \rceil) \times 0.18 \rceil \right)$$
+$$\text{Net} = \sum_{i \in S} \left( \text{Gross}_i - \text{MDR}_i - \text{GST}_i \right) \quad \text{where } \text{GST}_i = \text{round}(\text{MDR}_i \times 0.18)$$
 
 It quantizes candidate values ($q = 100$) and executes a bounded dynamic programming knapsack across candidate transactions within a $\pm 3$-day window, preventing combinatorial explosion.
 
 ### 5. Cryptographic SHA-256 Audit Preimage
 Every audit log entry is linked to its preceding event via a deterministic cryptographic hash:
-$$\text{Hash}_n = \operatorname{SHA-256}\left(\text{PrevHash}_{n-1} \parallel \text{OrgId} \parallel \text{EventSeq} \parallel \text{EventType} \parallel \text{EntityId} \parallel \text{ActorId} \parallel \text{Timestamp} \parallel \operatorname{CanonicalJSON}(\text{Payload})\right)$$
+$$\text{Hash}_n = \text{SHA-256}\left(\text{PrevHash}_{n-1} \parallel \text{OrgId} \parallel \text{EventSeq} \parallel \text{EventType} \parallel \text{EntityId} \parallel \text{ActorId} \parallel \text{Timestamp} \parallel \text{CanonicalJSON}(\text{Payload})\right)$$
 
 ---
 

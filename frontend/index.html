@@ -83,7 +83,7 @@
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
-          <select class="auth-input with-left-icon" id="auth-role" name="role" style="cursor: pointer; appearance: auto;">
+          <select class="auth-input with-left-icon select-custom" id="auth-role" name="role">
             <option value="analyst" selected>Reconciliation Analyst (Maker)</option>
             <option value="approver">Financial Approver (Checker)</option>
             <option value="admin">System Controller (Admin)</option>
@@ -1109,7 +1109,7 @@
               style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
               <div style="display: flex; align-items: center; gap: 0.75rem;">
                 <span style="font-size: 0.85rem; font-weight: 700;">Pending Dual-Control Review Vouchers</span>
-                <select id="excs-batch-filter" class="file-stream-select-min" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onchange="renderExceptionsQueue()">
+                <select id="excs-batch-filter" class="select-custom" onchange="renderExceptionsQueue()">
                   <option value="">All Batches</option>
                 </select>
               </div>
@@ -1365,7 +1365,7 @@
                 <strong style="color: var(--accent-cyan);">Target Exception for Agent 9:</strong>
                 <span>Select any discrepancy in the active batch to investigate on-demand:</span>
               </div>
-              <select id="agent-9-target-select" style="background: var(--bg-surface); border: 1px solid var(--border-medium); color: var(--text-primary); padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-family: var(--font-mono); outline: none;">
+              <select id="agent-9-target-select" class="select-custom" style="font-family: var(--font-mono);">
                 <option value="">Loading exceptions from active batch…</option>
               </select>
             </div>

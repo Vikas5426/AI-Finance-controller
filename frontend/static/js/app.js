@@ -1079,10 +1079,19 @@ function renderClusterHistogram() {
 
 function initOverviewCharts() {
   const isDark = appState.theme === 'dark';
-  const gridColor = isDark ? '#171717' : '#f0f0f0';
-  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+  const textColor = isDark ? '#e2e8f0' : '#1e293b';
+  const textMuted = isDark ? '#94a3b8' : '#64748b';
+  const dpr = Math.max(window.devicePixelRatio || 1, 2);
 
-  // 1. Reconciliation Vectors Grouped Histogram
+  // Set global Chart defaults for crisp rendering
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.devicePixelRatio = dpr;
+    Chart.defaults.font.family = FONT_SANS;
+    Chart.defaults.font.weight = '500';
+  }
+
+  // 1. Reconciliation Vectors Grouped Histogram (Ultra-Sharp High-DPI)
   const ctxVectors = document.getElementById('chartThreatVectors')?.getContext('2d');
   if (ctxVectors) {
     if (appState.charts.vectors) appState.charts.vectors.destroy();
@@ -1134,10 +1143,10 @@ function initOverviewCharts() {
           {
             label: 'Matched / Reconciled',
             data: vecMatched,
-            backgroundColor: isDark ? 'rgba(16, 185, 129, 0.82)' : 'rgba(16, 185, 129, 0.9)',
-            hoverBackgroundColor: '#10b981',
-            borderColor: isDark ? '#10b981' : '#059669',
-            borderWidth: 1,
+            backgroundColor: isDark ? '#10b981' : '#059669',
+            hoverBackgroundColor: '#34d399',
+            borderColor: isDark ? '#34d399' : '#047857',
+            borderWidth: 1.5,
             borderRadius: 4,
             borderSkipped: false,
             barPercentage: 0.65,
@@ -1146,10 +1155,10 @@ function initOverviewCharts() {
           {
             label: 'Exceptions Flagged',
             data: vecFlagged,
-            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.82)' : 'rgba(217, 119, 6, 0.9)',
-            hoverBackgroundColor: '#f59e0b',
-            borderColor: isDark ? '#f59e0b' : '#d97706',
-            borderWidth: 1,
+            backgroundColor: isDark ? '#f59e0b' : '#d97706',
+            hoverBackgroundColor: '#fbbf24',
+            borderColor: isDark ? '#fbbf24' : '#b45309',
+            borderWidth: 1.5,
             borderRadius: 4,
             borderSkipped: false,
             barPercentage: 0.65,
@@ -1160,6 +1169,7 @@ function initOverviewCharts() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        devicePixelRatio: dpr,
         layout: {
           padding: { top: 8, bottom: 4, left: 4, right: 8 }
         },
@@ -1170,13 +1180,13 @@ function initOverviewCharts() {
             backgroundColor: isDark ? '#12141a' : '#ffffff',
             titleColor: isDark ? '#f8fafc' : '#0f172a',
             bodyColor: isDark ? '#cbd5e1' : '#334155',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.1)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
             borderWidth: 1,
             padding: 10,
             cornerRadius: 6,
             boxPadding: 5,
             usePointStyle: true,
-            titleFont: { family: FONT_SANS, size: 11, weight: '600' },
+            titleFont: { family: FONT_SANS, size: 11.5, weight: '600' },
             bodyFont: { family: FONT_SANS, size: 11, weight: '500' },
             callbacks: {
               label: function (context) {
@@ -1193,7 +1203,7 @@ function initOverviewCharts() {
             border: { display: false },
             ticks: {
               color: textColor,
-              font: { family: FONT_SANS, size: 10.5, weight: '500' },
+              font: { family: FONT_SANS, size: 11, weight: '600' },
               maxRotation: 0,
               minRotation: 0,
               autoSkip: false
@@ -1201,14 +1211,14 @@ function initOverviewCharts() {
           },
           y: {
             grid: {
-              color: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.05)',
+              color: gridColor,
               drawBorder: false
             },
             border: { display: false },
             ticks: {
               precision: 0,
-              color: textColor,
-              font: { family: FONT_SANS, size: 10 }
+              color: textMuted,
+              font: { family: FONT_MONO, size: 10, weight: '600' }
             }
           }
         }
@@ -1216,7 +1226,7 @@ function initOverviewCharts() {
     });
   }
 
-  // 2. 13-Week Cash Liquidity Forecast Wave Splines
+  // 2. 13-Week Cash Liquidity Forecast Wave Splines (Ultra-Sharp High-DPI)
   const ctxFlow = document.getElementById('chartNetworkFlow')?.getContext('2d');
   if (ctxFlow) {
     if (appState.charts.flow) appState.charts.flow.destroy();
@@ -1240,21 +1250,25 @@ function initOverviewCharts() {
           {
             label: 'Confirmed Receipts (100%)',
             data: flowConfirmed,
-            borderColor: isDark ? 'rgba(16, 185, 129, 0.9)' : 'rgba(5, 150, 105, 1)',
-            borderWidth: 2,
+            borderColor: isDark ? '#10b981' : '#059669',
+            backgroundColor: isDark ? '#10b981' : '#059669',
+            borderWidth: 2.5,
             tension: 0.38,
-            pointRadius: 0,
-            pointHoverRadius: 4,
+            pointRadius: 2.5,
+            pointBackgroundColor: isDark ? '#10b981' : '#059669',
+            pointHoverRadius: 5,
             fill: false
           },
           {
             label: 'Probable In-Transit (70%)',
             data: flowProbable,
-            borderColor: isDark ? 'rgba(56, 189, 248, 0.85)' : 'rgba(14, 165, 233, 0.9)',
-            borderWidth: 2,
+            borderColor: isDark ? '#38bdf8' : '#0284c7',
+            backgroundColor: isDark ? '#38bdf8' : '#0284c7',
+            borderWidth: 2.5,
             tension: 0.38,
-            pointRadius: 0,
-            pointHoverRadius: 4,
+            pointRadius: 2.5,
+            pointBackgroundColor: isDark ? '#38bdf8' : '#0284c7',
+            pointHoverRadius: 5,
             fill: false
           }
         ]
@@ -1262,15 +1276,17 @@ function initOverviewCharts() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        devicePixelRatio: dpr,
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: isDark ? '#080a0f' : '#ffffff',
-            titleColor: isDark ? '#ffffff' : '#0f172a',
-            bodyColor: isDark ? '#94a3b8' : '#475569',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+            backgroundColor: isDark ? '#12141a' : '#ffffff',
+            titleColor: isDark ? '#f8fafc' : '#0f172a',
+            bodyColor: isDark ? '#cbd5e1' : '#334155',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
             borderWidth: 1,
-            cornerRadius: 8,
+            cornerRadius: 6,
+            usePointStyle: true,
             callbacks: {
               label: function (context) {
                 return ` ${context.dataset.label}: ₹${context.raw.toFixed(2)} Lakhs`;
@@ -1282,14 +1298,14 @@ function initOverviewCharts() {
           x: {
             grid: { display: false },
             border: { display: false },
-            ticks: { color: textColor, font: { family: FONT_MONO, size: 10 } }
+            ticks: { color: textColor, font: { family: FONT_MONO, size: 10.5, weight: '600' } }
           },
           y: {
             grid: { color: gridColor, borderDash: [4, 4] },
             border: { display: false },
             ticks: {
-              color: textColor,
-              font: { family: FONT_MONO, size: 10 },
+              color: textMuted,
+              font: { family: FONT_MONO, size: 10, weight: '600' },
               callback: function (val) { return `₹${val}L`; }
             }
           }

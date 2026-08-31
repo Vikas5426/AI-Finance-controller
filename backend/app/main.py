@@ -84,22 +84,38 @@ candidates = [
     os.path.abspath("frontend"),
     os.path.join(os.getcwd(), "frontend")
 ]
-frontend_dir = next((c for c in candidates if os.path.exists(os.path.join(c, "index.html"))), None)
-if frontend_dir and os.path.exists(os.path.join(frontend_dir, "static")):
-    app.mount(
-        "/static",
-        RevalidatingStaticFiles(directory=os.path.join(frontend_dir, "static")),
-        name="static",
-    )
+frontend_dir = next((c for c in candidates if os.path.exists(os.path.join(c, "index.html")) or os.path.exists(os.path.join(c, "dist", "index.html"))), None)
+
+if frontend_dir:
+    dist_dir = os.path.join(frontend_dir, "dist")
+    static_dir = os.path.join(frontend_dir, "static")
+
+    if os.path.exists(static_dir):
+        app.mount(
+            "/static",
+            RevalidatingStaticFiles(directory=static_dir),
+            name="static",
+        )
+
+    if os.path.exists(os.path.join(dist_dir, "assets")):
+        app.mount(
+            "/assets",
+            RevalidatingStaticFiles(directory=os.path.join(dist_dir, "assets")),
+            name="assets",
+        )
 
     @app.get("/")
     def serve_frontend_index():
-        # The HTML shell must never be cached, or it can keep referencing a
-        # stale asset set after a deploy.
+        target_html = (
+            os.path.join(dist_dir, "index.html")
+            if os.path.exists(os.path.join(dist_dir, "index.html"))
+            else os.path.join(frontend_dir, "index.html")
+        )
         return FileResponse(
-            os.path.join(frontend_dir, "index.html"),
+            target_html,
             headers={"Cache-Control": "no-store"},
         )
+
 
 @app.get("/health")
 @app.get("/api/v1/health")

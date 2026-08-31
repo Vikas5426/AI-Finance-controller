@@ -994,8 +994,6 @@ function renderClusterHistogram() {
 // OVERVIEW DASHBOARD: INSPIRATION GRAPH SUITE
 // ==============================================================================
 
-const FONT_SANS = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-
 function initOverviewCharts() {
   const isDark = appState.theme === 'dark';
   const gridColor = isDark ? '#171717' : '#f0f0f0';

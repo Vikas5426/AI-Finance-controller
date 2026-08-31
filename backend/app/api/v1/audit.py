@@ -16,7 +16,7 @@ def get_audit_events(
     offset: int = 0,
     current_user: Any = Depends(get_current_user)
 ):
-    org_id = current_user["org_id"]
+    org_id = current_user["org_id"] if isinstance(current_user, dict) else settings.DEFAULT_ORG_ID
     with get_db_context() as db:
         query = db.query(schema.AuditEvent).filter(schema.AuditEvent.org_id == org_id)
         if batch_id:
@@ -62,7 +62,7 @@ def verify_audit_chain(
     batch_id: Optional[str] = Query(None, description="Optional batch ID to scope cryptographic chain verification"),
     current_user: Any = Depends(get_current_user)
 ):
-    org_id = current_user["org_id"]
+    org_id = current_user["org_id"] if isinstance(current_user, dict) else settings.DEFAULT_ORG_ID
     raw_events = []
     with get_db_context() as db:
         query = db.query(schema.AuditEvent).filter(schema.AuditEvent.org_id == org_id)

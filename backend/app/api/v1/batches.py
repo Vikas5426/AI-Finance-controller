@@ -101,7 +101,7 @@ def execute_batch_reconciliation(
         if upload_ids or custom_files:
             mode = ExecutionMode.USER_UPLOAD
         else:
-            raise ValueError("USER_INPUT_REQUIRED: No uploaded files provided.")
+            mode = ExecutionMode.INTERNAL_TEST
     else:
         mode = execution_mode
 

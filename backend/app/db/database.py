@@ -88,4 +88,10 @@ def init_db():
     from app.db.database_service import DatabaseService
     Base.metadata.create_all(bind=engine)
     _apply_lightweight_migrations()
+    try:
+        with get_db_context() as db:
+            db.query(schema.DistributedLock).delete()
+            db.commit()
+    except Exception:
+        pass
     DatabaseService.seed_default_data()

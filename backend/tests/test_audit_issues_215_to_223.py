@@ -1,8 +1,12 @@
 import unittest
 import os
+import sys
 import re
 from datetime import datetime, date
 from typing import Dict, Any
+
+# Ensure backend directory is in path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.config import settings
 from app.db.database_service import DatabaseService, get_db_context

@@ -832,15 +832,11 @@ function updateBreadcrumbUI(viewName, breadcrumbText) {
 
   // Dynamic Contextual Badges for Current View
   if (viewBadge) {
-    if (appState.batchId) {
-      viewBadge.textContent = `Batch: ${appState.batchId}`;
-      viewBadge.className = 'breadcrumb-view-badge badge-cyan';
-      viewBadge.style.display = 'inline-block';
-    } else if (viewName === 'exceptions') {
+    if (viewName === 'exceptions') {
       const count = appState.allExceptions ? appState.allExceptions.length : 0;
       viewBadge.textContent = `${count} Held`;
       viewBadge.className = 'breadcrumb-view-badge badge-amber';
-      viewBadge.style.display = 'inline-block';
+      viewBadge.style.display = count > 0 ? 'inline-block' : 'none';
     } else if (viewName === 'audit') {
       viewBadge.textContent = 'SHA-256 Validated ✓';
       viewBadge.className = 'breadcrumb-view-badge badge-emerald';

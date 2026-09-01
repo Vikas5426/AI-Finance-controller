@@ -94,8 +94,13 @@ def get_transactions(
 
     # Fallback to in-memory state
     txns = _org_txns(org_id)
-    if batch_id:
-        txns = [t for t in txns if t.get("batch_id") == batch_id]
+    target_batch = batch_id
+    if not target_batch and not all_batches:
+        active_b = STATE.get("active_batch")
+        if active_b and active_b.get("org_id") == org_id:
+            target_batch = active_b.get("id")
+    if target_batch:
+        txns = [t for t in txns if t.get("batch_id") == target_batch]
     if source_kind:
         txns = [t for t in txns if t.get("source_kind") == source_kind]
     if match_status:
@@ -106,7 +111,7 @@ def get_transactions(
 
     return {
         "total": len(txns),
-        "batch_id": batch_id,
+        "batch_id": target_batch or batch_id,
         "limit": limit,
         "offset": offset,
         "items": txns[offset : offset + limit]
@@ -163,6 +168,13 @@ def get_matches(
             return {"total": org_matches.count(), "limit": limit, "offset": offset, "items": items}
 
     matches = [m for m in STATE.get("matches", []) if m.get("org_id") == org_id]
+    target_batch = batch_id
+    if not target_batch and not all_batches:
+        active_b = STATE.get("active_batch")
+        if active_b and active_b.get("org_id") == org_id:
+            target_batch = active_b.get("id")
+    if target_batch:
+        matches = [m for m in matches if m.get("batch_id") == target_batch]
     return {
         "total": len(matches),
         "limit": limit,

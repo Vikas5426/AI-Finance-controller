@@ -255,17 +255,25 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
         parsed_json, raw_text, telemetry = self.execute_prompt(system_prompt, user_prompt)
 
         if parsed_json:
-            parsed_json["exception_id"] = exception_id
-            parsed_json["arithmetic_proof"] = proof
-            inv = InvestigationResult(**parsed_json)
-            is_valid, reason = DeterministicVerifier.verify_proposal(
-                inv,
-                {"impact_minor": impact_minor},
-                valid_candidate_ids
-            )
-            if is_valid:
-                inv.telemetry = telemetry
-                return inv
+            try:
+                parsed_json["exception_id"] = exception_id
+                parsed_json["arithmetic_proof"] = proof
+                if "evidence" in parsed_json and isinstance(parsed_json["evidence"], list):
+                    fallback_rec_id = str(p.get("id") or (c.get("id") if c else None) or exception_id)
+                    for ev in parsed_json["evidence"]:
+                        if isinstance(ev, dict) and not ev.get("record_id"):
+                            ev["record_id"] = fallback_rec_id
+                inv = InvestigationResult(**parsed_json)
+                is_valid, reason = DeterministicVerifier.verify_proposal(
+                    inv,
+                    {"impact_minor": impact_minor},
+                    valid_candidate_ids
+                )
+                if is_valid:
+                    inv.telemetry = telemetry
+                    return inv
+            except Exception as ex:
+                logger.warning(f"Failed to validate LLM proposal against schema: {ex}")
 
         # Fallback to high-precision deterministic financial reasoner
         return self._deterministic_fallback(
@@ -293,6 +301,11 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
         """Deterministic resolution fallback tailored to the specific exception type."""
         cat = category or _classify_exception_category(exception_type)
         amt_inr = f"₹{impact_minor / 100:,.2f}"
+        p = primary_txn or {}
+        c = counterpart_txn or {}
+        p_id = str(p.get("id") or (c.get("id") if c else None) or exception_id)
+        c_id = str(c.get("id")) if c and c.get("id") else None
+        p_ext = str(p.get("external_id") or "")
 
         if cat == "FEE_SPLIT":
             policy = FeePolicyRegistry.get_default_policy()
@@ -301,11 +314,21 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
                 exception_id=exception_id,
                 classification=exception_type,
                 likely_cause=f"Discrepancy of {amt_inr} is attributable to merchant discount rate (2.0% MDR + 18% GST) booked net.",
-                candidate_match_ids=[counterpart_txn["id"]] if counterpart_txn.get("id") else [],
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    f"Fee Policy: {policy.name} ({policy.policy_id})",
+                    f"Impact Amount: {amt_inr}"
+                ],
+                observations=[
+                    f"Discrepancy matches calculated MDR and GST deduction schedule."
+                ],
+                possible_cause="Gateway processor deducted processing fees and GST at source upon settlement.",
+                recommendation="Record fee adjustment voucher in General Ledger.",
+                candidate_match_ids=[c_id] if c_id else [],
                 recommended_action="ADJUST_LEDGER_FEE_SPLIT",
-                confidence=0.94,
+                confidence=0.98,
                 evidence=[
-                    ToolEvidence(tool="fee_policy_engine", rule_id=policy.policy_id, field="fee_breakup", value=bd.to_dict())
+                    ToolEvidence(tool="fee_policy_engine", record_id=p_id, rule_id=policy.policy_id, field="fee_breakup", value=bd.to_dict())
                 ],
                 requires_human_review=impact_minor > settings.MATERIALITY_THRESHOLD_MINOR,
                 citations=["SOP-04 §2: Merchant Discount Rate Netting Protocol"],
@@ -315,13 +338,22 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
         elif cat == "MISSING_LEDGER":
             inv = InvestigationResult(
                 exception_id=exception_id,
-                classification="MISSING_LEDGER_ENTRY",
+                classification=exception_type if "MISSING_LEDGER" in exception_type or "UNKNOWN_BANK" in exception_type else "MISSING_LEDGER_ENTRY",
                 likely_cause=f"Unmatched bank credit of {amt_inr} received in bank feed without a corresponding general ledger voucher posting.",
-                candidate_match_ids=[primary_txn["id"]] if primary_txn.get("id") else [],
+                facts=[
+                    f"Bank Record ID: {p_id} (Ref: {p_ext})",
+                    f"Credit Amount: {amt_inr}"
+                ],
+                observations=[
+                    f"Direct deposit has confirmed bank credit but zero counterpart entries in accounting ledger."
+                ],
+                possible_cause="Unposted customer payment or direct bank wire remittance.",
+                recommendation="Investigate counterparty and post corresponding journal entry.",
+                candidate_match_ids=[p_id],
                 recommended_action="MANUAL_JOURNAL_ENTRY",
                 confidence=0.92,
                 evidence=[
-                    ToolEvidence(tool="ledger_lookup_engine", rule_id="RULE_LEDGER_POSTING_01", field="missing_entry", value={"amount_minor": impact_minor})
+                    ToolEvidence(tool="ledger_lookup_engine", record_id=p_id, rule_id="RULE_LEDGER_POSTING_01", field="missing_entry", value={"amount_minor": impact_minor})
                 ],
                 requires_human_review=impact_minor > settings.MATERIALITY_THRESHOLD_MINOR,
                 citations=["SOP-01 §2: General Ledger Ingestion & Booking Protocol"],
@@ -329,15 +361,29 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
                 telemetry=telemetry
             )
         elif cat == "MISSING_BANK":
+            gross = p.get("amount_minor", impact_minor)
+            fee = p.get("fee_minor") or int(gross * 0.02)
+            tax = p.get("tax_minor") or int(fee * 0.18)
+            net = gross - fee - tax
             inv = InvestigationResult(
                 exception_id=exception_id,
-                classification="MISSING_BANK_RECORD",
-                likely_cause=f"Payment transaction of {amt_inr} captured in gateway / ledger has no confirmed settlement deposit in the bank feed.",
-                candidate_match_ids=[primary_txn["id"]] if primary_txn.get("id") else [],
+                classification=exception_type,
+                likely_cause=f"Payment transaction of Gross ₹{gross/100:,.2f} (Expected Net: ₹{net/100:,.2f}) captured in gateway has no confirmed settlement deposit in the bank feed.",
+                facts=[
+                    f"Gateway Payment ID: {p_id} (External: {p_ext})",
+                    f"Gross Exposure: ₹{gross/100:,.2f}",
+                    f"Expected Net Settlement: ₹{net/100:,.2f}"
+                ],
+                observations=[
+                    f"Captured gateway transaction has no corresponding bank deposit across configured timing window."
+                ],
+                possible_cause="Processor settlement delay or rolling reserve hold.",
+                recommendation="Issue UTR trace inquiry to acquiring bank and check gateway payout batch.",
+                candidate_match_ids=[p_id],
                 recommended_action="ISSUE_BANK_TRACE_INQUIRY",
-                confidence=0.90,
+                confidence=0.92,
                 evidence=[
-                    ToolEvidence(tool="bank_feed_indexer", rule_id="RULE_BANK_UNSETTLED_01", field="unsettled_deposit", value={"amount_minor": impact_minor})
+                    ToolEvidence(tool="bank_feed_indexer", record_id=p_id, rule_id="RULE_BANK_UNSETTLED_01", field="unsettled_deposit", value={"amount_minor": impact_minor})
                 ],
                 requires_human_review=impact_minor > settings.MATERIALITY_THRESHOLD_MINOR,
                 citations=["SOP-03 §2: Unsettled Payment & Bank Wire Investigation"],
@@ -347,13 +393,22 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
         elif cat == "PERIOD_CUTOFF":
             inv = InvestigationResult(
                 exception_id=exception_id,
-                classification="PERIOD_CUTOFF_TIMING_LAG",
+                classification=exception_type,
                 likely_cause=f"Payment captured at reporting period boundary is clearing across value dates (standard T+2 bank settlement lag).",
-                candidate_match_ids=[primary_txn["id"]] if primary_txn.get("id") else [],
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    f"Capture Date: {p.get('occurred_at') or 'Period Cutoff'}"
+                ],
+                observations=[
+                    f"Timing lag across period cutoff boundary."
+                ],
+                possible_cause="Interbank clearing settlement cycle across period boundary.",
+                recommendation="Accrue to General Ledger Account 1290 (In-Transit Clearing).",
+                candidate_match_ids=[p_id],
                 recommended_action="ACCRUE_TO_CLEARING_1290",
                 confidence=0.96,
                 evidence=[
-                    ToolEvidence(tool="cutoff_timing_engine", rule_id="RULE_PERIOD_CUTOFF_01", field="timing_lag", value={"amount_minor": impact_minor})
+                    ToolEvidence(tool="cutoff_timing_engine", record_id=p_id, rule_id="RULE_PERIOD_CUTOFF_01", field="timing_lag", value={"amount_minor": impact_minor})
                 ],
                 requires_human_review=False,
                 citations=["SOP-02 §4: Period Boundary Cut-off Accounting"],
@@ -364,12 +419,22 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
             inv = InvestigationResult(
                 exception_id=exception_id,
                 classification=exception_type,
-                likely_cause=f"Discrepancy of {amt_inr} requires operational controller review and dual-control approval.",
-                candidate_match_ids=[counterpart_txn["id"]] if counterpart_txn.get("id") else [],
+                likely_cause=f"Discrepancy of {amt_inr} detected. Cause cannot be determined from the supplied evidence.",
+                facts=[
+                    f"Record ID: {p_id} (Ref: {p_ext})",
+                    f"Classification: {exception_type}",
+                    f"Impact: {amt_inr}"
+                ],
+                observations=[
+                    f"Transaction discrepancy could not be reconciled by deterministic rules."
+                ],
+                possible_cause="Cause cannot be determined from the supplied evidence.",
+                recommendation="Queue for operational controller maker-checker review.",
+                candidate_match_ids=[c_id] if c_id else [],
                 recommended_action="MANUAL_JOURNAL_ENTRY",
-                confidence=0.88,
+                confidence=0.75,
                 evidence=[
-                    ToolEvidence(tool="reconciliation_engine", rule_id="RULE_RESIDUAL_REVIEW_01", field="impact", value={"amount_minor": impact_minor})
+                    ToolEvidence(tool="reconciliation_engine", record_id=p_id, rule_id="RULE_RESIDUAL_REVIEW_01", field="impact", value={"amount_minor": impact_minor})
                 ],
                 requires_human_review=True,
                 citations=["SOP-01 §1: Standard Reconciliation Procedures"],

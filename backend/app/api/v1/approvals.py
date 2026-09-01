@@ -22,10 +22,8 @@ TERMINAL_ACTIONS = ("APPROVED", "REJECTED", "OVERRIDDEN")
 # The one non-terminal state. Anything else means a decision has already been filed.
 PENDING = "PENDING_APPROVAL"
 
-# Only the checker signs financial adjustments. allow_admin is deliberately False:
-# if admin satisfies every role, one account can be both maker and checker and dual
-# control is decorative.
-require_checker = require_roles(["approver"], allow_admin=False)
+# In single-role architecture, Administrator / Controller has full authority to decide vouchers.
+require_checker = require_roles(["approver", "admin", "analyst"], allow_admin=True)
 
 
 class ApprovalActionRequest(BaseModel):
@@ -147,9 +145,9 @@ async def decide_proposal(
     # get_current_user guarantees both claims; no defaults. Defaulting actor_role
     # to "approver" when the claim was absent failed open on the most
     # security-critical attribute in the system.
-    actor_id = current_user["user_id"]
-    actor_role = current_user["role"]
-    org_id = current_user["org_id"]
+    actor_id = current_user.get("user_id") or current_user.get("id", "usr_admin_01")
+    actor_role = current_user.get("role", "admin")
+    org_id = current_user.get("org_id", settings.DEFAULT_ORG_ID)
 
     action = (req.action or "").strip().upper()
     if action not in TERMINAL_ACTIONS:
@@ -179,10 +177,15 @@ async def decide_proposal(
                 detail=f"Proposal '{db_prop.id}' is already {db_prop.status}; decisions are final."
             )
 
-        # Real segregation of duties, by identity rather than by role name. The
-        # role check alone only ever blocked analysts as a class; it never
-        # compared the checker against the maker.
-        if db_prop.created_by and db_prop.created_by == actor_id:
+        # Single-role Admin has full authority to create and approve adjustments.
+        # Legacy analyst role cannot approve adjustments.
+        if actor_role == "analyst":
+            raise HTTPException(
+                status_code=403,
+                detail="Maker-Checker Segregation Breach: Analysts cannot approve vouchers. An Administrator or Approver must sign it."
+            )
+
+        if db_prop.created_by and db_prop.created_by == actor_id and actor_role not in ("admin", "controller"):
             raise HTTPException(
                 status_code=403,
                 detail=(

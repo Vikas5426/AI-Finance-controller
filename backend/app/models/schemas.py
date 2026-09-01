@@ -90,6 +90,16 @@ class ReferenceKeys(BaseModel):
     je: List[str] = Field(default_factory=list)
     custom: Dict[str, str] = Field(default_factory=dict)
 
+class JournalLine(BaseModel):
+    line_no: int
+    account_code: str
+    account_name: Optional[str] = None
+    direction: TxnDirection
+    amount_minor: int
+    original_amount: Optional[str] = None
+    memo: Optional[str] = None
+    doc_ref: Optional[str] = None
+
 class CanonicalTransaction(BaseModel):
     id: str
     org_id: str
@@ -113,18 +123,62 @@ class CanonicalTransaction(BaseModel):
     reference_keys: ReferenceKeys = Field(default_factory=ReferenceKeys)
     account_code: Optional[str] = None
     match_status: str = "UNMATCHED"
+    
+    # Complete Source Lineage & Entity Distinction
+    source_row_id: Optional[str] = None
+    source_row_number: Optional[int] = None
+    payment_id: Optional[str] = None
+    order_id: Optional[str] = None
+    settlement_id: Optional[str] = None
+    journal_id: Optional[str] = None
+    journal_line_no: Optional[int] = None
+    original_amount: Optional[str] = None
+    normalized_amount: Optional[int] = None
+    original_date: Optional[str] = None
+    normalized_date: Optional[date] = None
+    source_reference: Optional[str] = None
+    
+    # Compound GL Journal Entry Representation
+    lines: List[JournalLine] = Field(default_factory=list)
+    is_duplicate_source_row: bool = False
+    is_balanced_je: Optional[bool] = None
+    total_debit_minor: Optional[int] = None
+    total_credit_minor: Optional[int] = None
 
 class ToolEvidence(BaseModel):
     tool: str
     rule_id: Optional[str] = None
-    record_id: Optional[str] = None
+    record_id: str
     field: Optional[str] = None
     value: Optional[Any] = None
+
+class AIExceptionContext(BaseModel):
+    batch_id: str
+    exception_id: str
+    classification: str
+    payment_id: Optional[str] = None
+    source_records: List[Dict[str, Any]] = Field(default_factory=list)
+    matched_records: List[Dict[str, Any]] = Field(default_factory=list)
+    gross_amount: float
+    fee: float
+    tax: float
+    expected_net_settlement: float
+    actual_bank_settlement: Optional[float] = None
+    variance: float
+    capture_date: Optional[str] = None
+    settlement_date: Optional[str] = None
+    timing_window: str = "T+2 Banking Days (0 <= days <= 7)"
+    deterministic_rules: List[str] = Field(default_factory=list)
+    deterministic_result: str
 
 class InvestigationResult(BaseModel):
     exception_id: str
     classification: str
     likely_cause: str
+    facts: List[str] = Field(default_factory=list)
+    observations: List[str] = Field(default_factory=list)
+    possible_cause: Optional[str] = None
+    recommendation: Optional[str] = None
     candidate_match_ids: List[str] = Field(default_factory=list)
     recommended_action: str
     confidence: float
@@ -208,15 +262,64 @@ class ExceptionSchema(BaseModel):
     investigation: Optional[InvestigationResult] = None
     detected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class ForecastClassification(str, Enum):
+    OBSERVED_CASH = "OBSERVED_CASH"
+    CONFIRMED_FUTURE_INFLOWS = "CONFIRMED_FUTURE_INFLOWS"
+    PROBABLE_INFLOWS = "PROBABLE_INFLOWS"
+    AT_RISK_INFLOWS = "AT_RISK_INFLOWS"
+    UNKNOWN_INFLOWS = "UNKNOWN_INFLOWS"
+    ASSUMPTIONS = "ASSUMPTIONS"
+
+class DataNature(str, Enum):
+    OBSERVED = "Observed"
+    CALCULATED = "Calculated"
+    FORECAST = "Forecast"
+    ASSUMPTION = "Assumption"
+
+class ForecastStatus(str, Enum):
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+class ForecastEntry(BaseModel):
+    week_number: int
+    amount_minor: int
+    amount_inr: float
+    classification: ForecastClassification
+    data_nature: DataNature
+    source_record_ids: List[str] = Field(default_factory=list)
+    calculation_method: str
+    assumption_ids: List[str] = Field(default_factory=list)
+    narrative: str
+
 class CashForecastSegment(BaseModel):
     week_number: int
     period_start: str
     period_end: str
-    confirmed_inflow_minor: int
-    probable_inflow_minor: int
-    at_risk_inflow_minor: int
-    unknown_inflow_minor: int
+    observed_cash_minor: int = 0
+    confirmed_future_inflows_minor: int = 0
+    probable_inflows_minor: int = 0
+    at_risk_inflows_minor: int = 0
+    unknown_inflows_minor: int = 0
+    assumptions_minor: int = 0
+    
+    # Backwards-compatible aliases
+    confirmed_inflow_minor: int = 0
+    probable_inflow_minor: int = 0
+    at_risk_inflow_minor: int = 0
+    unknown_inflow_minor: int = 0
+    
+    entries: List[ForecastEntry] = Field(default_factory=list)
     risk_narrative: str
+
+class LiquidityForecastEnvelope(BaseModel):
+    forecast_status: ForecastStatus
+    missing_fields_explanation: Optional[str] = None
+    as_of_date: str
+    total_observed_cash_minor: int
+    total_projected_inflow_minor: int
+    segments: List[CashForecastSegment] = Field(default_factory=list)
+    provenance_summary: Dict[str, Any] = Field(default_factory=dict)
 
 class ExecutionMode(str, Enum):
     USER_UPLOAD = "USER_UPLOAD"
@@ -253,5 +356,162 @@ class BatchProvenanceManifest(BaseModel):
     total_raw_rows: int = 0
     total_normalized_records: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RootCauseStatus(str, Enum):
+    CONFIRMED = "CONFIRMED"
+    SUPPORTED_HYPOTHESIS = "SUPPORTED_HYPOTHESIS"
+    UNKNOWN = "UNKNOWN"
+
+class SystemicRCAFinding(BaseModel):
+    pattern_name: str
+    affected_count: int
+    impact_inr: float
+    affected_exception_ids: List[str] = Field(default_factory=list)
+    affected_record_ids: List[str] = Field(default_factory=list)
+    observed_evidence: List[str] = Field(default_factory=list)
+    root_cause_status: RootCauseStatus
+    root_cause_explanation: str
+    confidence: float
+    recommended_remediation: str
+    remediation_owner: str
+
+class SystemicRCAResult(BaseModel):
+    batch_id: str
+    total_exceptions_analyzed: int
+    total_impact_inr: float
+    systemic_risk_score: float
+    systemic_findings: List[SystemicRCAFinding] = Field(default_factory=list)
+    operational_summary: str
+    preventative_action_items: List[str] = Field(default_factory=list)
+    telemetry: Dict[str, Any] = Field(default_factory=dict)
+
+class HashChainIntegrityStatus(str, Enum):
+    VALID = "VALID"
+    TAMPERED = "TAMPERED"
+    EMPTY = "EMPTY"
+
+class MakerCheckerStatus(str, Enum):
+    PENDING_REVIEW = "PENDING_REVIEW"
+    PARTIALLY_APPROVED = "PARTIALLY_APPROVED"
+    FULLY_APPROVED = "FULLY_APPROVED"
+    SEGREGATION_VIOLATION = "SEGREGATION_VIOLATION"
+    MISSING_CHECKER = "MISSING_CHECKER"
+    NO_APPROVALS_REQUIRED = "NO_APPROVALS_REQUIRED"
+
+class AccessControlStatus(str, Enum):
+    ENFORCED = "ENFORCED"
+    SEGREGATION_COMPLIANT = "SEGREGATION_COMPLIANT"
+    VIOLATION_DETECTED = "VIOLATION_DETECTED"
+    UNVERIFIABLE_ACTORS = "UNVERIFIABLE_ACTORS"
+
+class ChangeControlStatus(str, Enum):
+    IMMUTABLE_LOG_VERIFIED = "IMMUTABLE_LOG_VERIFIED"
+    UNAUTHORIZED_MODIFICATION = "UNAUTHORIZED_MODIFICATION"
+    LOGS_UNVERIFIED = "LOGS_UNVERIFIED"
+
+class OverallComplianceStatus(str, Enum):
+    COMPLIANT = "COMPLIANT"
+    NON_COMPLIANT = "NON_COMPLIANT"
+    PENDING_ACTION = "PENDING_ACTION"
+    AUDIT_READY = "AUDIT_READY"
+
+class ApprovalRecordSchema(BaseModel):
+    id: str
+    exception_id: str
+    proposal_id: str
+    maker_id: str
+    checker_id: Optional[str] = None
+    maker_timestamp: str
+    checker_timestamp: Optional[str] = None
+    approval_status: str # "PENDING_CHECKER", "APPROVED", "REJECTED", "SEGREGATION_VIOLATION"
+    segregation_check: bool # maker_id != checker_id and checker_id is not None
+    decision_notes: Optional[str] = None
+
+class AuditorSignOffState(BaseModel):
+    is_signed_off: bool = False
+    signed_by_auditor_id: Optional[str] = None
+    signed_at: Optional[str] = None
+    auditor_notes: Optional[str] = None
+    system_event_id: Optional[str] = None
+
+class ComplianceAssessment(BaseModel):
+    batch_id: str
+    hash_chain_integrity: HashChainIntegrityStatus
+    maker_checker_status: MakerCheckerStatus
+    access_control_status: AccessControlStatus
+    change_control_status: ChangeControlStatus
+    overall_compliance_status: OverallComplianceStatus
+    
+    total_exceptions: int
+    pending_review_count: int
+    completed_approvals_count: int
+    segregation_violations_count: int
+    
+    approvals: List[ApprovalRecordSchema] = Field(default_factory=list)
+    auditor_sign_off: AuditorSignOffState = Field(default_factory=AuditorSignOffState)
+    controls_breakdown: Dict[str, Any] = Field(default_factory=dict)
+
+class ReportReconciliationSection(BaseModel):
+    total_records: int = 0
+    unique_transactions_count: int = 0
+    source_counts: Dict[str, int] = Field(default_factory=dict)
+    matched_records: int = 0
+    unmatched_records: int = 0
+    exact_matches_count: int = 0
+    contextual_matches_count: int = 0
+    match_rate: float = 0.0
+    total_gross_inr: float = 0.0
+    execution_time_seconds: float = 0.0
+
+class ReportExceptionsSection(BaseModel):
+    total_exceptions: int = 0
+    total_held_impact_inr: float = 0.0
+    breakdown_by_type: Dict[str, int] = Field(default_factory=dict)
+    breakdown_by_severity: Dict[str, int] = Field(default_factory=dict)
+    pending_review_count: int = 0
+    resolved_count: int = 0
+
+class ReportRCASection(BaseModel):
+    status: str = "NOT_AVAILABLE" # AVAILABLE, NOT_AVAILABLE, ZERO_EXCEPTIONS
+    primary_bottleneck: Optional[str] = None
+    systemic_risk_score: Optional[float] = None
+    findings: List[SystemicRCAFinding] = Field(default_factory=list)
+    operational_summary: Optional[str] = None
+
+class ReportLiquiditySection(BaseModel):
+    status: str = "INSUFFICIENT_DATA" # COMPLETE, PARTIAL, INSUFFICIENT_DATA, NOT_AVAILABLE
+    missing_fields_explanation: Optional[str] = None
+    total_observed_cash_inr: float = 0.0
+    total_projected_inflow_inr: float = 0.0
+    week_1_inflow_inr: float = 0.0
+    week_2_inflow_inr: float = 0.0
+    forward_weeks_status: str = "INSUFFICIENT_DATA"
+
+class ReportAuditSection(BaseModel):
+    status: str = "NOT_AVAILABLE" # AVAILABLE, NOT_AVAILABLE
+    hash_chain_integrity: str = "EMPTY" # VALID, TAMPERED, EMPTY
+    maker_checker_status: str = "PENDING_REVIEW" # FULLY_APPROVED, PENDING_REVIEW, SEGREGATION_VIOLATION, NO_APPROVALS_REQUIRED
+    access_control_status: str = "ENFORCED"
+    change_control_status: str = "IMMUTABLE_LOG_VERIFIED"
+    overall_compliance_status: str = "PENDING_ACTION"
+    auditor_signed_off: bool = False
+    auditor_id: Optional[str] = None
+    auditor_notes: Optional[str] = None
+
+class ReportProvenanceSection(BaseModel):
+    execution_mode: str = "USER_UPLOAD"
+    source_files: List[Dict[str, Any]] = Field(default_factory=list)
+    sha256_digests: Dict[str, str] = Field(default_factory=dict)
+
+class ExecutiveReportInputContract(BaseModel):
+    batch_id: str
+    reconciliation: ReportReconciliationSection
+    exceptions: ReportExceptionsSection
+    rca: ReportRCASection
+    liquidity: ReportLiquiditySection
+    audit: ReportAuditSection
+    provenance: ReportProvenanceSection
+
+
 
 

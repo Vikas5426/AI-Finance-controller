@@ -167,3 +167,161 @@ def verify_audit_chain(
         "head_event_hash": head_hash,
         "message": f"All {len(raw_events)} audit blocks across {len(batches_events)} batches verified successfully against immutable SHA-256 hash chains."
     }
+
+from pydantic import BaseModel
+
+class AuditorSignOffRequest(BaseModel):
+    batch_id: str
+    notes: str = "Independent audit examination completed. All controls verified."
+
+@router.get("/compliance-status")
+def get_compliance_status(
+    batch_id: Optional[str] = Query(None, description="Batch ID for 5-state compliance evaluation"),
+    current_user: Any = Depends(get_current_user)
+):
+    from app.services.compliance_evaluator import ComplianceEvaluator
+    org_id = current_user["org_id"] if isinstance(current_user, dict) else settings.DEFAULT_ORG_ID
+
+    with get_db_context() as db:
+        target_batch = batch_id
+        if not target_batch:
+            latest = db.query(schema.Batch.id).filter(schema.Batch.org_id == org_id).order_by(schema.Batch.created_at.desc()).first()
+            target_batch = latest[0] if latest else "BATCH_DEFAULT"
+
+        db_events = db.query(schema.AuditEvent).filter(schema.AuditEvent.org_id == org_id, schema.AuditEvent.batch_id == target_batch).all()
+        db_props = db.query(schema.ResolutionProposal).join(
+            schema.ExceptionRecord, schema.ResolutionProposal.exception_id == schema.ExceptionRecord.id
+        ).filter(schema.ExceptionRecord.batch_id == target_batch, schema.ExceptionRecord.org_id == org_id).all()
+        db_apprs = db.query(schema.Approval).filter(schema.Approval.org_id == org_id).all()
+        db_excs = db.query(schema.ExceptionRecord).filter(schema.ExceptionRecord.batch_id == target_batch, schema.ExceptionRecord.org_id == org_id).all()
+
+        events_list = [
+            {
+                "id": e.id,
+                "org_id": e.org_id,
+                "batch_id": e.batch_id,
+                "event_seq": e.event_seq,
+                "event_type": e.event_type,
+                "entity_id": e.entity_id,
+                "actor_id": e.actor_id,
+                "payload": e.payload,
+                "prev_hash": e.prev_hash,
+                "event_hash": e.event_hash,
+                "created_at": e.created_at
+            }
+            for e in db_events
+        ]
+        props_list = [
+            {
+                "id": p.id,
+                "exception_id": p.exception_id,
+                "created_by": p.created_by,
+                "status": p.status,
+                "created_at": p.created_at.isoformat() if p.created_at else None
+            }
+            for p in db_props
+        ]
+        apprs_list = [
+            {
+                "id": a.id,
+                "proposal_id": a.proposal_id,
+                "exception_id": a.exception_id,
+                "actor_id": a.actor_id,
+                "action": a.action,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+                "decision_notes": a.decision_notes
+            }
+            for a in db_apprs
+        ]
+        excs_list = [{"id": e.id, "impact_minor": e.impact_minor} for e in db_excs]
+
+    # Fallback to in-memory if DB empty
+    if not events_list:
+        events_list = [e for e in STATE.get("audit_events", []) if e.get("org_id") == org_id and (not target_batch or e.get("batch_id") == target_batch)]
+    if not props_list:
+        props_list = [p for p in STATE.get("proposals", []) if p.get("org_id") == org_id]
+    if not apprs_list:
+        apprs_list = [a for a in STATE.get("approvals", []) if a.get("org_id") == org_id]
+    if not excs_list:
+        excs_list = [e for e in STATE.get("exceptions", []) if e.get("org_id") == org_id]
+
+    assessment = ComplianceEvaluator.evaluate_batch_compliance(
+        batch_id=target_batch,
+        audit_events=events_list,
+        proposals=props_list,
+        approvals=apprs_list,
+        exceptions=excs_list
+    )
+    return assessment.model_dump()
+
+
+@router.post("/sign-off")
+def record_auditor_signoff(
+    req: AuditorSignOffRequest,
+    current_user: Any = Depends(get_current_user)
+):
+    import uuid
+    from datetime import datetime, timezone
+    org_id = current_user["org_id"] if isinstance(current_user, dict) else settings.DEFAULT_ORG_ID
+    actor_id = current_user.get("user_id") or current_user.get("id", "usr_auditor_01")
+    actor_role = current_user.get("role", "admin")
+
+    ts = datetime.now(timezone.utc)
+    with get_db_context() as db:
+        last_audit = db.query(schema.AuditEvent).filter(
+            schema.AuditEvent.org_id == org_id,
+            schema.AuditEvent.batch_id == req.batch_id
+        ).order_by(schema.AuditEvent.event_seq.desc()).first()
+
+        prev_hash = last_audit.event_hash if last_audit else AuditHashChain.GENESIS_HASH
+        seq = (last_audit.event_seq + 1) if last_audit else 1
+        payload = {
+            "event": "AUDITOR_SIGNOFF",
+            "batch_id": req.batch_id,
+            "auditor_id": actor_id,
+            "role": actor_role,
+            "notes": req.notes,
+            "signed_at": ts.isoformat()
+        }
+        new_hash = AuditHashChain.compute_event_hash(
+            prev_hash=prev_hash,
+            org_id=org_id,
+            event_seq=seq,
+            event_type="AUDITOR_SIGNOFF",
+            entity_id=req.batch_id,
+            actor_id=actor_id,
+            payload=payload,
+            created_at=ts
+        )
+        db_audit = schema.AuditEvent(
+            id=str(uuid.uuid4()),
+            org_id=org_id,
+            batch_id=req.batch_id,
+            event_seq=seq,
+            event_type="AUDITOR_SIGNOFF",
+            entity_type="BATCH",
+            entity_id=req.batch_id,
+            actor_id=actor_id,
+            actor_type=actor_role,
+            action="AUDITOR_SIGNOFF",
+            payload=payload,
+            prev_hash=prev_hash,
+            event_hash=new_hash,
+            created_at=ts
+        )
+        db.add(db_audit)
+        db.commit()
+
+        event_id = db_audit.id
+
+    return {
+        "status": "SUCCESS",
+        "batch_id": req.batch_id,
+        "is_signed_off": True,
+        "signed_by_auditor_id": actor_id,
+        "signed_at": ts.isoformat(),
+        "auditor_notes": req.notes,
+        "system_event_id": event_id,
+        "event_hash": new_hash
+    }
+

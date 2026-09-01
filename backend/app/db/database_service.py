@@ -447,28 +447,36 @@ class DatabaseService:
             return batch_record
 
     @staticmethod
-    def get_batch_stats(batch_id: Optional[str] = None) -> Dict[str, Any]:
-        """Calculates dynamic stats directly from the database."""
+    def get_batch_stats(batch_id: Optional[str] = None, org_id: Optional[str] = None) -> Dict[str, Any]:
+        """Calculates dynamic stats directly from the database scoped by batch and tenant."""
         with get_db_context() as db:
-            target_batch = None
+            q = db.query(schema.Batch)
+            if org_id:
+                q = q.filter(schema.Batch.org_id == org_id)
             if batch_id:
-                target_batch = db.query(schema.Batch).filter_by(id=batch_id).first()
-            if not target_batch:
-                target_batch = db.query(schema.Batch).order_by(desc(schema.Batch.created_at)).first()
+                target_batch = q.filter(schema.Batch.id == batch_id).first()
+            else:
+                target_batch = q.order_by(desc(schema.Batch.created_at)).first()
 
             if not target_batch:
                 return {}
 
             b_id = target_batch.id
-            total_txns = db.query(func.count(schema.Transaction.id)).filter_by(batch_id=b_id).scalar() or 0
-            total_excs = db.query(func.count(schema.ExceptionRecord.id)).filter_by(batch_id=b_id).scalar() or 0
+            b_org = target_batch.org_id
+            total_txns = db.query(func.count(schema.Transaction.id)).filter_by(batch_id=b_id, org_id=b_org).scalar() or 0
+            total_excs = db.query(func.count(schema.ExceptionRecord.id)).filter_by(batch_id=b_id, org_id=b_org).scalar() or 0
             pending_apprs = db.query(func.count(schema.ResolutionProposal.id)).join(
                 schema.ExceptionRecord, schema.ResolutionProposal.exception_id == schema.ExceptionRecord.id
-            ).filter(schema.ExceptionRecord.batch_id == b_id, schema.ResolutionProposal.status == "PENDING_APPROVAL").scalar() or 0
-            audit_count = db.query(func.count(schema.AuditEvent.id)).filter_by(batch_id=b_id).scalar() or 0
+            ).filter(
+                schema.ExceptionRecord.batch_id == b_id,
+                schema.ExceptionRecord.org_id == b_org,
+                schema.ResolutionProposal.status == "PENDING_APPROVAL"
+            ).scalar() or 0
+            audit_count = db.query(func.count(schema.AuditEvent.id)).filter_by(batch_id=b_id, org_id=b_org).scalar() or 0
 
             return {
                 "batch_id": b_id,
+                "org_id": b_org,
                 "total_records": total_txns,
                 "total_exceptions": total_excs,
                 "pending_approvals": pending_apprs,

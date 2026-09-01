@@ -113,12 +113,30 @@ class IngestionService:
             cls.validate_schema(headers, source_kind, file_path)
 
         canonical_txns: List[CanonicalTransaction] = []
-        for row in raw_rows:
-            if not any(str(v).strip() for v in row.values() if v is not None):
-                continue
-            txn = NormalizerService.normalize_row(
-                row, source_kind, org_id, batch_id, amount_scale=amount_scale
-            )
-            canonical_txns.append(txn)
+        for idx, row in enumerate(raw_rows, start=2):
+            row["__row_num__"] = idx
 
-        return canonical_txns, len(canonical_txns)
+        if source_kind == SourceKind.LEDGER:
+            # Group multi-line journal entries by je_id so each JE is ONE CanonicalTransaction
+            je_groups: Dict[str, List[Dict[str, Any]]] = {}
+            for row in raw_rows:
+                if not any(str(v).strip() for k, v in row.items() if v is not None and not k.startswith("__")):
+                    continue
+                je_id = str(row.get("je_id") or row.get("journal_id") or row.get("id") or "JE-000")
+                je_groups.setdefault(je_id, []).append(row)
+
+            for je_id, group in je_groups.items():
+                txn = NormalizerService.normalize_journal_entry(
+                    group, org_id, batch_id, amount_scale=amount_scale
+                )
+                canonical_txns.append(txn)
+        else:
+            for row in raw_rows:
+                if not any(str(v).strip() for k, v in row.items() if v is not None and not k.startswith("__")):
+                    continue
+                txn = NormalizerService.normalize_row(
+                    row, source_kind, org_id, batch_id, amount_scale=amount_scale
+                )
+                canonical_txns.append(txn)
+
+        return canonical_txns, len(raw_rows)

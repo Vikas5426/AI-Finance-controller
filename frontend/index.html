@@ -84,9 +84,7 @@
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
           <select class="auth-input with-left-icon select-custom" id="auth-role" name="role">
-            <option value="analyst" selected>Reconciliation Analyst (Maker)</option>
-            <option value="approver">Financial Approver (Checker)</option>
-            <option value="admin">System Controller (Admin)</option>
+            <option value="admin" selected>Administrator (Full Access)</option>
           </select>
         </div>
       </div>
@@ -121,30 +119,15 @@
 
       <div class="auth-footnote" id="auth-footnote">
         <div class="auth-quick-header">
-          <span>Demo Role Access</span>
+          <span>Quick Demo Access</span>
         </div>
-        <div class="auth-quick-actions">
-          <button type="button" class="auth-quick-btn" onclick="quickFillLogin('admin@acme.co', 'Admin@2026!')" title="Sign in as Administrator">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="auth-quick-actions single-action">
+          <button type="button" class="auth-quick-btn auth-quick-btn-single" onclick="quickFillLogin('admin@acme.co', 'Admin@2026!')" title="Sign in as Administrator with Full Access">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="8" r="4"/>
               <path d="M20 21a8 8 0 1 0-16 0"/>
             </svg>
-            <span>Admin</span>
-          </button>
-          <button type="button" class="auth-quick-btn" onclick="quickFillLogin('approver@acme.co', 'Approver@2026!')" title="Sign in as Approver (Checker)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <polyline points="9 12 11 14 15 10"/>
-            </svg>
-            <span>Approver</span>
-          </button>
-          <button type="button" class="auth-quick-btn" onclick="quickFillLogin('analyst@acme.co', 'Analyst@2026!')" title="Sign in as Analyst (Maker)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"/>
-              <line x1="12" y1="20" x2="12" y2="4"/>
-              <line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-            <span>Analyst</span>
+            <span>Sign in as Admin (Full Access)</span>
           </button>
         </div>
       </div>
@@ -451,7 +434,7 @@
             <!-- Top Row: Exactly 4 Sleek Horizontal Metric Cards -->
             <div class="reui-top-cards-grid">
               <!-- Card 1: Exceptions & Variance -->
-              <div class="reui-card">
+              <div class="reui-card" style="cursor: pointer;" onclick="switchView('exceptions', 'Governance > Exceptions Queue')" title="Click to inspect open exceptions">
                 <div class="reui-card-top">
                   <div>
                     <div class="reui-card-title">Exceptions & Variance</div>
@@ -466,13 +449,13 @@
                   <div class="reui-card-val" id="ov-val-exceptions" style="color: var(--accent-coral);">0 Held</div>
                   <div class="reui-card-bottom-right">
                     <span class="reui-delta-badge delta-amber" id="ov-badge-exceptions">0 Held</span>
-                    <span class="reui-card-subtext">variance</span>
+                    <span class="reui-card-subtext">action queue →</span>
                   </div>
                 </div>
               </div>
 
               <!-- Card 2: 3-Way Match Rate -->
-              <div class="reui-card">
+              <div class="reui-card" style="cursor: pointer;" onclick="switchView('workflow', 'Workflow > Reconciliation Stage')" title="Click to view 3-way reconciliation stage">
                 <div class="reui-card-top">
                   <div>
                     <div class="reui-card-title">3-Way Match Rate</div>
@@ -493,11 +476,11 @@
               </div>
 
               <!-- Card 3: Gross Flow Volume -->
-              <div class="reui-card">
+              <div class="reui-card" style="cursor: pointer;" onclick="switchView('workflow', 'Workflow > Reconciliation Stage')" title="Click to view transaction volume breakdown">
                 <div class="reui-card-top">
                   <div>
                     <div class="reui-card-title">Gross Flow Volume</div>
-                    <div class="reui-card-sub">Total Reconciled Value</div>
+                    <div class="reui-card-sub">Unique Economic Inflow</div>
                   </div>
                   <svg class="sparkline-svg" viewBox="0 0 90 28" fill="none">
                     <path d="M2 22 L22 19 L40 24 L58 14 L72 10 L88 16" stroke="#f59e0b" stroke-width="2"
@@ -508,13 +491,13 @@
                   <div class="reui-card-val" id="ov-val-gross-flow">₹0.00</div>
                   <div class="reui-card-bottom-right">
                     <span class="reui-delta-badge delta-amber">INR (₹)</span>
-                    <span class="reui-card-subtext">canonical</span>
+                    <span class="reui-card-subtext">gateway gross</span>
                   </div>
                 </div>
               </div>
 
               <!-- Card 4: Ingested Records -->
-              <div class="reui-card">
+              <div class="reui-card" style="cursor: pointer;" onclick="switchView('workflow', 'Workflow > Reconciliation Stage')" title="Click to view ingested multi-stream records">
                 <div class="reui-card-top">
                   <div>
                     <div class="reui-card-title">Ingested Records</div>
@@ -529,7 +512,7 @@
                   <div class="reui-card-val" id="ov-val-total-records">0</div>
                   <div class="reui-card-bottom-right">
                     <span class="reui-delta-badge delta-green">3 Streams</span>
-                    <span class="reui-card-subtext">active</span>
+                    <span class="reui-card-subtext">31 raw rows</span>
                   </div>
                 </div>
               </div>

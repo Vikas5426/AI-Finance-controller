@@ -31,7 +31,7 @@ router = APIRouter(prefix="/agents", tags=["Reasoning Agents (Agents 9-13)"])
 
 # Every endpoint here can trigger a paid LLM call, so they are restricted to
 # users who actually operate the reconciliation rather than left open.
-require_agent_operator = require_roles(["analyst", "approver"])
+require_agent_operator = require_roles(["admin", "analyst", "approver"], allow_admin=True)
 
 
 class InvestigateRequest(BaseModel):

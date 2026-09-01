@@ -1,0 +1,148 @@
+{
+  "STAGE_1_INGESTION": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "files_ingested": {
+        "gateway.csv": {
+          "rows": 12,
+          "sha256": "b92b199b03d1ce88fbc740c0cb8a94459aa9ac9f1d4b1b775859053a8a603dd1",
+          "size_bytes": 1884
+        },
+        "bank.csv": {
+          "rows": 10,
+          "sha256": "0c053ad74b5a3675f93255e3e55dbb63d1a6651e9c2382f87cad9dd1d009f4e3",
+          "size_bytes": 1038
+        },
+        "general_ledger.csv": {
+          "rows": 42,
+          "sha256": "8535321052e6c36d2bf19f859b4d87a1c658467ec6fb4fe70ac173691151ed44",
+          "size_bytes": 3714
+        }
+      },
+      "total_source_rows": 64
+    }
+  },
+  "STAGE_2_CANONICALIZATION": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "gateway_transactions_count": 12,
+      "bank_transactions_count": 10,
+      "ledger_transactions_count": 14,
+      "total_canonical_transactions": 36,
+      "total_gross_inr": 38215.0,
+      "total_bank_settled_inr": 30630.26
+    }
+  },
+  "STAGE_4_RECONCILIATION": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "total_records": 36,
+      "matched_records": 29,
+      "unmatched_records": 7,
+      "match_rate": 80.56,
+      "three_way_matches": 9,
+      "two_way_matches": 1,
+      "timing_lag_matches": 1,
+      "exceptions_count": 7,
+      "execution_time_seconds": 0.04
+    }
+  },
+  "STAGE_5_EXCEPTIONS": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "total_exceptions": 7,
+      "total_exposure_inr": 16868.0,
+      "breakdown": {
+        "DUPLICATE_RECORD": 1,
+        "MISSING_BANK_SETTLEMENT": 1,
+        "UNKNOWN_BANK_CREDIT": 1,
+        "MISSING_LEDGER_ENTRY": 4
+      },
+      "all_have_primary_txn_ids": true
+    }
+  },
+  "STAGE_6_AI_DATA_CONTRACT": {
+    "status": "PASS",
+    "data": {
+      "sample_exception_id": "EXC-3eb98b2a",
+      "payment_id": "3eb98b2a-2df2-4d96-9a36-df2f0a0329fc",
+      "is_payment_id_non_null": true,
+      "all_17_contract_fields_present": true
+    }
+  },
+  "STAGE_7_RCA": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "total_exceptions_analyzed": 7,
+      "systemic_findings_count": 4,
+      "sum_of_affected_counts": 7,
+      "reconciled_with_exceptions": true,
+      "statuses": [
+        "CONFIRMED",
+        "SUPPORTED_HYPOTHESIS",
+        "UNKNOWN",
+        "UNKNOWN"
+      ]
+    }
+  },
+  "STAGE_8_LIQUIDITY": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "total_observed_cash_inr": 0.0,
+      "total_projected_inflow_inr": 68845.26,
+      "forecast_status": "COMPLETE",
+      "missing_fields_explanation": null,
+      "weeks_3_to_13_zero": true
+    }
+  },
+  "STAGE_9_AUDIT_COMPLIANCE": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "hash_chain_integrity": "VALID",
+      "maker_checker_status": "PENDING_REVIEW",
+      "access_control_status": "SEGREGATION_COMPLIANT",
+      "change_control_status": "IMMUTABLE_LOG_VERIFIED",
+      "overall_compliance_status": "PENDING_ACTION",
+      "pending_review_count": 7,
+      "completed_approvals_count": 0,
+      "auditor_signed_off": false
+    }
+  },
+  "STAGE_10_EXECUTIVE_REPORT": {
+    "status": "PASS",
+    "data": {
+      "batch_id": "PROD-E2E-20260901185035",
+      "report_title": "Executive Reconciliation & Compliance Report: Batch PROD-E2E-20260901185035",
+      "reconciliation_health_verdict": "DEGRADED - ACTION REQUIRED",
+      "full_markdown_length_chars": 4055
+    }
+  },
+  "STAGE_11_FRONTEND_DASHBOARD": {
+    "status": "PASS",
+    "data": {
+      "overview_batch_id": "PROD-E2E-20260901185035",
+      "recon_batch_id": "PROD-E2E-20260901185035",
+      "exceptions_batch_id": "PROD-E2E-20260901185035",
+      "forecast_batch_id": "PROD-E2E-20260901185035",
+      "audit_batch_id": "PROD-E2E-20260901185035",
+      "agents_batch_id": "PROD-E2E-20260901185035",
+      "overview_records": 36,
+      "recon_records": 36,
+      "overview_matched": 29,
+      "recon_matched": 29,
+      "overview_match_rate": "0.8%",
+      "recon_match_rate": "0.8%",
+      "overview_exceptions": 7,
+      "exceptions_badge": 7,
+      "audit_pending_reviews": 7,
+      "audit_completed_approvals": 0
+    }
+  }
+}

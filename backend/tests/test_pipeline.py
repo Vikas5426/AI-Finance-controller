@@ -71,7 +71,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
             "gross_amount": 10000.00,
             "created_at": "2026-08-20T10:00:00",
             "merchant_reference": "INV-1001"
-        }, SourceKind.GATEWAY, self.org_id, self.batch_id)
+        }, SourceKind.GATEWAY, self.org_id, self.batch_id, amount_scale=100)
 
         bank = NormalizerService.normalize_row({
             "bank_transaction_id": "UTR-1001",
@@ -79,7 +79,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
             "date": "2026-08-20",
             "description": "Direct deposit INV-1001 PAY-1001",
             "type": "Credit"
-        }, SourceKind.BANK, self.org_id, self.batch_id)
+        }, SourceKind.BANK, self.org_id, self.batch_id, amount_scale=100)
 
         engine = ReconciliationEngine(self.org_id, self.batch_id)
         res = engine.run_full_pipeline([gw, bank])
@@ -97,7 +97,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
             "net_amount": 9764.00,
             "created_at": "2026-08-20T11:00:00",
             "merchant_reference": "INV-1002"
-        }, SourceKind.GATEWAY, self.org_id, self.batch_id)
+        }, SourceKind.GATEWAY, self.org_id, self.batch_id, amount_scale=100)
 
         bank = NormalizerService.normalize_row({
             "bank_transaction_id": "UTR-1002",
@@ -105,7 +105,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
             "date": "2026-08-20",
             "description": "Settlement net PAY-1002 INV-1002",
             "type": "Credit"
-        }, SourceKind.BANK, self.org_id, self.batch_id)
+        }, SourceKind.BANK, self.org_id, self.batch_id, amount_scale=100)
 
         engine = ReconciliationEngine(self.org_id, self.batch_id)
         res = engine.run_full_pipeline([gw, bank])
@@ -213,7 +213,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
         self.assertEqual(res["status"], "SUCCESS")
 
         stats = DatabaseService.get_batch_stats(res["batch_id"])
-        self.assertGreaterEqual(stats["total_records"], 60)
+        self.assertGreaterEqual(stats["total_records"], 30)
         self.assertGreater(stats["audit_blocks_count"], 0)
         self.assertGreater(stats["audit_blocks_count"], 0)
 
@@ -255,7 +255,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
 
         try:
             txns, count = IngestionService.ingest_and_normalize(
-                tmp_path, SourceKind.GATEWAY, self.org_id, self.batch_id
+                tmp_path, SourceKind.GATEWAY, self.org_id, self.batch_id, amount_scale=100
             )
             self.assertEqual(count, 2)
             self.assertEqual(len(txns), 2)

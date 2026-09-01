@@ -76,7 +76,7 @@ class RegisterRequest(BaseModel):
     full_name: str
     email: str
     password: str
-    role: Optional[str] = "analyst"
+    role: Optional[str] = "admin"
 
 @router.post("/register", response_model=TokenResponse)
 def register(req: RegisterRequest):
@@ -102,7 +102,7 @@ def register(req: RegisterRequest):
             )
 
         user_id = str(uuid.uuid4())
-        role_clean = req.role if req.role in ["admin", "approver", "analyst"] else "analyst"
+        role_clean = req.role if req.role in ["admin", "approver", "analyst"] else "admin"
         new_user = schema.User(
             id=user_id,
             org_id=settings.DEFAULT_ORG_ID,

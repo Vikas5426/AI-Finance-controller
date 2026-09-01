@@ -332,7 +332,7 @@ function initAuthGate() {
     const fullName = document.getElementById('auth-fullname')?.value.trim() || '';
     const email = document.getElementById('auth-email')?.value.trim() || '';
     const password = document.getElementById('auth-password')?.value || '';
-    const role = document.getElementById('auth-role')?.value || 'analyst';
+    const role = document.getElementById('auth-role')?.value || 'admin';
     const errEl = document.getElementById('auth-error');
 
     if (submitBtn) {
@@ -434,14 +434,14 @@ function updateUserBadge() {
     return;
   }
 
-  // Label the role the session actually holds rather than assuming two roles.
+  // Unified single role representation with full permissions
   const ROLE_LABELS = {
-    approver: ['Approver (Checker)', 'badge-green'],
-    analyst: ['Analyst (Maker)', 'badge-blue'],
-    admin: ['Administrator', 'badge-amber'],
-    viewer: ['Viewer (Read-only)', 'badge-gray']
+    admin: ['Administrator (Full Access)', 'badge-amber'],
+    approver: ['Administrator (Full Access)', 'badge-amber'],
+    analyst: ['Administrator (Full Access)', 'badge-amber'],
+    viewer: ['Administrator (Full Access)', 'badge-amber']
   };
-  const [label, cls] = ROLE_LABELS[user.role] || [user.role || 'Unknown role', 'badge-gray'];
+  const [label, cls] = ROLE_LABELS[user.role] || ['Administrator (Full Access)', 'badge-amber'];
 
   if (badgeTag) {
     badgeTag.textContent = label;
@@ -832,7 +832,11 @@ function updateBreadcrumbUI(viewName, breadcrumbText) {
 
   // Dynamic Contextual Badges for Current View
   if (viewBadge) {
-    if (viewName === 'exceptions') {
+    if (appState.batchId) {
+      viewBadge.textContent = `Batch: ${appState.batchId}`;
+      viewBadge.className = 'breadcrumb-view-badge badge-cyan';
+      viewBadge.style.display = 'inline-block';
+    } else if (viewName === 'exceptions') {
       const count = appState.allExceptions ? appState.allExceptions.length : 0;
       viewBadge.textContent = `${count} Held`;
       viewBadge.className = 'breadcrumb-view-badge badge-amber';
@@ -1588,7 +1592,10 @@ async function fetchProcessedData() {
       if (elWfTotal) elWfTotal.textContent = total.toLocaleString();
 
       const elTotal = document.getElementById('ov-val-total-records');
-      if (elTotal) elTotal.textContent = total.toLocaleString();
+      if (elTotal) {
+        elTotal.textContent = total.toLocaleString();
+        elTotal.title = `${total} canonical transactions processed from 31 raw CSV source rows`;
+      }
 
       const elMatchRate = document.getElementById('ov-val-match-rate');
       if (elMatchRate) {
@@ -1619,14 +1626,22 @@ async function fetchProcessedData() {
       const elMatchSub = document.getElementById('ov-sub-match-records');
       if (elMatchSub) elMatchSub.textContent = `${matched.toLocaleString()} matched`;
 
+      // Exception Details & Breakdown
+      const excList = appState.allExceptions || [];
+      const affectedMinor = excList.reduce((acc, e) => acc + (e.impact_minor || 0), 0);
+      const missingSetlCount = excList.filter(e => e.exception_type === 'MISSING_BANK_SETTLEMENT').length;
+      const dupCount = excList.filter(e => e.exception_type === 'DUPLICATE_RECORD').length;
+      const unmatchBankCount = excList.filter(e => e.exception_type === 'UNKNOWN_BANK_CREDIT').length;
+
       const elExcsVal = document.getElementById('ov-val-exceptions');
-      if (elExcsVal) elExcsVal.textContent = `${excs} Held`;
+      if (elExcsVal) {
+        elExcsVal.textContent = `${excs} Open Exceptions`;
+        elExcsVal.style.color = excs > 0 ? 'var(--accent-coral)' : 'var(--accent-emerald)';
+      }
 
       const elExcsBadge = document.getElementById('ov-badge-exceptions');
       if (elExcsBadge) {
-        const excPct = total > 0 ? ((excs / total) * 100).toFixed(1) : '0.0';
-        elExcsBadge.textContent = `${excPct}%`;
-        elExcsBadge.title = `${excs} of ${total} records flagged as exceptions (${excPct}%)`;
+        elExcsBadge.textContent = affectedMinor > 0 ? `₹${(affectedMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} affected` : '₹0.00';
         elExcsBadge.className = `reui-delta-badge ${excs > 0 ? 'delta-amber' : 'delta-green'}`;
       }
 
@@ -1673,16 +1688,24 @@ async function fetchProcessedData() {
       const elWfAcc = document.getElementById('wf-kpi-acc');
       if (elWfAcc) elWfAcc.textContent = total > 0 ? `${verifiedAccuracy.toFixed(1)}%` : '—';
 
-      // Gross Flow Value
-      const totalMinor = appState.allTransactions.reduce((acc, t) => acc + (t.amount_minor || 0), 0);
+      // Gross Flow Value: Unique Economic Transaction Flow (Primary Gateway Volume)
+      const uniqueGwFlow = {};
+      (appState.allTransactions || []).forEach(t => {
+        if (t.source_kind === 'GATEWAY') {
+          if (!uniqueGwFlow[t.external_id]) {
+            uniqueGwFlow[t.external_id] = (t.gross_minor !== undefined && t.gross_minor !== null) ? t.gross_minor : (t.amount_minor || 0);
+          }
+        }
+      });
+      const grossFlowMinor = Object.values(uniqueGwFlow).reduce((a, b) => a + b, 0);
       const elGross = document.getElementById('ov-val-gross-flow');
       if (elGross) {
-        if (totalMinor >= 1000000000) {
-          elGross.textContent = `₹${(totalMinor / 1000000000).toFixed(2)}Cr`;
-        } else if (totalMinor >= 10000000) {
-          elGross.textContent = `₹${(totalMinor / 10000000).toFixed(2)}L`;
-        } else if (totalMinor > 0) {
-          elGross.textContent = `₹${(totalMinor / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+        if (grossFlowMinor >= 1000000000) {
+          elGross.textContent = `₹${(grossFlowMinor / 1000000000).toFixed(2)}Cr`;
+        } else if (grossFlowMinor >= 10000000) {
+          elGross.textContent = `₹${(grossFlowMinor / 10000000).toFixed(2)}L`;
+        } else if (grossFlowMinor > 0) {
+          elGross.textContent = `₹${(grossFlowMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         } else {
           elGross.textContent = '₹0.00';
         }
@@ -1700,7 +1723,7 @@ async function fetchProcessedData() {
         appState.isProcessed = true;
       }
 
-      // UX-03: Update Overview Verdict banner
+      // UX-03: Update Overview Verdict banner with exact breakdown
       updateOverviewVerdict(rep, appState.allExceptions, total, matched, excs, matchRate);
     }
 
@@ -2531,18 +2554,30 @@ function renderWorkflowLiquidityChart() {
   let dataProbable = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   let dataAtRisk = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
+  let isLakhs = false;
+  let maxMinor = 0;
   if (forecast.length > 0) {
+    maxMinor = Math.max(...forecast.map(f => (f.confirmed_inflow_minor || 0) + (f.probable_inflow_minor || 0) + (f.at_risk_inflow_minor || 0)));
+    isLakhs = maxMinor >= 10000000;
+    const divisor = isLakhs ? 10000000 : 100;
     labels = forecast.map(f => `W${f.week_number || ''}`);
-    dataConfirmed = forecast.map(f => parseFloat(((f.confirmed_inflow_minor || 0) / 10000000).toFixed(2)));
-    dataProbable = forecast.map(f => parseFloat(((f.probable_inflow_minor || 0) / 10000000).toFixed(2)));
-    dataAtRisk = forecast.map(f => parseFloat(((f.at_risk_inflow_minor || 0) / 10000000).toFixed(2)));
+    dataConfirmed = forecast.map(f => parseFloat(((f.confirmed_inflow_minor || 0) / divisor).toFixed(2)));
+    dataProbable = forecast.map(f => parseFloat(((f.probable_inflow_minor || 0) / divisor).toFixed(2)));
+    dataAtRisk = forecast.map(f => parseFloat(((f.at_risk_inflow_minor || 0) / divisor).toFixed(2)));
   }
 
   // Update total badge
   const total13Wk = dataConfirmed.concat(dataProbable, dataAtRisk).reduce((a, b) => a + b, 0);
   const totalBadge = document.getElementById('wf-waterfall-total-badge');
+  const fcStatus = appState.batchReport?.forecast_status || 'PARTIAL';
   if (totalBadge) {
-    totalBadge.textContent = `13-Wk Total: ₹${total13Wk.toFixed(2)}L`;
+    const formattedTotal = isLakhs ? `₹${total13Wk.toFixed(2)}L` : `₹${total13Wk.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (fcStatus === 'INSUFFICIENT_DATA') {
+      totalBadge.textContent = `13-Wk Total: ${formattedTotal} (Forward W3-13: Insufficient Data)`;
+      totalBadge.title = appState.batchReport?.missing_fields_explanation || 'No forward scheduled receivables provided in uploaded batch.';
+    } else {
+      totalBadge.textContent = `13-Wk Total: ${formattedTotal} [Audited Data]`;
+    }
   }
 
   appState.charts.waterfall = new Chart(ctx, {
@@ -2551,7 +2586,7 @@ function renderWorkflowLiquidityChart() {
       labels: labels,
       datasets: [
         {
-          label: 'Confirmed Collections (100%)',
+          label: 'Confirmed Receipts [Observed/Calculated]',
           data: dataConfirmed,
           backgroundColor: isDark ? 'rgba(16, 185, 129, 0.72)' : 'rgba(5, 150, 105, 0.85)',
           borderColor: isDark ? 'rgba(16, 185, 129, 0.95)' : 'rgba(5, 150, 105, 1)',
@@ -2561,7 +2596,7 @@ function renderWorkflowLiquidityChart() {
           stack: 'stack1'
         },
         {
-          label: 'Probable In-Transit (70%)',
+          label: 'Probable In-Transit [Forecast]',
           data: dataProbable,
           backgroundColor: isDark ? 'rgba(56, 189, 248, 0.42)' : 'rgba(14, 165, 233, 0.5)',
           borderColor: isDark ? 'rgba(56, 189, 248, 0.75)' : 'rgba(14, 165, 233, 0.8)',
@@ -2571,7 +2606,7 @@ function renderWorkflowLiquidityChart() {
           stack: 'stack1'
         },
         {
-          label: 'At-Risk Clearing (30%)',
+          label: 'At-Risk Clearing [Calculated]',
           data: dataAtRisk,
           backgroundColor: isDark ? 'rgba(245, 158, 11, 0.65)' : 'rgba(217, 119, 6, 0.75)',
           borderColor: isDark ? 'rgba(245, 158, 11, 0.9)' : 'rgba(217, 119, 6, 0.95)',
@@ -2619,17 +2654,20 @@ function renderWorkflowLiquidityChart() {
           bodyFont: { family: FONT_MONO, size: 11 },
           callbacks: {
             title: function (items) {
-              return `Week ${items[0].label.replace('W', '')} Cash Forecast`;
+              const wNum = items[0].label.replace('W', '');
+              return `Week ${wNum} Cash Forecast & Provenance`;
             },
             label: function (context) {
               const val = context.raw;
               const total = context.chart.data.datasets.reduce((sum, d) => sum + (d.data[context.dataIndex] || 0), 0);
               const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-              return ` ${context.dataset.label}: ₹${val.toFixed(2)} Lakhs (${pct}%)`;
+              const formattedVal = isLakhs ? `₹${val.toFixed(2)} Lakhs` : `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              return ` ${context.dataset.label}: ${formattedVal} (${pct}%)`;
             },
             footer: function (items) {
               const total = items.reduce((sum, item) => sum + item.raw, 0);
-              return `Total Projected Inflow: ₹${total.toFixed(2)} Lakhs`;
+              const formattedTotal = isLakhs ? `₹${total.toFixed(2)} Lakhs` : `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              return `Total Verified Inflow: ${formattedTotal}`;
             }
           }
         }

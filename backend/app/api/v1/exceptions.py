@@ -77,8 +77,14 @@ def get_exceptions(
     # tenants, so it must be filtered to the caller's organisation.
     exceptions = [e for e in STATE.get("exceptions", []) if e.get("org_id") == org_id]
     proposals = [p for p in STATE.get("proposals", []) if p.get("org_id") == org_id]
-    if batch_id:
-        exceptions = [e for e in exceptions if e.get("batch_id") == batch_id]
+    target_batch = batch_id
+    if not target_batch and not all_batches:
+        active_b = STATE.get("active_batch")
+        if active_b and active_b.get("org_id") == org_id:
+            target_batch = active_b.get("id")
+    if target_batch:
+        exceptions = [e for e in exceptions if e.get("batch_id") == target_batch]
+        proposals = [p for p in proposals if p.get("batch_id") == target_batch]
     if severity:
         exceptions = [e for e in exceptions if e.get("severity") == severity]
     if exception_type:
@@ -96,7 +102,7 @@ def get_exceptions(
 
     return {
         "total": len(exceptions),
-        "batch_id": batch_id,
+        "batch_id": target_batch or batch_id,
         "limit": limit,
         "offset": offset,
         "items": enriched_items

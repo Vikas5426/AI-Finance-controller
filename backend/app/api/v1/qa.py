@@ -690,7 +690,7 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
 @router.post("/ask", response_model=QAResponse)
 def ask_question(
     request: QARequest,
-    current_user: Dict[str, Any] = Depends(require_roles(["analyst", "approver"]))
+    current_user: Dict[str, Any] = Depends(require_roles(["admin", "analyst", "approver"], allow_admin=True))
 ):
     query = request.query.strip()
     history = request.conversation_history or []

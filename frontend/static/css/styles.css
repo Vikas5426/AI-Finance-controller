@@ -3601,6 +3601,10 @@ select.auth-input {
   gap: 0.5rem;
 }
 
+.auth-quick-actions.single-action {
+  grid-template-columns: 1fr;
+}
+
 .auth-quick-btn {
   display: inline-flex;
   align-items: center;
@@ -3616,6 +3620,21 @@ select.auth-input {
   cursor: pointer;
   transition: all 0.16s ease;
   outline: none;
+}
+
+.auth-quick-btn-single {
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+}
+
+.auth-quick-btn-single:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #ffffff;
 }
 
 .auth-quick-btn svg {

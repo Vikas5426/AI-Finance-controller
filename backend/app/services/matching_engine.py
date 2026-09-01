@@ -1,4 +1,5 @@
 import math
+import re
 import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -80,13 +81,13 @@ class AccountingSemanticGate:
             # Revenue Accounts (4xxx / Revenue / Sales / Income):
             # A Bank Deposit or Bank Withdrawal can NEVER match directly to a Revenue line.
             # Bank deposits must settle through Cash/Bank Asset (1010 DEBIT) or Clearing/AR (1290/1210 CREDIT).
-            if gl_acc.startswith("4") or "REVENUE" in desc_upper or "SALES" in desc_upper or "INCOME" in desc_upper:
+            if gl_acc.startswith("4") or ("REVENUE" in desc_upper and not gl_acc.startswith("121")) or ("SALES" in desc_upper and not gl_acc.startswith("121")):
                 return False, f"Accounting Rule Violation: Bank entry cannot match directly to GL Revenue account '{gl_acc}'. Bank deposits must settle through Cash/Bank (1010 DEBIT) or Clearing/AR (1290/1210 CREDIT)."
 
             # Cash/Bank Asset Account (1010/1020):
             # Bank Deposit Credit -> GL Cash/Bank Asset DEBIT (Asset increase)
             # Bank Withdrawal Debit -> GL Cash/Bank Asset CREDIT (Asset decrease)
-            if gl_acc.startswith("101") or gl_acc.startswith("102") or "CASH" in desc_upper or "BANK" in desc_upper:
+            if gl_acc.startswith("101") or gl_acc.startswith("102") or (re.search(r"\b(?:CASH|BANK\s+CONTROL|BANK\s+ASSET)\b", desc_upper) and not gl_acc.startswith("121")):
                 if bk_credit and not gl_debit:
                     return False, f"Accounting Rule Violation: Bank Deposit Credit requires GL Cash/Bank Asset Debit, found {gl.direction.value}."
                 if not bk_credit and not gl_credit:
@@ -98,7 +99,7 @@ class AccountingSemanticGate:
                     return False, f"Accounting Rule Violation: Bank Deposit cannot balance against GL Clearing {gl.direction.value}."
 
             # Expense Accounts (5010 MDR Fee, etc.):
-            elif gl_acc.startswith("5") or "EXPENSE" in desc_upper or "FEE" in desc_upper or "MDR" in desc_upper:
+            elif gl_acc.startswith("5") or "EXPENSE" in desc_upper or ("FEE" in desc_upper and not gl_acc.startswith("121")) or ("MDR" in desc_upper and not gl_acc.startswith("121")):
                 if bk_credit:
                     return False, f"Accounting Rule Violation: Bank Deposit Credit cannot match directly to GL Fee/Expense account '{gl_acc}'."
 
@@ -115,9 +116,9 @@ class AccountingSemanticGate:
             gl_debit = gl.direction in (TxnDirection.DEBIT, TxnDirection.OUTFLOW)
 
             if gw_inflow:
-                if gl_acc.startswith("101") or gl_acc.startswith("102") or "BANK" in desc_upper:
+                if (gl_acc.startswith("101") or gl_acc.startswith("102") or re.search(r"\b(?:BANK\s+CONTROL|BANK\s+ASSET)\b", desc_upper)) and not gl_acc.startswith("121"):
                     return False, f"Accounting Rule Violation: Gateway Inflow cannot match directly to GL Bank Asset account '{gl_acc}'."
-                if gl_acc.startswith("5") or "EXPENSE" in desc_upper or "FEE" in desc_upper:
+                if (gl_acc.startswith("5") or "EXPENSE" in desc_upper or "FEE" in desc_upper) and not gl_acc.startswith("121"):
                     return False, f"Accounting Rule Violation: Gateway Inflow cannot match GL Expense/Fee account '{gl_acc}'."
                 if not (gl_credit or gl_debit):
                     return False, f"Accounting Rule Violation: Gateway Inflow cannot match invalid GL leg."
@@ -131,6 +132,9 @@ class AccountingSemanticGate:
 
         if a.currency != b.currency:
             return False, f"Currency mismatch: '{a.currency}' != '{b.currency}'"
+
+        if getattr(a, "is_balanced_je", True) is False or getattr(b, "is_balanced_je", True) is False:
+            return False, "Accounting Rule Violation: UNBALANCED_JOURNAL_ENTRY (debits do not equal credits)."
 
         ok, reason = cls.is_polarity_compatible(a, b)
         if not ok:
@@ -264,6 +268,7 @@ class ReconciliationEngine:
         self.candidates: List[MatchCandidate] = []
         self.exceptions: List[ExceptionSchema] = []
         self.matched_txn_ids: Set[str] = set()
+        self.bank_settled_gw_ids: Set[str] = set()
         self.safeguards_triggered: List[Dict[str, Any]] = []
         self.audit_trace: List[Dict[str, Any]] = []
 
@@ -306,15 +311,20 @@ class ReconciliationEngine:
         gross = max(a.amount_minor, b.amount_minor)
         net = min(a.amount_minor, b.amount_minor)
 
-        # 1. Match against versioned Fee Policies
+        # 1. Declared fee check (highest priority: if row carries explicit fee/tax, honor it)
+        decl_fee = (a.fee_minor or 0) + (a.tax_minor or 0) + (b.fee_minor or 0) + (b.tax_minor or 0)
+        if decl_fee > 0:
+            if abs(diff - decl_fee) <= 100:
+                return 0.99, True
+            # Explicit fee was declared but does not explain the discrepancy: do NOT override with generic policy
+            tol = max(200, int(0.03 * gross))
+            score = math.exp(-diff / tol)
+            return max(0.0, min(1.0, score)), False
+
+        # 2. Match against versioned Fee Policies when no explicit row fee is declared
         matched_policy = FeePolicyRegistry.match_best_policy(gross, net, tolerance_minor=100)
         if matched_policy:
             return 0.98, True
-
-        # 2. Declared fee fallback
-        decl_fee = (a.fee_minor or 0) + (a.tax_minor or 0) + (b.fee_minor or 0) + (b.tax_minor or 0)
-        if decl_fee > 0 and abs(diff - decl_fee) <= 100:
-            return 0.99, True
 
         tol = max(200, int(0.03 * gross))
         score = math.exp(-diff / tol)
@@ -322,10 +332,13 @@ class ReconciliationEngine:
 
     @staticmethod
     def score_date(a: CanonicalTransaction, b: CanonicalTransaction, grace: int = 1, tau: float = 2.0) -> float:
-        delta_days = abs((a.value_date - b.value_date).days)
-        if delta_days <= grace:
+        # Enforce forward causality: bank settlement should not precede gateway capture
+        days_lag = (b.value_date - a.value_date).days if (a.source_kind == SourceKind.GATEWAY and b.source_kind == SourceKind.BANK) else ((a.value_date - b.value_date).days if (b.source_kind == SourceKind.GATEWAY and a.source_kind == SourceKind.BANK) else abs((a.value_date - b.value_date).days))
+        if days_lag < 0:
+            return 0.0
+        if days_lag <= grace:
             return 1.0
-        return math.exp(-(delta_days - grace) / tau)
+        return math.exp(-(days_lag - grace) / tau)
 
     @staticmethod
     def score_desc(a: CanonicalTransaction, b: CanonicalTransaction) -> float:
@@ -397,19 +410,43 @@ class ReconciliationEngine:
             for k in gw.reference_keys.payment + gw.reference_keys.invoice:
                 gw_by_key.setdefault(k, []).append(gw)
 
-        matched_gw = set()
-        matched_bk = set()
-
         for gw in gw_txns:
             if gw.id in self.matched_txn_ids:
                 continue
 
-            keys = set(gw.reference_keys.payment + gw.reference_keys.invoice)
-            cands = [b for b in bank_txns if b.id not in self.matched_txn_ids and keys.intersection(set(b.reference_keys.payment + b.reference_keys.invoice))]
+            # Deterministic calculation: expected_net_settlement = gross - fee - tax
+            gross_paise = gw.gross_minor if gw.gross_minor is not None else gw.amount_minor
+            decl_fee = gw.fee_minor or 0
+            decl_tax = gw.tax_minor or 0
+            has_decl_fees = (decl_fee > 0 or decl_tax > 0)
+
+            if has_decl_fees:
+                expected_net_paise = gross_paise - decl_fee - decl_tax
+            else:
+                pol = FeePolicyRegistry.get_default_policy()
+                bd = pol.calculate(gross_paise)
+                expected_net_paise = bd.expected_net_minor
+                decl_fee = bd.fee_minor
+                decl_tax = bd.tax_minor
+
+            keys = set(gw.reference_keys.payment + gw.reference_keys.invoice + gw.reference_keys.settlement + gw.reference_keys.order)
+            
+            # Search bank candidates using ID keys, settlement ID, UTR, and configured timing window (0 <= days_lag <= 7)
+            cands = []
+            for b in bank_txns:
+                if b.id in self.matched_txn_ids:
+                    continue
+                b_keys = set(b.reference_keys.payment + b.reference_keys.invoice + b.reference_keys.settlement + b.reference_keys.order + b.reference_keys.utr)
+                has_key_match = bool(keys and keys.intersection(b_keys))
+                days_delta = (b.value_date - gw.value_date).days
+                has_timing_amount_match = (abs(b.amount_minor - expected_net_paise) <= 100 or abs(b.amount_minor - gross_paise) <= 100) and (0 <= days_delta <= 7)
+                
+                if has_key_match or has_timing_amount_match:
+                    cands.append(b)
 
             # Check if multiple competing gateway transactions share the same key
             competing = [g for k in keys for g in gw_by_key.get(k, []) if g.id != gw.id]
-            if competing and cands:
+            if competing and cands and any(bool(keys.intersection(set(b.reference_keys.payment + b.reference_keys.invoice))) for b in cands):
                 # Trigger Runner-Up Margin Safeguard on Ambiguous Competitors
                 self.safeguards_triggered.append({
                     "safeguard": "RUNNER_UP_MARGIN_SAFEGUARD",
@@ -427,24 +464,12 @@ class ReconciliationEngine:
                 if not ok:
                     continue
 
-                diff = abs(gw.amount_minor - bk.amount_minor)
+                diff_gross = abs(gross_paise - bk.amount_minor)
+                diff_net = abs(expected_net_paise - bk.amount_minor)
                 days_lag = (bk.value_date - gw.value_date).days
-                is_cutoff = self.period.is_cutoff_date(gw.value_date, window_days=1) if self.period else (gw.value_date.day in (28, 29, 30, 31))
 
-                # Period Cutoff Safeguard Check
-                if is_cutoff and days_lag >= 2:
-                    self.safeguards_triggered.append({
-                        "safeguard": "PERIOD_BOUNDARY_TIMING_SAFEGUARD",
-                        "reason": f"Payment {gw.external_id} captured at period boundary cutoff with T+{days_lag} settlement lag. Routed to Tier 3 Review.",
-                        "gateway_id": gw.id,
-                        "bank_id": bk.id
-                    })
-                    gw.match_status = "NEEDS_REVIEW"
-                    bk.match_status = "NEEDS_REVIEW"
-                    break
-
-                # Tier 1 Exact Match (amount diff == 0)
-                if diff == 0:
+                # 1. Tier 1 Exact Match (Gross == Bank Credit)
+                if diff_gross == 0 and 0 <= days_lag <= 7:
                     match_id = str(uuid.uuid4())
                     self.matches.append(MatchSchema(
                         id=match_id,
@@ -454,47 +479,12 @@ class ReconciliationEngine:
                         score=1.00,
                         confidence=1.00,
                         decision_tier=DecisionTier.RESOLVED,
-                        solver_evidence={"matched_key": list(keys)[0] if keys else gw.external_id, "tier": "Tier 1: Exact Match"},
-                        legs=[
-                            MatchLegSchema(transaction_id=gw.id, role=LegRoleEnum.PRIMARY, signed_amount_minor=gw.amount_minor),
-                            MatchLegSchema(transaction_id=bk.id, role=LegRoleEnum.COUNTERPART, signed_amount_minor=-bk.amount_minor)
-                        ]
-                    ))
-                    self.matched_txn_ids.add(gw.id)
-                    self.matched_txn_ids.add(bk.id)
-                    gw.match_status = "MATCHED_EXACT"
-                    bk.match_status = "MATCHED_EXACT"
-                    break
-
-                # Tier 2 Contextual Match (Fee Policy Proof)
-                matched_pol_res = FeePolicyRegistry.match_best_policy(gw.amount_minor, bk.amount_minor, tolerance_minor=100)
-                if matched_pol_res is not None or diff <= 100:
-                    if matched_pol_res is not None:
-                        policy, fee_bd = matched_pol_res
-                        fee_label = f"{policy.name} ({policy.policy_id})"
-                        arith_proof = fee_bd.formula_proof
-                        pol_id = policy.policy_id
-                    else:
-                        fee_label = "Rounding Tolerance Gate"
-                        arith_proof = f"Gross Rs. {gw.amount_minor/100:.2f} ≈ Net Rs. {bk.amount_minor/100:.2f} (diff Rs. {diff/100:.2f})"
-                        pol_id = "POL-ROUNDING-TOL"
-
-                    match_id = str(uuid.uuid4())
-                    self.matches.append(MatchSchema(
-                        id=match_id,
-                        batch_id=self.batch_id,
-                        match_type=MatchTypeEnum.ONE_TO_ONE,
-                        method=MatchMethodEnum.RULE_GATE,
-                        score=0.96,
-                        confidence=0.97,
-                        decision_tier=DecisionTier.RESOLVED_WITH_EXPLANATION,
                         solver_evidence={
-                            "fee_tier": fee_label,
-                            "policy_id": pol_id,
-                            "variance_minor": diff,
-                            "variance_rs": f"Rs. {diff/100:.2f}",
-                            "arithmetic_proof": arith_proof,
-                            "tier": "Tier 2: Contextual + Proof Match"
+                            "matched_key": list(keys)[0] if keys else gw.external_id,
+                            "classification": "MATCHED",
+                            "gross_minor": gross_paise,
+                            "bank_net_minor": bk.amount_minor,
+                            "tier": "Tier 1: Exact Match"
                         },
                         legs=[
                             MatchLegSchema(transaction_id=gw.id, role=LegRoleEnum.PRIMARY, signed_amount_minor=gw.amount_minor),
@@ -503,8 +493,66 @@ class ReconciliationEngine:
                     ))
                     self.matched_txn_ids.add(gw.id)
                     self.matched_txn_ids.add(bk.id)
-                    gw.match_status = "MATCHED_CONTEXTUAL"
-                    bk.match_status = "MATCHED_CONTEXTUAL"
+                    self.bank_settled_gw_ids.add(gw.id)
+                    gw.match_status = "MATCHED_EXACT"
+                    bk.match_status = "MATCHED_EXACT"
+                    break
+
+                # 2. Contextual / Fee Policy Match (Bank Credit == expected_net_settlement)
+                matched_pol_res = FeePolicyRegistry.match_best_policy(gross_paise, bk.amount_minor, tolerance_minor=100)
+                if diff_net <= 100 or matched_pol_res is not None:
+                    if matched_pol_res is not None:
+                        policy, fee_bd = matched_pol_res
+                        fee_label = f"{policy.name} ({policy.policy_id})"
+                        arith_proof = fee_bd.formula_proof
+                        pol_id = policy.policy_id
+                    else:
+                        fee_label = "2.0% Standard MDR + 18% GST"
+                        arith_proof = f"Gross Rs. {gross_paise/100:.2f} - Fee Rs. {decl_fee/100:.2f} - Tax Rs. {decl_tax/100:.2f} = Net Rs. {expected_net_paise/100:.2f} ~ Bank Rs. {bk.amount_minor/100:.2f}"
+                        pol_id = "POL-MDR-STD-2026"
+
+                    # Check for Timing Lag (T+1 .. T+7 across month/period boundaries)
+                    if days_lag >= 1:
+                        classification = "MATCHED_WITH_TIMING_LAG"
+                        timing_note = f"Settled with T+{days_lag} days timing lag on {bk.value_date} (Capture date: {gw.value_date})."
+                    else:
+                        classification = "MATCHED_WITH_FEE_EXPLANATION"
+                        timing_note = f"Same-day settlement on {bk.value_date}."
+
+                    match_id = str(uuid.uuid4())
+                    self.matches.append(MatchSchema(
+                        id=match_id,
+                        batch_id=self.batch_id,
+                        match_type=MatchTypeEnum.ONE_TO_ONE,
+                        method=MatchMethodEnum.RULE_GATE,
+                        score=0.97 if days_lag <= 2 else 0.94,
+                        confidence=0.98,
+                        decision_tier=DecisionTier.RESOLVED_WITH_EXPLANATION,
+                        solver_evidence={
+                            "classification": classification,
+                            "fee_tier": fee_label,
+                            "policy_id": pol_id,
+                            "gross_minor": gross_paise,
+                            "fee_minor": decl_fee,
+                            "tax_minor": decl_tax,
+                            "expected_net_minor": expected_net_paise,
+                            "bank_credit_minor": bk.amount_minor,
+                            "variance_minor": abs(expected_net_paise - bk.amount_minor),
+                            "days_lag": days_lag,
+                            "timing_note": timing_note,
+                            "arithmetic_proof": arith_proof,
+                            "tier": "Tier 2: Contextual Match"
+                        },
+                        legs=[
+                            MatchLegSchema(transaction_id=gw.id, role=LegRoleEnum.PRIMARY, signed_amount_minor=gw.amount_minor),
+                            MatchLegSchema(transaction_id=bk.id, role=LegRoleEnum.COUNTERPART, signed_amount_minor=-bk.amount_minor)
+                        ]
+                    ))
+                    self.matched_txn_ids.add(gw.id)
+                    self.matched_txn_ids.add(bk.id)
+                    self.bank_settled_gw_ids.add(gw.id)
+                    gw.match_status = "MATCHED_TIMING_LAG" if days_lag >= 1 else "MATCHED_CONTEXTUAL"
+                    bk.match_status = "MATCHED_TIMING_LAG" if days_lag >= 1 else "MATCHED_CONTEXTUAL"
                     break
 
     # --- PASS P2: Bank <-> General Ledger Control Stream ---
@@ -572,7 +620,10 @@ class ReconciliationEngine:
                         ]
                     ))
                     self.matched_txn_ids.add(gl.id)
+                    self.matched_txn_ids.add(gw.id)
                     gl.match_status = "MATCHED_EXACT"
+                    if gw.match_status == "UNMATCHED":
+                        gw.match_status = "MATCHED_EXACT"
                     break
 
     @staticmethod
@@ -778,14 +829,18 @@ class ReconciliationEngine:
                     if vq <= 0:
                         continue
 
-                    for curr_s, solutions in list(reach.items()):
+                    new_entries: Dict[int, List[Tuple[int, ...]]] = {}
+                    for curr_s, solutions in reach.items():
                         ns = curr_s + vq
                         if ns <= T_q + tol_q + 2:
-                            if ns not in reach:
-                                reach[ns] = []
+                            new_entries[ns] = [sol + (idx,) for sol in solutions if len(sol) < 30]
+
+                    for ns, sols in new_entries.items():
+                        if ns not in reach:
+                            reach[ns] = []
+                        for sol in sols:
                             if len(reach[ns]) < 3:
-                                for sol in solutions:
-                                    reach[ns].append(sol + (idx,))
+                                reach[ns].append(sol)
 
                 matching_subsets: List[Tuple[int, ...]] = []
                 for s_val in range(T_q - tol_q, T_q + tol_q + 1):
@@ -802,20 +857,29 @@ class ReconciliationEngine:
             if not best_solutions_by_fee:
                 continue
 
-            total_sol_count = sum(len(sols) for sols in best_solutions_by_fee.values())
-            if total_sol_count > 1:
+            # Deduplicate unique transaction subset sets across fee schedules
+            unique_solution_subsets = set()
+            first_solution = None
+            for fee_pct, sols in best_solutions_by_fee.items():
+                for sol in sols:
+                    sorted_sol = tuple(sorted(sol))
+                    if sorted_sol not in unique_solution_subsets:
+                        unique_solution_subsets.add(sorted_sol)
+                        if first_solution is None:
+                            first_solution = (fee_pct, sol)
+
+            if len(unique_solution_subsets) > 1:
                 self.safeguards_triggered.append({
                     "safeguard": "AMBIGUOUS_SETTLEMENT_GROUP_SAFEGUARD",
-                    "reason": f"Bank settlement wire {bk.external_id} of Rs. {target/100:.2f} matches {total_sol_count} distinct subset combinations across fee schedules. Ambiguity detected: routed to Tier 3 Review.",
+                    "reason": f"Bank settlement wire {bk.external_id} of Rs. {target/100:.2f} matches {len(unique_solution_subsets)} distinct subset combinations across fee schedules. Ambiguity detected: routed to Tier 3 Review.",
                     "bank_id": bk.id,
                     "target_minor": target,
-                    "solution_count": total_sol_count
+                    "solution_count": len(unique_solution_subsets)
                 })
                 bk.match_status = "NEEDS_REVIEW"
                 continue
 
-            chosen_fee_pct, sols = list(best_solutions_by_fee.items())[0]
-            chosen_indices = sols[0]
+            chosen_fee_pct, chosen_indices = first_solution
             matched_gw_list = [cands[i] for i in chosen_indices]
 
             total_gross = sum(g.amount_minor for g in matched_gw_list)
@@ -876,83 +940,90 @@ class ReconciliationEngine:
 
             for g in matched_gw_list:
                 self.matched_txn_ids.add(g.id)
+                self.bank_settled_gw_ids.add(g.id)
                 g.match_status = "MATCHED_CONTEXTUAL"
             self.matched_txn_ids.add(bk.id)
             bk.match_status = "MATCHED_CONTEXTUAL"
 
     # --- PASS P5: Fuzzy Scored Assignment with Hungarian Algorithm & Safeguards ---
     def pass_p4_fuzzy_hungarian(self, txns: List[CanonicalTransaction]):
-        left_pool = [t for t in txns if t.id not in self.matched_txn_ids and t.source_kind in (SourceKind.GATEWAY, SourceKind.BANK)]
-        right_pool = [t for t in txns if t.id not in self.matched_txn_ids and t.source_kind == SourceKind.LEDGER]
+        gl_matched_txn_ids = set()
+        for m in self.matches:
+            has_gl = any(l.role == LegRoleEnum.COUNTERPART or any(t.source_kind == SourceKind.LEDGER for t in txns if t.id == l.transaction_id) for l in m.legs)
+            if has_gl:
+                for l in m.legs:
+                    gl_matched_txn_ids.add(l.transaction_id)
+
+        left_pool = [
+            t for t in txns
+            if t.id not in self.matched_txn_ids
+            and t.id not in gl_matched_txn_ids
+            and t.source_kind == SourceKind.GATEWAY
+        ]
+        right_pool = [
+            t for t in txns
+            if t.id not in self.matched_txn_ids
+            and t.id not in gl_matched_txn_ids
+            and t.source_kind in (SourceKind.BANK, SourceKind.SETTLEMENT)
+        ]
 
         if not left_pool or not right_pool:
             return
 
-        n, m = len(left_pool), len(right_pool)
-        NEG = -1e6
-        cost_matrix = np.full((n, m), NEG, dtype=np.float64)
+        cost_matrix = np.full((len(left_pool), len(right_pool)), 999.0)
+        score_cache: Dict[Tuple[int, int], float] = {}
 
         for i, a in enumerate(left_pool):
             for j, b in enumerate(right_pool):
-                if a.currency != b.currency or abs((a.value_date - b.value_date).days) > 4:
-                    continue
-
-                ok, reason = AccountingSemanticGate.can_match(a, b)
+                ok, _ = AccountingSemanticGate.can_match(a, b)
                 if not ok:
                     continue
 
-                weights = PAIR_WEIGHTS.get((a.source_kind, b.source_kind), PAIR_WEIGHTS.get((SourceKind.GATEWAY, SourceKind.LEDGER)))
                 s_id = self.score_id(a, b)
-                s_amt, fee_exp = self.score_amount(a, b)
+                s_amt, is_fee = self.score_amount(a, b)
                 s_date = self.score_date(a, b)
                 s_desc = self.score_desc(a, b)
                 s_cp = self.score_cp(a, b)
                 s_ctx = self.score_context(a, b)
 
-                total_score = (
-                    weights["s_id"] * s_id +
-                    weights["s_amt"] * s_amt +
-                    weights["s_date"] * s_date +
-                    weights["s_desc"] * s_desc +
-                    weights["s_cp"] * s_cp +
-                    weights["s_ctx"] * s_ctx
+                score = (
+                    0.35 * s_id +
+                    0.25 * s_amt +
+                    0.15 * s_date +
+                    0.10 * s_desc +
+                    0.10 * s_cp +
+                    0.05 * s_ctx
                 )
+                score_cache[(i, j)] = score
+                cost_matrix[i, j] = 1.0 - score
 
-                if total_score >= 0.50:
-                    cost_matrix[i, j] = total_score
-                    self.candidates.append(MatchCandidate(
-                        id=str(uuid.uuid4()),
-                        source_txn_id=a.id,
-                        target_txn_id=b.id,
-                        feature_scores=FeatureScores(s_id=s_id, s_amt=s_amt, s_date=s_date, s_desc=s_desc, s_cp=s_cp, s_ctx=s_ctx),
-                        total_score=round(total_score, 4),
-                        pass_name="P4_HUNGARIAN"
-                    ))
+        row_ind, col_ind = linear_sum_assignment(cost_matrix)
 
-        rows, cols = linear_sum_assignment(cost_matrix, maximize=True)
+        for r, c in zip(row_ind, col_ind):
+            s = score_cache.get((r, c), 0.0)
+            a = left_pool[r]
+            b = right_pool[c]
 
-        for i, j in zip(rows, cols):
-            s = cost_matrix[i, j]
-            if s <= 0:
-                continue
+            row_costs = [cost_matrix[r, k] for k in range(len(right_pool)) if k != c]
+            runner_up_cost = min(row_costs) if row_costs else 999.0
+            margin = runner_up_cost - cost_matrix[r, c]
 
-            a, b = left_pool[i], right_pool[j]
-            row_best2 = np.partition(cost_matrix[i], -2)[-2] if m > 1 else NEG
-            col_best2 = np.partition(cost_matrix[:, j], -2)[-2] if n > 1 else NEG
-            second_best = max(row_best2, col_best2)
-            margin = s - second_best if second_best > NEG else 1.0
-
-            if s >= 0.80 and margin >= 0.05:
+            if s >= 0.85 and margin >= 0.05:
                 match_id = str(uuid.uuid4())
                 self.matches.append(MatchSchema(
                     id=match_id,
                     batch_id=self.batch_id,
                     match_type=MatchTypeEnum.ONE_TO_ONE,
-                    method=MatchMethodEnum.FUZZY_HUNGARIAN,
+                    method=MatchMethodEnum.FUZZY_SCORE,
                     score=round(s, 4),
-                    confidence=round(min(0.99, s * 1.02), 4),
+                    confidence=round(s, 4),
                     decision_tier=DecisionTier.RESOLVED_WITH_EXPLANATION,
-                    solver_evidence={"runner_up_margin": round(margin, 4), "tier": "Tier 2: Hungarian Contextual"},
+                    solver_evidence={
+                        "score": round(s, 4),
+                        "runner_up_margin": round(margin, 4),
+                        "classification": "MATCHED_FUZZY",
+                        "tier": "Tier 2: Contextual Match"
+                    },
                     legs=[
                         MatchLegSchema(transaction_id=a.id, role=LegRoleEnum.PRIMARY, signed_amount_minor=a.amount_minor),
                         MatchLegSchema(transaction_id=b.id, role=LegRoleEnum.COUNTERPART, signed_amount_minor=-b.amount_minor)
@@ -960,6 +1031,7 @@ class ReconciliationEngine:
                 ))
                 self.matched_txn_ids.add(a.id)
                 self.matched_txn_ids.add(b.id)
+                self.bank_settled_gw_ids.add(a.id)
                 a.match_status = "MATCHED_CONTEXTUAL"
                 b.match_status = "MATCHED_CONTEXTUAL"
             elif s >= 0.70 and margin < 0.05:
@@ -974,28 +1046,91 @@ class ReconciliationEngine:
 
     # --- PASS P6: Residual Classification (Tiers 3 & 4) ---
     def pass_p5_residuals(self, txns: List[CanonicalTransaction]):
-        unmatched = [t for t in txns if t.id not in self.matched_txn_ids]
+        # 1. Identify gateway transactions that have NOT received bank settlement
+        gw_txns = [t for t in txns if t.source_kind == SourceKind.GATEWAY and t.id not in self.bank_settled_gw_ids]
+        
+        # 2. Identify all other unmatched non-gateway transactions
+        other_unmatched = [t for t in txns if t.source_kind != SourceKind.GATEWAY and t.id not in self.matched_txn_ids]
+        
+        seen_exc_txn_ids = set(e.primary_txn_id for e in self.exceptions)
+        inspect_pool = []
+        for g in gw_txns:
+            if g.id not in seen_exc_txn_ids:
+                inspect_pool.append(g)
+                seen_exc_txn_ids.add(g.id)
+        for t in other_unmatched:
+            if t.id not in seen_exc_txn_ids:
+                inspect_pool.append(t)
+                seen_exc_txn_ids.add(t.id)
 
-        for t in unmatched:
+        for t in inspect_pool:
+            investigation_result = None
             if t.match_status == "NEEDS_REVIEW":
                 exc_type = "PERIOD_CUTOFF_TIMING" if t.value_date.day in (28, 29, 30, 31) else "AMBIGUOUS_MATCH"
                 sev = ExceptionSeverity.LOW
+                findings = [f"Ambiguous or timing cutoff {t.source_kind.value} entry '{t.external_id}' of Rs. {t.amount_minor/100:.2f}. Classification: {exc_type}."]
+                impact_minor = t.amount_minor
             elif t.source_kind == SourceKind.BANK and t.direction in (TxnDirection.INFLOW, TxnDirection.CREDIT):
                 exc_type = "UNKNOWN_BANK_CREDIT"
                 sev = ExceptionSeverity.HIGH
                 t.match_status = "UNRESOLVED_EXCEPTION"
+                impact_minor = t.amount_minor
+                findings = [f"Unreconciled BANK deposit '{t.external_id}' of Rs. {t.amount_minor/100:.2f}. No matching gateway capture or GL receivable found. Classification: UNKNOWN_BANK_CREDIT."]
             elif t.source_kind == SourceKind.GATEWAY:
-                exc_type = "MISSING_BANK_RECORD"
+                exc_type = "MISSING_BANK_SETTLEMENT"
                 sev = ExceptionSeverity.HIGH
                 t.match_status = "UNRESOLVED_EXCEPTION"
+                
+                gross_exp = t.gross_minor if t.gross_minor is not None else t.amount_minor
+                decl_fee = t.fee_minor or 0
+                decl_tax = t.tax_minor or 0
+                if decl_fee > 0 or decl_tax > 0:
+                    fee_exp = decl_fee
+                    tax_exp = decl_tax
+                    net_exp = gross_exp - fee_exp - tax_exp
+                else:
+                    pol = FeePolicyRegistry.get_default_policy()
+                    bd = pol.calculate(gross_exp)
+                    fee_exp = bd.fee_minor
+                    tax_exp = bd.tax_minor
+                    net_exp = bd.expected_net_minor
+                
+                impact_minor = gross_exp
+                findings = [
+                    f"Unreconciled GATEWAY payment '{t.external_id}'. "
+                    f"Gross Exposure: Rs. {gross_exp/100:.2f} | "
+                    f"Expected Cash Settlement: Rs. {net_exp/100:.2f} "
+                    f"(MDR Fee: Rs. {fee_exp/100:.2f}, GST: Rs. {tax_exp/100:.2f}). "
+                    f"Classification: MISSING_BANK_SETTLEMENT."
+                ]
+                from app.models.schemas import InvestigationResult
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification="MISSING_BANK_SETTLEMENT",
+                    likely_cause="Payment captured on gateway but no bank settlement credit received within configured timing window.",
+                    recommended_action="Initiate payment gateway settlement trace and verify merchant balance payout schedule.",
+                    confidence=0.95,
+                    arithmetic_proof={
+                        "gross_exposure_minor": gross_exp,
+                        "expected_net_settlement_minor": net_exp,
+                        "fee_minor": fee_exp,
+                        "tax_minor": tax_exp,
+                        "gross_exposure_rs": f"Rs. {gross_exp/100:.2f}",
+                        "expected_net_rs": f"Rs. {net_exp/100:.2f}"
+                    }
+                )
             elif t.source_kind == SourceKind.LEDGER:
                 exc_type = "MISSING_LEDGER_ENTRY"
                 sev = ExceptionSeverity.MEDIUM
                 t.match_status = "UNRESOLVED_EXCEPTION"
+                impact_minor = t.amount_minor
+                findings = [f"Unreconciled LEDGER Journal Entry '{t.external_id}' of Rs. {t.amount_minor/100:.2f}. Classification: MISSING_LEDGER_ENTRY."]
             else:
                 exc_type = "UNCLASSIFIED_RESIDUAL"
                 sev = ExceptionSeverity.MEDIUM
                 t.match_status = "UNRESOLVED_EXCEPTION"
+                impact_minor = t.amount_minor
+                findings = [f"Unreconciled {t.source_kind.value} entry of Rs. {t.amount_minor/100:.2f}. Classification: {exc_type}."]
 
             self.exceptions.append(ExceptionSchema(
                 id=f"EXC-{t.id[:8]}",
@@ -1005,11 +1140,12 @@ class ReconciliationEngine:
                 exception_type=exc_type,
                 severity=sev,
                 state=ExceptionState.DETECTED,
-                impact_minor=t.amount_minor,
+                impact_minor=impact_minor,
                 currency=t.currency,
-                checks_performed=["Cross-Source Control Lookup", "Fee Tolerance Gate", "Period Cutoff Gate"],
-                findings=[f"Unreconciled {t.source_kind.value} entry of Rs. {t.amount_minor/100:.2f}. Classification: {exc_type}."],
-                resolution_confidence=0.60,
+                checks_performed=["Cross-Source Control Lookup", "Fee Tolerance Gate", "Period Cutoff Gate", "Timing Window Lookup"],
+                findings=findings,
+                investigation=investigation_result,
+                resolution_confidence=0.90 if exc_type == "MISSING_BANK_SETTLEMENT" else 0.60,
                 detected_at=datetime.now(timezone.utc)
             ))
 

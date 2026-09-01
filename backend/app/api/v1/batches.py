@@ -194,8 +194,9 @@ def execute_batch_reconciliation(
     orchestrator = LangGraphBatchOrchestrator(org_id=org_id, batch_id=b_id, window_size=window_size)
     summary = orchestrator.run_windowed_pipeline(canonical_txns)
 
-    # Step 4: Segmented 13-Week Cash Forecast
-    forecast = SegmentedCashForecaster.forecast_13_weeks(canonical_txns, orchestrator.decisions)
+    # Step 4: Segmented 13-Week Cash Forecast & Liquidity Envelope
+    liquidity_envelope = SegmentedCashForecaster.generate_liquidity_envelope(canonical_txns, orchestrator.decisions)
+    forecast = liquidity_envelope.segments
 
     # Step 5: Atomically Persist to Database
     DatabaseService.save_batch_run(
@@ -261,6 +262,7 @@ def execute_batch_reconciliation(
         "match_rate": summary["match_rate"]
     }
     STATE["cash_forecast"] = [f.model_dump() for f in forecast]
+    STATE["liquidity_forecast"] = liquidity_envelope.model_dump()
     STATE["provenance"] = manifest.model_dump()
 
     # Synchronize tenant-isolated state
@@ -381,7 +383,7 @@ def get_active_batch(current_user: Dict[str, Any] = Depends(get_current_user)):
         }
 
     # Calculate live stats directly from database if available
-    db_stats = DatabaseService.get_batch_stats(active["id"])
+    db_stats = DatabaseService.get_batch_stats(batch_id=active["id"], org_id=current_user["org_id"])
 
     prov = STATE.get("provenance") or {}
     exec_mode = prov.get("execution_mode", "USER_UPLOAD")
@@ -474,7 +476,7 @@ async def get_batch_progress(
 @router.post("/run")
 async def run_windowed_batch(
     req: RunBatchRequest,
-    current_user: Dict[str, Any] = Depends(require_roles(["analyst", "approver"]))
+    current_user: Dict[str, Any] = Depends(require_roles(["admin", "analyst", "approver"], allow_admin=True))
 ):
     org_id = current_user["org_id"]
     batch_id = f"BATCH-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"

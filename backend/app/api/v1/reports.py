@@ -69,11 +69,35 @@ async def get_executive_summary(
     def _conf(m: Any) -> float:
         return m.get("confidence", 0) if isinstance(m, dict) else getattr(m, "confidence", 0)
 
+    forecast_segments = ctx["cash_forecast"] or []
+    has_future_inflow = any(s.get("confirmed_future_inflows_minor", 0) > 0 for s in forecast_segments)
+    has_clearing = any(s.get("probable_inflows_minor", 0) > 0 or s.get("probable_inflow_minor", 0) > 0 for s in forecast_segments)
+    obs_cash = sum(s.get("observed_cash_minor", 0) or s.get("confirmed_inflow_minor", 0) for s in forecast_segments[:1])
+
+    if not forecast_segments or (obs_cash == 0 and not has_future_inflow and not has_clearing):
+        fc_status = "INSUFFICIENT_DATA"
+        fc_missing = "No financial transactions found in the batch to generate liquidity projections."
+    elif not has_future_inflow:
+        fc_status = "INSUFFICIENT_DATA"
+        fc_missing = "Insufficient forward horizon data for weeks 3–13: The uploaded reconciliation batch contains settled transaction records for the current clearing cycle (W1–W2), but contains zero future-dated invoice receivables, scheduled payouts, or explicit recurring revenue assumptions."
+    else:
+        fc_status = "COMPLETE"
+        fc_missing = None
+
     resp_payload: Dict[str, Any] = {
         "batch": ctx["batch"],
         "quality_metrics": qm,
         "windows": ctx["windows"],
-        "cash_forecast": ctx["cash_forecast"],
+        "cash_forecast": forecast_segments,
+        "forecast_status": fc_status,
+        "missing_fields_explanation": fc_missing,
+        "liquidity_forecast": {
+            "forecast_status": fc_status,
+            "missing_fields_explanation": fc_missing,
+            "total_observed_cash_minor": obs_cash,
+            "total_projected_inflow_minor": sum(s.get("probable_inflows_minor", 0) or s.get("probable_inflow_minor", 0) for s in forecast_segments),
+            "segments": forecast_segments
+        },
         "exception_breakdown": ctx["exception_breakdown"],
         "mode": "REAL_USER_DATA",
         "operational_metrics": {

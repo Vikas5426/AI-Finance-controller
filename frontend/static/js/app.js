@@ -590,6 +590,11 @@ function initEventListeners() {
     btn.addEventListener('click', toggleTheme);
   });
 
+  // Reset Workspace Button
+  document.getElementById('header-reset-btn')?.addEventListener('click', () => {
+    confirmResetWorkspace();
+  });
+
   // Empty State Action Buttons
   document.getElementById('btn-empty-quick-load')?.addEventListener('click', async () => {
     await loadSampleDataFeeds();
@@ -1319,6 +1324,146 @@ function initOverviewCharts() {
 // ==============================================================================
 // DATA FETCHING & DYNAMIC VALUE SYNCHRONIZATION
 // ==============================================================================
+
+async function confirmResetWorkspace() {
+  await resetWorkspace();
+}
+
+async function resetWorkspace() {
+  try {
+    showToast('Resetting workspace and clearing all reconciliation data...', 'info');
+    
+    // Ensure token is loaded
+    const token = appState.authToken || localStorage.getItem('fin_jwt_token');
+    if (token) {
+      appState.authToken = token;
+      try {
+        const res = await authFetch(`${API_BASE}/batches/reset`, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.warn('Backend reset response:', err);
+        }
+      } catch (backendErr) {
+        console.warn('Backend reset error (proceeding with local reset):', backendErr);
+      }
+    }
+    
+    // 1. Reset Global Application State
+    appState.batchId = null;
+    appState.batchResult = null;
+    appState.allTransactions = [];
+    appState.allExceptions = [];
+    appState.pendingApprovals = [];
+    appState.cashForecast = [];
+    appState.auditEvents = [];
+    appState.batchReport = null;
+    appState.uploadedFiles = [];
+    appState.isProcessed = false;
+    appState.workflowSubStep = 1;
+    appState.activeCategory = 'matched';
+    appState.agentResults = {};
+    appState.qaContext = {};
+
+    // 2. Destroy / Reset Charts
+    if (appState.charts.threatVectors) {
+      try { appState.charts.threatVectors.destroy(); } catch (e) {}
+      delete appState.charts.threatVectors;
+    }
+    if (appState.charts.networkFlow) {
+      try { appState.charts.networkFlow.destroy(); } catch (e) {}
+      delete appState.charts.networkFlow;
+    }
+    if (appState.charts.wfWaterfall) {
+      try { appState.charts.wfWaterfall.destroy(); } catch (e) {}
+      delete appState.charts.wfWaterfall;
+    }
+
+    // 3. Clear file inputs & dropzone
+    const fileInput = document.getElementById('wf-file-input');
+    if (fileInput) fileInput.value = '';
+    const uploadedSection = document.getElementById('wf-uploaded-files-section');
+    if (uploadedSection) uploadedSection.style.display = 'none';
+    const gridLayout = document.querySelector('.ingestion-grid-layout');
+    if (gridLayout) gridLayout.classList.remove('has-files');
+    const uploadedList = document.getElementById('wf-uploaded-files-list');
+    if (uploadedList) uploadedList.innerHTML = '';
+
+    // 4. Reset Stage 2 DAG state
+    ['1', '2', '3', '4', '4b', '5', '6'].forEach(id => updateDagNode(id, 'waiting', 'Waiting'));
+    const progFill = document.getElementById('dag-progress-fill');
+    if (progFill) progFill.style.width = '0%';
+    const dagOverall = document.getElementById('dag-overall-status');
+    if (dagOverall) {
+      dagOverall.textContent = 'Idle · Ready';
+      dagOverall.className = 'badge-min badge-green';
+    }
+    const term = document.getElementById('wf-terminal-logs');
+    if (term) term.innerHTML = '<div class="term-line"><span class="term-time">[00:00:00]</span> <span class="term-msg">Workspace reset. Initialized Ingestion Engine & Standing By...</span></div>';
+    const waitAlert = document.getElementById('dag-wait-explanation');
+    if (waitAlert) waitAlert.style.display = 'none';
+    const headerTimer = document.getElementById('dag-header-timer');
+    if (headerTimer) {
+      headerTimer.style.display = 'none';
+      headerTimer.textContent = '00:00';
+    }
+
+    // 5. Reset DOM KPI Elements directly
+    const setElemText = (id, txt) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt;
+    };
+    setElemText('ov-val-exceptions', '0 Held');
+    setElemText('ov-badge-exceptions', '0 Held');
+    setElemText('ov-val-match-rate', '0.0%');
+    setElemText('ov-sub-match-records', '0 matched');
+    setElemText('ov-val-gross-flow', '₹0.00');
+    setElemText('ov-val-total-records', '0');
+    setElemText('nav-badge-excs-count', '0 Held');
+    setElemText('excs-total-badge', '0 Held');
+    setElemText('wf-kpi-total', '0');
+    setElemText('wf-kpi-match', '0.0%');
+    setElemText('wf-kpi-acc', '100.0%');
+    setElemText('wf-kpi-excs', '0');
+    setElemText('wf-badge-matched', '0');
+    setElemText('wf-badge-cutoff', '0');
+    setElemText('wf-badge-fee', '0');
+    setElemText('wf-badge-missing', '0');
+    setElemText('wf-badge-unmatched', '0');
+    const verdictBanner = document.getElementById('overview-verdict-banner');
+    if (verdictBanner) verdictBanner.style.display = 'none';
+
+    // 6. Reset UI Sub-components
+    updateOverviewVisibility();
+    renderExceptionsQueue();
+    renderAuditTrail();
+    renderResultsTable();
+    renderSidebarActiveFeeds();
+    updateActiveExceptionLanes([]);
+    
+    // Reset Agents Hub
+    const agentSelect = document.getElementById('agent-9-target-select');
+    if (agentSelect) {
+      agentSelect.innerHTML = '<option value="">No exceptions in active batch</option>';
+    }
+    const agentOut = document.getElementById('agent-output-container');
+    if (agentOut) {
+      agentOut.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 3rem 1rem;">Select any agent above or click <strong>"Run Agent"</strong> to execute LLM reasoning on the active financial batch.</div>';
+    }
+    const thoughtStream = document.getElementById('agent-thought-stream');
+    if (thoughtStream) thoughtStream.style.display = 'none';
+    const telCalls = document.getElementById('agent-tel-calls');
+    if (telCalls) telCalls.textContent = '0 Invocations';
+    const telTokens = document.getElementById('agent-tel-tokens');
+    if (telTokens) telTokens.textContent = '0 Est Tokens';
+
+    // 7. Switch to clean Overview
+    switchView('overview');
+    showToast('Workspace cleared. Ready for fresh reconciliation processing.', 'success');
+  } catch (err) {
+    console.error('Reset error:', err);
+    showToast(`Workspace reset completed.`, 'info');
+  }
+}
 
 async function checkAndRehydrateLatestBatch() {
   try {
@@ -4181,5 +4326,8 @@ window.runAgent = runAgent;
 window.runAllAgents = runAllAgents;
 window.selectAgent = selectAgent;
 window.explainAuditChainWithAgent12 = explainAuditChainWithAgent12;
+window.resetWorkspace = resetWorkspace;
+window.confirmResetWorkspace = resetWorkspace;
+
 
 

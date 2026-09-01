@@ -583,3 +583,71 @@ class DatabaseService:
                     "audit_blocks_count": audit_count,
                 },
             }
+
+    @staticmethod
+    def reset_workspace_data(org_id: Optional[str] = None) -> Dict[str, int]:
+        """
+        Clears all batch records, transactions, matches, exceptions, investigations,
+        proposals, approvals, audit events, batch reports, and uploads.
+        Preserves organizations, users, and source profiles so accounts and configs remain functional.
+        """
+        deleted_counts = {}
+        with get_db_context() as db:
+            if org_id:
+                batch_ids = [b[0] for b in db.query(schema.Batch.id).filter_by(org_id=org_id).all()]
+                prop_ids = [p[0] for p in db.query(schema.ResolutionProposal.id).filter_by(org_id=org_id).all()]
+                match_ids = [m[0] for m in db.query(schema.Match.id).filter_by(org_id=org_id).all()]
+
+                if prop_ids:
+                    deleted_counts["approvals"] = db.query(schema.Approval).filter(schema.Approval.proposal_id.in_(prop_ids)).delete(synchronize_session=False)
+                else:
+                    deleted_counts["approvals"] = 0
+
+                deleted_counts["resolution_proposals"] = db.query(schema.ResolutionProposal).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["ai_investigations"] = db.query(schema.AIInvestigation).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["exceptions"] = db.query(schema.ExceptionRecord).filter_by(org_id=org_id).delete(synchronize_session=False)
+
+                if match_ids:
+                    deleted_counts["match_legs"] = db.query(schema.MatchLeg).filter(schema.MatchLeg.match_id.in_(match_ids)).delete(synchronize_session=False)
+                else:
+                    deleted_counts["match_legs"] = 0
+
+                deleted_counts["match_candidates"] = db.query(schema.MatchCandidate).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["matches"] = db.query(schema.Match).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["transactions"] = db.query(schema.Transaction).filter_by(org_id=org_id).delete(synchronize_session=False)
+
+                if batch_ids:
+                    deleted_counts["batch_steps"] = db.query(schema.BatchStep).filter(schema.BatchStep.batch_id.in_(batch_ids)).delete(synchronize_session=False)
+                else:
+                    deleted_counts["batch_steps"] = 0
+
+                deleted_counts["batch_reports"] = db.query(schema.BatchReport).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["audit_events"] = db.query(schema.AuditEvent).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["uploads"] = db.query(schema.Upload).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["batches"] = db.query(schema.Batch).filter_by(org_id=org_id).delete(synchronize_session=False)
+                deleted_counts["distributed_locks"] = db.query(schema.DistributedLock).delete(synchronize_session=False)
+            else:
+                tables_to_clear = [
+                    schema.Approval,
+                    schema.ResolutionProposal,
+                    schema.AIInvestigation,
+                    schema.ExceptionRecord,
+                    schema.MatchCandidate,
+                    schema.MatchLeg,
+                    schema.Match,
+                    schema.Transaction,
+                    schema.BatchStep,
+                    schema.BatchReport,
+                    schema.AuditEvent,
+                    schema.Upload,
+                    schema.Batch,
+                    schema.DistributedLock,
+                ]
+                for model in tables_to_clear:
+                    count = db.query(model).delete(synchronize_session=False)
+                    deleted_counts[model.__tablename__] = count
+
+            db.commit()
+        return deleted_counts
+
+

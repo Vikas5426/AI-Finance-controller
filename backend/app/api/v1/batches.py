@@ -540,3 +540,22 @@ async def run_windowed_batch(
         await invalidate_dashboard_cache(org_id)
 
         return result
+
+
+@router.post("/reset")
+async def reset_workspace(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """
+    Clears all reconciliation batch runs, transactions, exceptions, proposals,
+    audit events, and uploaded feeds for the user's organization.
+    Resets in-memory active batch state to start completely clean and fresh.
+    """
+    org_id = current_user.get("org_id")
+    deleted = DatabaseService.reset_workspace_data(org_id=org_id)
+    STATE.clear()
+    await invalidate_dashboard_cache(org_id)
+    return {
+        "status": "SUCCESS",
+        "message": "Workspace successfully reset to a clean and fresh processing state.",
+        "deleted": deleted
+    }
+

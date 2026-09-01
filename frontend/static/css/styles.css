@@ -3052,6 +3052,28 @@ button:disabled, .btn:disabled {
   color: var(--text-primary);
 }
 
+.header-reset-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-reset-pill:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-coral);
+  color: var(--accent-coral);
+}
+
+
 
 
 

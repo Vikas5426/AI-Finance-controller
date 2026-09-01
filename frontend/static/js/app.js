@@ -693,8 +693,9 @@ function initEventListeners() {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.results-tab-min').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      const cat = tab.getAttribute('data-cat');
-      appState.activeTab = cat;
+      const cat = tab.getAttribute('data-cat') || 'matched';
+      appState.activeCategory = cat;
+      renderWhyPolicyCard(cat);
       renderResultsTable();
     });
   });
@@ -1381,7 +1382,7 @@ async function fetchProcessedData() {
     const batchParamSolo = `?batch_id=${encodeURIComponent(appState.batchId)}`;
 
     const [txRes, repRes, excRes, audRes, appRes, actRes] = await Promise.all([
-      authFetch(`${API_BASE}/transactions/?limit=100${batchParam}`),
+      authFetch(`${API_BASE}/transactions/?limit=500${batchParam}`),
       authFetch(`${API_BASE}/reports/summary${batchParamSolo}`),
       authFetch(`${API_BASE}/exceptions/${batchParamSolo}`),
       authFetch(`${API_BASE}/audit/events${batchParamSolo}`),
@@ -2292,7 +2293,19 @@ function renderResultsTable() {
   const tbody = document.getElementById('wf-results-tbody');
   if (!tbody) return;
 
-  const txns = filterTxns(appState.activeCategory);
+  const currentCat = appState.activeCategory || 'matched';
+  renderWhyPolicyCard(currentCat);
+
+  // Sync active class across category tabs
+  document.querySelectorAll('.results-tab-min').forEach(tab => {
+    if (tab.getAttribute('data-cat') === currentCat) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+
+  const txns = filterTxns(currentCat);
 
   const badgeMatched = document.getElementById('wf-badge-matched');
   if (badgeMatched) badgeMatched.textContent = filterTxns('matched').length;
@@ -2306,7 +2319,7 @@ function renderResultsTable() {
   if (badgeUnmatched) badgeUnmatched.textContent = filterTxns('unmatched').length;
 
   if (!appState.isProcessed || !txns.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">No records available. Upload CSV feeds in Stage 1 to initiate 3-way matching.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">No records found for category: ${escapeHtml(currentCat)}.</td></tr>`;
     return;
   }
 

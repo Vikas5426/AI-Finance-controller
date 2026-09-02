@@ -523,6 +523,11 @@ class DatabaseService:
 
             breakdown = {s: _sev(s) for s in ("CRITICAL", "HIGH", "MEDIUM", "LOW")}
             total_excs = sum(breakdown.values())
+            unresolved_excs = db.query(func.count(schema.ExceptionRecord.id)).filter(
+                schema.ExceptionRecord.org_id == org_id,
+                schema.ExceptionRecord.batch_id == b_id,
+                schema.ExceptionRecord.state.notin_(["RESOLVED", "APPROVED"])
+            ).scalar() or 0
             total_txns = db.query(func.count(schema.Transaction.id)).filter_by(
                 org_id=org_id, batch_id=b_id
             ).scalar() or 0
@@ -559,10 +564,10 @@ class DatabaseService:
                 "exact_matches": summary.get("exact_matches", 0),
                 "contextual_matches": summary.get("contextual_matches", 0),
                 "needs_review_count": summary.get("needs_review_count", 0),
-                "unresolved_exceptions": summary.get("unresolved_exceptions", total_excs),
+                "unresolved_exceptions": unresolved_excs,
                 "critical_high_unresolved": summary.get("critical_high_unresolved", breakdown["CRITICAL"] + breakdown["HIGH"]),
                 "total_unresolved_records": summary.get("total_unresolved_records", total_excs),
-                "total_exceptions": summary.get("total_exceptions", total_excs),
+                "total_exceptions": total_excs,
                 "safeguards_triggered_count": summary.get("safeguards_triggered_count", 0),
                 "safeguards_breakdown": summary.get("safeguards_breakdown", []),
                 "tier_breakdown": summary.get("tier_breakdown", {}),

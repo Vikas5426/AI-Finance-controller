@@ -10,10 +10,13 @@ Coordinates autonomous three-way financial reconciliation across 7 stages:
 7. Finalize Batch Node (13-Week Cash Forecast & SHA-256 Audit Sealing)
 """
 
+import logging
 import time
 import uuid
 from datetime import datetime, timezone, date
 from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
+
+logger = logging.getLogger(__name__)
 
 from langgraph.graph import StateGraph, END
 
@@ -150,13 +153,18 @@ def triage_exceptions_node(state: ReconciliationState) -> Dict[str, Any]:
         cands = index.find_candidates(txn, limit=3)
         
         # Check declarative SOP rules
+        cand_amt = cands[0]["amount_minor"] if cands else 0
+        abs_diff = abs(txn.amount_minor - cand_amt)
+        gross_val = txn.gross_minor or txn.amount_minor
         context_payload = {
             "source_kind": txn.source_kind.value if hasattr(txn.source_kind, "value") else str(txn.source_kind),
             "amount_minor": txn.amount_minor,
-            "abs_diff_minor": abs(txn.amount_minor - (cands[0]["amount_minor"] if cands else 0)),
+            "abs_diff_minor": abs_diff,
+            "diff_pct_of_gross": (abs_diff / gross_val) if gross_val else None,
             "currency": txn.currency,
             "days_lag": 2 if ctx.is_period_cutoff else 0,
-            "is_period_boundary": ctx.is_period_cutoff
+            "is_period_boundary": ctx.is_period_cutoff,
+            "debit_credit_diff_minor": getattr(txn, "unbalanced_diff_minor", 0) or 0
         }
         sop_action = tool_evaluate_sop_rules(context_payload)
 
@@ -238,7 +246,7 @@ def investigate_exception_agent_node(state: ReconciliationState) -> Dict[str, An
             sev = "LOW"
 
         # Only allow external LLM reasoning for top material items within budget; use fast deterministic rules for the rest
-        use_deterministic_rule = bool(item.get("sop_action")) or (ai_inv_count >= ai_inv_budget)
+        use_deterministic_rule = bool((item.get("sop_action") or {}).get("auto_resolve")) or (ai_inv_count >= ai_inv_budget)
         if not use_deterministic_rule:
             ai_inv_count += 1
 
@@ -337,20 +345,27 @@ def decision_routing_node(state: ReconciliationState) -> Dict[str, Any]:
             conf = 1.00
             expl = "Deterministically matched across control accounts with exact reference and amount tie-out."
             req_mc = False
-        elif txn.match_status == "MATCHED_CONTEXTUAL":
+        elif txn.match_status in ("MATCHED_CONTEXTUAL", "MATCHED_TIMING_LAG"):
             dec_tier = DecisionTier.RESOLVED_WITH_EXPLANATION
             conf = 0.95
-            expl = "Contextually reconciled net of gateway processing fees (MDR + 18% GST) with verified arithmetic proof."
+            expl = ("Settlement received T+2 net of gateway processing fees (MDR + 18% GST); "
+                    "arithmetic verified to the paise.")
             req_mc = False
-        elif txn.match_status == "NEEDS_REVIEW" or ctx.is_period_cutoff:
+        elif txn.match_status == "NEEDS_REVIEW" or (ctx.is_period_cutoff and txn.match_status not in ("MATCHED_EXACT", "MATCHED_CONTEXTUAL", "MATCHED_TIMING_LAG")):
             dec_tier = DecisionTier.NEEDS_REVIEW
             conf = ai_prop.confidence if ai_prop else 0.88
             expl = ai_prop.likely_cause if ai_prop else "T+2 period boundary cutoff timing difference. Propose accrual to Account 1290 (In-Transit Clearing)."
             req_mc = True
-        else:
+        elif txn.match_status == "UNRESOLVED_EXCEPTION" or not txn.match_status:
             dec_tier = DecisionTier.UNRESOLVED_EXCEPTION
             conf = ai_prop.confidence if ai_prop else 0.60
             expl = ai_prop.likely_cause if ai_prop else "Unmatched residual entry. No counterpart record found within configured tolerance gates."
+            req_mc = True
+        else:
+            logger.warning("Unrecognized match_status '%s' for txn %s. Defaulting to UNRESOLVED_EXCEPTION.", txn.match_status, txn.id)
+            dec_tier = DecisionTier.UNRESOLVED_EXCEPTION
+            conf = ai_prop.confidence if ai_prop else 0.60
+            expl = ai_prop.likely_cause if ai_prop else f"Residual entry with status {txn.match_status}."
             req_mc = True
 
         decision = ReconciliationDecision(
@@ -458,6 +473,13 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
         w_ctx = len([t for t in chunk if t.match_status == "MATCHED_CONTEXTUAL"]) // 2
         w_exc = len([t for t in chunk if t.match_status in ("NEEDS_REVIEW", "UNRESOLVED_EXCEPTION")])
 
+        w_start = datetime.fromtimestamp(state.get("wall_clock_start", time.time()), timezone.utc)
+        w_end = datetime.now(timezone.utc)
+        w_ai_count = len([
+            p for p in state.get("agent_proposals", {}).values()
+            if (getattr(p, "telemetry", {}).get("provider") if hasattr(p, "telemetry") and isinstance(p.telemetry, dict) else (p.get("telemetry", {}).get("provider") if isinstance(p, dict) else None)) in ("GROQ", "GEMINI", "OPENAI")
+        ])
+
         w_summary = BatchWindowSummary(
             window_index=w_idx + 1,
             window_id=w_id,
@@ -465,10 +487,11 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
             start_index=start_i,
             end_index=end_i,
             status="COMPLETED",
-            started_at=datetime.now(timezone.utc),
-            completed_at=datetime.now(timezone.utc),
+            started_at=w_start,
+            completed_at=w_end,
             exact_matches=w_exact,
             contextual_matches=w_ctx,
+            ai_investigated=w_ai_count,
             exceptions_count=w_exc
         )
         windows.append(w_summary)
@@ -514,7 +537,28 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
 
     unmatched_count = len(all_txns) - total_matched_records
     needs_review_count = len([p for p in state["proposals"] if p["tier"] == "NEEDS_REVIEW"])
-    critical_high_unresolved = len([p for p in state["proposals"] if p["tier"] == "UNRESOLVED_EXCEPTION"])
+
+    raw_exceptions = state.get("exceptions", [])
+
+    def _is_resolved(e):
+        st = getattr(e, "state", None) or (e.get("state") if isinstance(e, dict) else None)
+        st_val = getattr(st, "value", st)
+        return str(st_val).upper() in ("RESOLVED", "APPROVED")
+
+    def _is_crit_high(e):
+        sev = getattr(e, "severity", None) or (e.get("severity") if isinstance(e, dict) else None)
+        sev_val = getattr(sev, "value", sev)
+        return str(sev_val).upper() in ("CRITICAL", "HIGH")
+
+    open_exceptions = [e for e in raw_exceptions if not _is_resolved(e)]
+    unresolved_exceptions_count = len(open_exceptions)
+    critical_high_unresolved_count = len([e for e in open_exceptions if _is_crit_high(e)])
+    total_exceptions_count = len(raw_exceptions)
+
+    ai_inv_performed = len([
+        p for p in state.get("agent_proposals", {}).values()
+        if (getattr(p, "telemetry", {}).get("provider") if hasattr(p, "telemetry") and isinstance(p.telemetry, dict) else (p.get("telemetry", {}).get("provider") if isinstance(p, dict) else None)) in ("GROQ", "GEMINI", "OPENAI")
+    ])
 
     confidences = [m.confidence for m in state["matches"]]
     avg_confidence = round(sum(confidences) / len(confidences), 4) if confidences else 0.0
@@ -531,9 +575,10 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
         "matched_records": total_matched_records,
         "needs_review_count": needs_review_count,
         "total_unresolved_records": unmatched_count,
-        "critical_high_unresolved": critical_high_unresolved,
-        "unresolved_exceptions": critical_high_unresolved,
-        "total_exceptions": unmatched_count,
+        "critical_high_unresolved": critical_high_unresolved_count,
+        "unresolved_exceptions": unresolved_exceptions_count,
+        "total_exceptions": total_exceptions_count,
+        "ai_investigations_performed": ai_inv_performed,
         "match_rate": round(match_rate, 4),
         "reconciliation_graph": engine_res.get("reconciliation_graph", {}),
         "three_way_matches_count": engine_res.get("three_way_matches_count", 0),
@@ -548,7 +593,7 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
             "tier_1_exact": exact_matches_count,
             "tier_2_contextual": contextual_matches_count,
             "tier_3_needs_review": needs_review_count,
-            "tier_4_unresolved": critical_high_unresolved
+            "tier_4_unresolved": critical_high_unresolved_count
         }),
         "avg_confidence": avg_confidence,
         "average_match_confidence": avg_confidence,

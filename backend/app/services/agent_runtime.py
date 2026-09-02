@@ -31,6 +31,13 @@ def _record_agent_telemetry(*args, **kwargs):
     except Exception:
         pass
 
+AMBIGUOUS_CREDIT_TYPES = (
+    "UNALLOCATED_BANK_CREDIT",
+    "ANONYMOUS_BANK_LINE",
+    "UNKNOWN_BANK_CREDIT",
+    "UNSETTLED_GATEWAY_RECORD"
+)
+
 
 class DeterministicVerifier:
     """Hard-gate verifier that enforces AI immutability, fact-checking, and zero-hallucination policies."""
@@ -225,11 +232,11 @@ class AIAgentRuntime:
             return False, "DETERMINISTIC_RULES_SUFFICIENT"
 
         # 2. Low impact routine items -> Manual review queue (Avoid AI call)
-        if severity == "LOW" or (impact_minor <= 50000 and severity not in ("CRITICAL", "HIGH") and exception_type not in ("UNALLOCATED_BANK_CREDIT", "ANONYMOUS_BANK_LINE")):
+        if severity == "LOW" or (impact_minor <= 50000 and severity not in ("CRITICAL", "HIGH") and exception_type not in AMBIGUOUS_CREDIT_TYPES):
             return False, "LOW_IMPACT_MANUAL_REVIEW_QUEUE"
 
         # 3. High/Critical impact or ambiguous direct deposits / unexplained missing funds -> AI
-        if severity in ("CRITICAL", "HIGH") or impact_minor >= settings.MATERIALITY_THRESHOLD_MINOR or exception_type in ("UNALLOCATED_BANK_CREDIT", "ANONYMOUS_BANK_LINE", "UNSETTLED_GATEWAY_RECORD"):
+        if severity in ("CRITICAL", "HIGH") or impact_minor >= settings.MATERIALITY_THRESHOLD_MINOR or exception_type in AMBIGUOUS_CREDIT_TYPES:
             return True, "HIGH_FINANCIAL_IMPACT_AMBIGUOUS_INVESTIGATION"
 
         # 4. Fallback for other medium ambiguity
@@ -577,6 +584,7 @@ class AIAgentRuntime:
             
             allowed, budget_reason = AICircuitBreaker.can_make_call(batch_id_val, "Agent 9: Exception Investigation Agent")
             if not allowed:
+                start_fb = time.time()
                 inv = self._generate_rule_based_investigation(
                     exception_id=exception_id,
                     exception_type=exception_type,
@@ -586,6 +594,24 @@ class AIAgentRuntime:
                     targeted_context=self.build_targeted_context(
                         exception_id, exception_type, severity, impact_minor, primary_txn, counterpart_txn
                     )
+                )
+                lat_fb = round((time.time() - start_fb) * 1000, 2)
+                inv.telemetry = {
+                    "provider": "DETERMINISTIC",
+                    "model": "rule_engine_v1",
+                    "latency_ms": lat_fb,
+                    "fallback_reason": budget_reason,
+                    "verifier_status": "PASSED",
+                    "tokens_est": 0
+                }
+                _record_agent_telemetry(
+                    agent_name="Agent 9: Exception Investigation Agent",
+                    provider="DETERMINISTIC",
+                    model="rule_engine_v1",
+                    latency_ms=lat_fb,
+                    tokens_est=0,
+                    status="SUCCESS",
+                    metadata={"exception_id": exception_id, "fallback_reason": budget_reason, "classification": inv.classification}
                 )
                 return inv
         except Exception:

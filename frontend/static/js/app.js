@@ -437,14 +437,14 @@ function updateUserBadge() {
     return;
   }
 
-  // Unified single role representation with full permissions
+  // Distinct role representation honoring Maker-Checker governance
   const ROLE_LABELS = {
-    admin: ['Administrator (Full Access)', 'badge-amber'],
-    approver: ['Administrator (Full Access)', 'badge-amber'],
-    analyst: ['Administrator (Full Access)', 'badge-amber'],
-    viewer: ['Administrator (Full Access)', 'badge-amber']
+    admin: ['Administrator · Full Access', 'badge-amber'],
+    approver: ['Approver · Checker', 'badge-blue'],
+    analyst: ['Analyst · Maker', 'badge-slate'],
+    viewer: ['Viewer · Read Only', 'badge-slate']
   };
-  const [label, cls] = ROLE_LABELS[user.role] || ['Administrator (Full Access)', 'badge-amber'];
+  const [label, cls] = ROLE_LABELS[user.role] || ['Administrator · Full Access', 'badge-amber'];
 
   if (badgeTag) {
     badgeTag.textContent = label;
@@ -1623,7 +1623,7 @@ async function fetchProcessedData() {
       const op = rep.operational_metrics || activeSummary || {};
       const total = op.total_records !== undefined ? op.total_records : (txTotal || appState.allTransactions.length || 0);
       const matched = op.matched_records !== undefined ? op.matched_records : (appState.allTransactions.filter(t => isTxnMatched(t)).length);
-      const excs = op.exceptions_count !== undefined ? op.exceptions_count : appState.allExceptions.length;
+      const excs = (appState.allExceptions && appState.allExceptions.length > 0) ? appState.allExceptions.length : (op.exceptions_count !== undefined ? op.exceptions_count : 0);
       const matchRate = total > 0 ? (matched / total) * 100 : 0;
 
 
@@ -1849,21 +1849,14 @@ function updateOverviewVerdict(rep, exceptions, total, matched, excs, matchRate)
 function updateActiveExceptionLanes(exceptions, totalExcs) {
   const excsList = Array.isArray(exceptions) && exceptions.length > 0 ? exceptions : (appState.allExceptions || []);
   if (!excsList || !excsList.length) {
-    document.getElementById('lane-count-cutoff').textContent = '0';
-    document.getElementById('lane-pct-cutoff').textContent = '0%';
-    document.getElementById('lane-bar-cutoff').style.width = '0%';
-
-    document.getElementById('lane-count-fee').textContent = '0';
-    document.getElementById('lane-pct-fee').textContent = '0%';
-    document.getElementById('lane-bar-fee').style.width = '0%';
-
-    document.getElementById('lane-count-missing').textContent = '0';
-    document.getElementById('lane-pct-missing').textContent = '0%';
-    document.getElementById('lane-bar-missing').style.width = '0%';
-
-    document.getElementById('lane-count-dup').textContent = '0';
-    document.getElementById('lane-pct-dup').textContent = '0%';
-    document.getElementById('lane-bar-dup').style.width = '0%';
+    ['cutoff', 'fee', 'missing', 'dup', 'unidentified', 'other'].forEach(idPrefix => {
+      const elCount = document.getElementById(`lane-count-${idPrefix}`);
+      const elPct = document.getElementById(`lane-pct-${idPrefix}`);
+      const elBar = document.getElementById(`lane-bar-${idPrefix}`);
+      if (elCount) elCount.textContent = '0';
+      if (elPct) elPct.textContent = '0%';
+      if (elBar) elBar.style.width = '0%';
+    });
     return;
   }
 
@@ -1888,7 +1881,15 @@ function updateActiveExceptionLanes(exceptions, totalExcs) {
     return t.includes('DUP') || t.includes('DUPLICATE');
   }).length;
 
-  const total = totalExcs || excsList.length || 1;
+  const unidentifiedCount = excsList.filter(e => {
+    const t = (e.exception_type || '').toUpperCase();
+    return t.includes('UNKNOWN_BANK') || t.includes('UNALLOCATED') || t.includes('ANONYMOUS');
+  }).length;
+
+  const accountedCount = cutoffCount + feeCount + missingCount + dupCount + unidentifiedCount;
+  const otherCount = Math.max(0, excsList.length - accountedCount);
+
+  const total = (appState.allExceptions && appState.allExceptions.length > 0) ? appState.allExceptions.length : (totalExcs || excsList.length || 1);
 
   const setLane = (idPrefix, count) => {
     const pct = Math.min(100, Math.round((count / total) * 100));
@@ -1904,6 +1905,8 @@ function updateActiveExceptionLanes(exceptions, totalExcs) {
   setLane('fee', feeCount);
   setLane('missing', missingCount);
   setLane('dup', dupCount);
+  setLane('unidentified', unidentifiedCount);
+  setLane('other', otherCount);
 }
 
 // ==============================================================================
@@ -2073,7 +2076,7 @@ function renderUploadedFilesList() {
               <span>${escapeHtml(f.name)}</span>
               <span class="badge-detected" title="Pre-classified automatically based on filename heuristics">detected</span>
             </div>
-            <div style="font-size: 0.7rem; color: var(--text-muted);">${f.size} · ${f.rowCount ? `${f.rowCount} rows · ` : ''}Valid Canonical Feed</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">${f.size} · ${f.rowCount ? `${f.rowCount} rows · ` : ''}${f.note ? `<span style="color: var(--accent-cyan); font-weight: 500;">${escapeHtml(f.note)}</span>` : 'Valid Canonical Feed'}</div>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -2323,6 +2326,10 @@ async function startWorkflowProcessing() {
           if (upRes.ok) {
             const upData = await upRes.json();
             if (upData.upload_id) uploadIds.push(upData.upload_id);
+            if (upData.note) {
+              f.note = upData.note;
+              logLine(`[FEED NOTE] ${f.name}: ${upData.note}`);
+            }
             if (upData.total_rows !== undefined) f.rowCount = upData.total_rows;
             logLine(`Ingested feed: ${f.name} (SHA-256: ${(upData.file_hash || '').substring(0, 16)}...)`);
           } else {
@@ -2424,7 +2431,7 @@ async function startWorkflowProcessing() {
     logLine(`Node 03: SOP rules engine triaged ${excCount} exception(s).`);
 
     // Node 4: Agent 9 Investigate
-    updateDagNode('4', 'completed', invCount > 0 ? `${invCount} AI investigations` : 'Rules resolved all', 'Asking the AI to explain items rules couldn\'t resolve');
+    updateDagNode('4', 'completed', invCount > 0 ? `${invCount} AI investigations` : (excCount > 0 ? 'AI review skipped' : 'Rules resolved all'), 'Asking the AI to explain items rules couldn\'t resolve');
     logLine(`Node 04: AI Investigation evaluated ${invCount} discrepancy cases.`);
 
     // Node 4b: Verify Proposal
@@ -2612,6 +2619,10 @@ function renderWorkflowLiquidityChart() {
   const total13Wk = dataConfirmed.concat(dataProbable, dataAtRisk).reduce((a, b) => a + b, 0);
   const totalBadge = document.getElementById('wf-waterfall-total-badge');
   const fcStatus = appState.batchReport?.forecast_status || 'PARTIAL';
+  const fcInsuffBadge = document.getElementById('wf-forecast-insufficient-badge');
+  if (fcInsuffBadge) {
+    fcInsuffBadge.style.display = fcStatus === 'INSUFFICIENT_DATA' ? 'inline-block' : 'none';
+  }
   if (totalBadge) {
     const formattedTotal = isLakhs ? `₹${total13Wk.toFixed(2)}L` : `₹${total13Wk.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (fcStatus === 'INSUFFICIENT_DATA') {
@@ -2887,7 +2898,18 @@ window.approveProposal = async function (excId, propId = null, decisionNotes = n
   }
 
   const targetPropId = match.id;
-  const notes = decisionNotes || `Authorized and verified by ${appState.currentUser?.full_name || 'Dual Approver'} via Controller Maker-Checker UI.`;
+  let notes = (decisionNotes || '').trim();
+  if (!notes || notes.length < 15) {
+    const prompted = prompt(
+      `Enter substantive verification notes for ${excId} (minimum 15 characters required by SOX audit controls):`,
+      notes
+    );
+    if (!prompted || prompted.trim().length < 15) {
+      showToast('Approval aborted: Verification notes must be at least 15 characters.', 'warn');
+      return;
+    }
+    notes = prompted.trim();
+  }
 
   try {
     showToast(`Submitting dual-control authorization for ${excId}...`, 'info');
@@ -4244,8 +4266,8 @@ window.openExceptionInvestigationDrawer = async function(excId) {
         approveBtn.onclick = () => {
           const notesEl = document.getElementById('drawer-decision-notes');
           const notesVal = notesEl ? notesEl.value.trim() : '';
-          if (!notesVal) {
-            showToast('Please type a justification note before signing off.', 'warn');
+          if (!notesVal || notesVal.length < 15) {
+            showToast('Please type substantive verification notes before signing off (min 15 characters).', 'warn');
             if (notesEl) notesEl.focus();
             return;
           }

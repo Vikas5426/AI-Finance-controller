@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.exc import IntegrityError
 from app.api.v1.batches import STATE
 from app.core.security import get_current_user, require_roles
@@ -29,10 +29,15 @@ require_checker = require_roles(["approver", "admin", "analyst"], allow_admin=Tr
 class ApprovalActionRequest(BaseModel):
     proposal_id: str
     action: str = "APPROVED"  # APPROVED, REJECTED, OVERRIDDEN
-    decision_notes: str = "Reviewed and confirmed against supporting invoice & bank statement."
-    # Deliberately no actor_id / actor_role fields. The actor is taken from the
-    # verified token; accepting it from the request body would let a caller sign
-    # someone else's name into the immutable audit trail.
+    decision_notes: str  # Mandatory substantive human justification
+
+    @field_validator("decision_notes")
+    @classmethod
+    def _substantive(cls, v: str) -> str:
+        v = (v or "").strip()
+        if len(v) < 15:
+            raise ValueError("decision_notes must record what was actually verified (min 15 chars).")
+        return v
 
 
 @router.get("")
@@ -221,6 +226,7 @@ async def decide_proposal(
         # Batch scope for the audit chain: proposals reach a batch only through
         # their parent exception.
         b_id = (getattr(db_exc, "batch_id", None) if db_exc else None) or STATE.get("batch_id")
+        chain_batch_id = b_id or "ORG_LIFECYCLE"
 
         audit_q = db.query(schema.AuditEvent).filter(schema.AuditEvent.org_id == org_id)
         if b_id:
@@ -228,7 +234,9 @@ async def decide_proposal(
                 schema.AuditEvent.event_seq.desc()
             ).first()
         else:
-            last_audit = audit_q.order_by(schema.AuditEvent.event_seq.desc()).first()
+            last_audit = audit_q.filter(
+                (schema.AuditEvent.batch_id == None) | (schema.AuditEvent.batch_id == "ORG_LIFECYCLE")
+            ).order_by(schema.AuditEvent.event_seq.desc()).first()
 
         prev_hash = last_audit.event_hash if last_audit else AuditHashChain.GENESIS_HASH
         seq = (last_audit.event_seq + 1) if last_audit else 1
@@ -238,7 +246,7 @@ async def decide_proposal(
             "proposal_id": db_prop.id,
             "action": action,
             "actor_id": actor_id,
-            "batch_id": b_id,
+            "batch_id": chain_batch_id,
             "notes": req.decision_notes
         }
         new_hash = AuditHashChain.compute_event_hash(
@@ -254,7 +262,7 @@ async def decide_proposal(
         db_audit = schema.AuditEvent(
             id=str(uuid.uuid4()),
             org_id=org_id,
-            batch_id=b_id,
+            batch_id=chain_batch_id,
             event_seq=seq,
             event_type="PROPOSAL_DECISION",
             entity_type="PROPOSAL",

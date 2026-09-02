@@ -9,6 +9,7 @@ from app.db.database import get_db_context
 from app.db import schema
 from app.models.schemas import SourceKind
 from app.services.ingestion import IngestionService
+from app.services.normalizer import NormalizerService
 
 router = APIRouter(prefix="/sources", tags=["Sources & Uploads"])
 
@@ -129,7 +130,13 @@ async def upload_file(
         db.add(upload_record)
         db.commit()
 
-    return {
+    ledger_note = None
+    if (source_kind == SourceKind.LEDGER or getattr(source_kind, "value", None) == "LEDGER") and total_rows > 0:
+        je_ids = {str(NormalizerService._first_present(r, "je_id", "journal_id", "entry_id", "id") or "") for r in raw_rows}
+        je_count = len([j for j in je_ids if j]) or len(raw_rows)
+        ledger_note = f"{total_rows} journal lines collapsed into {je_count} economic entries"
+
+    resp: Dict[str, Any] = {
         "upload_id": upload_id,
         "file_name": filename,
         "file_hash": file_hash,
@@ -137,9 +144,11 @@ async def upload_file(
         "total_rows": total_rows,
         "accepted_rows": total_rows,
         "source_kind": source_kind,
-        "storage_path": save_path,
         "status": "ACCEPTED"
     }
+    if ledger_note:
+        resp["note"] = ledger_note
+    return resp
 
 @router.post("/upload-batch")
 async def upload_batch(
@@ -216,15 +225,23 @@ async def upload_batch(
             db.add(upload_record)
             db.commit()
 
-        results.append({
+        ledger_note = None
+        if (s_kind == SourceKind.LEDGER or getattr(s_kind, "value", None) == "LEDGER") and total_rows > 0:
+            je_ids = {str(NormalizerService._first_present(r, "je_id", "journal_id", "entry_id", "id") or "") for r in raw_rows}
+            je_count = len([j for j in je_ids if j]) or len(raw_rows)
+            ledger_note = f"{total_rows} journal lines collapsed into {je_count} economic entries"
+
+        res_item: Dict[str, Any] = {
             "upload_id": upload_id,
             "file_name": filename,
             "file_hash": file_hash,
             "file_size": len(content),
             "total_rows": total_rows,
-            "source_kind": s_kind.value,
-            "storage_path": save_path
-        })
+            "source_kind": s_kind.value
+        }
+        if ledger_note:
+            res_item["note"] = ledger_note
+        results.append(res_item)
 
     return {
         "status": "SUCCESS",

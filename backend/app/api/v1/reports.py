@@ -118,7 +118,7 @@ async def get_executive_summary(
             "ai_investigations_performed": len([
                 e for e in exceptions
                 if (e.get("investigation") if isinstance(e, dict) else getattr(e, "investigation", None))
-            ]),
+            ]) or qm.get("ai_investigated", 0) or ctx["stats"].get("ai_investigations_performed", 0),
         },
     }
 

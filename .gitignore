@@ -67,6 +67,7 @@ _*.json
 _*.py
 
 # Local Tooling, Backups & IDE Metadata
+.audit-out/
 .backup_pre_p0_fixes/
 .claude/
 .gemini/

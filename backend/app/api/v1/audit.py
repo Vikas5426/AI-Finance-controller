@@ -116,15 +116,15 @@ def verify_audit_chain(
     # When no batch_id is specified, verify each batch's hash chain independently
     # since each batch starts with a genesis block (prev_hash = GENESIS_HASH).
     batches_events: Dict[str, List[Dict[str, Any]]] = {}
-    for ev in raw_events:
-        b_id = ev.get("batch_id") or "GENESIS_BATCH"
-        batches_events.setdefault(b_id, []).append(ev)
+    lifecycle_events: List[Dict[str, Any]] = []
 
-    # Report every failing chain instead of raising on the first one. A single
-    # legacy batch whose hash was written by an older formula used to 409 the whole
-    # endpoint, so the SOX compliance agent reported "FAIL" for organisations whose
-    # current batches were all intact and gave no way to tell which batch was at
-    # fault. Callers asking about one specific batch still get a hard 409 above.
+    for ev in raw_events:
+        b_id = ev.get("batch_id")
+        if not b_id or b_id in ("GENESIS_BATCH", "ORG_LIFECYCLE"):
+            lifecycle_events.append(ev)
+        else:
+            batches_events.setdefault(b_id, []).append(ev)
+
     compromised: List[Dict[str, Any]] = []
     for b_id, b_events in batches_events.items():
         b_events.sort(key=lambda x: x.get("event_seq", 1))
@@ -136,20 +136,43 @@ def verify_audit_chain(
                 "events_in_chain": len(b_events)
             })
 
+    unverifiable_legacy: List[Dict[str, Any]] = []
+    if lifecycle_events:
+        lifecycle_events.sort(key=lambda x: x.get("event_seq", 1))
+        is_valid, broken_seq = AuditHashChain.verify_chain_integrity(lifecycle_events)
+        if not is_valid:
+            first_ev = lifecycle_events[0]
+            if first_ev.get("prev_hash") != AuditHashChain.GENESIS_HASH or first_ev.get("event_seq", 1) > 1:
+                unverifiable_legacy.append({
+                    "chain_id": "ORG_LIFECYCLE",
+                    "reason": "LEGACY_NON_GENESIS_CHAIN",
+                    "starting_sequence": first_ev.get("event_seq"),
+                    "events_in_chain": len(lifecycle_events)
+                })
+            else:
+                compromised.append({
+                    "batch_id": "ORG_LIFECYCLE",
+                    "broken_at_sequence": broken_seq,
+                    "events_in_chain": len(lifecycle_events)
+                })
+
     head_hash = raw_events[-1]["event_hash"]
-    verified_batches = len(batches_events) - len(compromised)
+    total_batches = len(batches_events)
+    verified_batches = total_batches - len([c for c in compromised if c["batch_id"] != "ORG_LIFECYCLE"])
+
     if compromised:
         return {
             "status": "TAMPERED",
             "is_valid": False,
             "batch_id": None,
             "total_events_checked": len(raw_events),
-            "total_batches_checked": len(batches_events),
+            "total_batches_checked": total_batches,
             "verified_batches": verified_batches,
             "compromised_batches": compromised,
+            "unverifiable_legacy_events": unverifiable_legacy,
             "head_event_hash": head_hash,
             "message": (
-                f"{verified_batches} of {len(batches_events)} audit chains verified. "
+                f"{verified_batches} of {total_batches} audit chains verified. "
                 f"{len(compromised)} chain(s) failed integrity verification: "
                 + ", ".join(c["batch_id"] for c in compromised[:5])
                 + (" …" if len(compromised) > 5 else "")
@@ -161,11 +184,12 @@ def verify_audit_chain(
         "is_valid": True,
         "batch_id": None,
         "total_events_checked": len(raw_events),
-        "total_batches_checked": len(batches_events),
+        "total_batches_checked": total_batches,
         "verified_batches": verified_batches,
         "compromised_batches": [],
+        "unverifiable_legacy_events": unverifiable_legacy,
         "head_event_hash": head_hash,
-        "message": f"All {len(raw_events)} audit blocks across {len(batches_events)} batches verified successfully against immutable SHA-256 hash chains."
+        "message": f"All {len(raw_events)} audit blocks across {total_batches} batches verified successfully against immutable SHA-256 hash chains."
     }
 
 from pydantic import BaseModel

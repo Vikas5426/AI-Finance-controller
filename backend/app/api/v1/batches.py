@@ -522,18 +522,21 @@ async def run_windowed_batch(
         # Awaiting it directly on the event loop froze every other request in the
         # process, including /health, for the whole run. run_in_threadpool moves it
         # onto a worker thread so the server stays responsive.
-        result = await run_in_threadpool(
-            execute_batch_reconciliation,
-            record_count=req.record_count,
-            window_size=req.window_size,
-            batch_id=batch_id,
-            execution_mode=req.execution_mode,
-            upload_ids=req.upload_ids,
-            custom_files=req.custom_files,
-            expected_hashes=req.expected_hashes,
-            org_id=org_id,
-            created_by=current_user["user_id"]
-        )
+        try:
+            result = await run_in_threadpool(
+                execute_batch_reconciliation,
+                record_count=req.record_count,
+                window_size=req.window_size,
+                batch_id=batch_id,
+                execution_mode=req.execution_mode,
+                upload_ids=req.upload_ids,
+                custom_files=req.custom_files,
+                expected_hashes=req.expected_hashes,
+                org_id=org_id,
+                created_by=current_user["user_id"]
+            )
+        except (FileNotFoundError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
         # 4. Update final progress in Redis & Invalidate Dashboard Cache
         await set_cached_json(

@@ -626,7 +626,7 @@
                     </div>
                   </div>
 
-                  <div class="lane-item" style="margin-bottom: 0;">
+                  <div class="lane-item">
                     <div class="lane-top">
                       <div>
                         <span style="color: var(--accent-emerald);">● [03] Duplicate Webhooks</span>
@@ -639,6 +639,40 @@
                     </div>
                     <div class="lane-track">
                       <div class="lane-fill" id="lane-bar-dup" style="width: 0%; background: var(--accent-emerald);">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="lane-item">
+                    <div class="lane-top">
+                      <div>
+                        <span style="color: #a855f7;">● [04] Unidentified Credits</span>
+                        <div class="lane-sub">Anonymous Bank Lines · Direct Wire Triage</div>
+                      </div>
+                      <div style="text-align: right;">
+                        <div id="lane-count-unidentified">0</div>
+                        <div class="lane-sub" id="lane-pct-unidentified">0%</div>
+                      </div>
+                    </div>
+                    <div class="lane-track">
+                      <div class="lane-fill" id="lane-bar-unidentified" style="width: 0%; background: #a855f7;">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="lane-item" style="margin-bottom: 0;">
+                    <div class="lane-top">
+                      <div>
+                        <span style="color: var(--text-secondary);">● [05] Other Discrepancies</span>
+                        <div class="lane-sub">Unclassified Exceptions · Manual Queue</div>
+                      </div>
+                      <div style="text-align: right;">
+                        <div id="lane-count-other">0</div>
+                        <div class="lane-sub" id="lane-pct-other">0%</div>
+                      </div>
+                    </div>
+                    <div class="lane-track">
+                      <div class="lane-fill" id="lane-bar-other" style="width: 0%; background: var(--text-secondary);">
                       </div>
                     </div>
                   </div>
@@ -1066,6 +1100,7 @@
                   <div class="graph-subtitle" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem;">Deterministic Cash Forecast · Confirmed Collections vs At-Risk Inflows (₹ in Lakhs)</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="badge-min badge-amber" style="font-family: var(--font-mono); font-size: 0.65rem; display: none;" id="wf-forecast-insufficient-badge">INSUFFICIENT HISTORY — 1 WEEK OF DATA</span>
                   <span class="badge-min badge-green" style="font-family: var(--font-mono); font-size: 0.65rem;">13 BLOCKS SEALED</span>
                   <span class="badge-min badge-gray" style="font-family: var(--font-mono); font-size: 0.65rem;" id="wf-waterfall-total-badge">13-Wk Total: ₹0.00L</span>
                 </div>

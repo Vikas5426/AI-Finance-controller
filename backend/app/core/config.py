@@ -119,8 +119,9 @@ class Settings(BaseSettings):
     AGENT_PRIMARY_PROVIDER: str = "groq"
     AGENT_MAX_RETRIES: int = 1
     MAX_RETRIES_PER_PROVIDER: int = 1
-    MAX_LLM_CALLS_PER_BATCH: int = 3
+    MAX_LLM_CALLS_PER_BATCH: int = 12
     MAX_LLM_CALLS_PER_AGENT: int = 1
+    MAX_LLM_CALLS_AGENT9: int = 5
     AI_CIRCUIT_BREAKER_COOLDOWN_SEC: float = 60.0
     AI_TELEMETRY_STRUCTURED_LOGS: bool = True
 

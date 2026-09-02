@@ -207,7 +207,7 @@ class ResolutionProposal(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     org_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
-    exception_id = Column(String(36), ForeignKey("exceptions.id"), nullable=False)
+    exception_id = Column(String(36), ForeignKey("exceptions.id", ondelete="CASCADE"), nullable=False)
     investigation_id = Column(String(36), ForeignKey("ai_investigations.id"), nullable=True)
     action = Column(String(50), nullable=False)
     recommended_parameters = Column(JSON, nullable=False)

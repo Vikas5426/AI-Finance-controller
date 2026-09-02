@@ -50,8 +50,11 @@ class AICircuitBreaker:
         if not batch_id:
             return True, "OK"
 
-        max_batch = getattr(settings, "MAX_LLM_CALLS_PER_BATCH", 3)
-        max_agent = getattr(settings, "MAX_LLM_CALLS_PER_AGENT", 1)
+        max_batch = getattr(settings, "MAX_LLM_CALLS_PER_BATCH", 12)
+        if "Agent 9" in agent_name:
+            max_agent = getattr(settings, "MAX_LLM_CALLS_AGENT9", 5)
+        else:
+            max_agent = getattr(settings, "MAX_LLM_CALLS_PER_AGENT", 1)
 
         curr_batch = cls._batch_call_counts.get(batch_id, 0)
         if curr_batch >= max_batch:
@@ -90,6 +93,8 @@ class AgentTelemetryTracker:
         "deterministic_fallback_calls": 0,
         "total_tokens_est": 0,
         "avg_latency_ms": 0.0,
+        "avg_llm_latency_ms": 0.0,
+        "avg_deterministic_latency_ms": 0.0,
         "last_active_at": None
     }
 
@@ -105,6 +110,7 @@ class AgentTelemetryTracker:
         metadata: Optional[Dict[str, Any]] = None
     ):
         cls._stats["total_agent_calls"] += 1
+        is_llm = provider in ("GROQ", "GEMINI", "OPENAI")
         if provider == "GROQ":
             cls._stats["groq_calls"] += 1
         elif provider == "GEMINI":
@@ -116,6 +122,16 @@ class AgentTelemetryTracker:
         total = cls._stats["total_agent_calls"]
         curr_avg = cls._stats["avg_latency_ms"]
         cls._stats["avg_latency_ms"] = round(((curr_avg * (total - 1)) + latency_ms) / total, 2)
+
+        if is_llm:
+            llm_calls = cls._stats["groq_calls"] + cls._stats["gemini_calls"]
+            curr_llm_avg = cls._stats.get("avg_llm_latency_ms", 0.0)
+            cls._stats["avg_llm_latency_ms"] = round(((curr_llm_avg * (llm_calls - 1)) + latency_ms) / max(1, llm_calls), 2)
+        else:
+            det_calls = cls._stats["deterministic_fallback_calls"]
+            curr_det_avg = cls._stats.get("avg_deterministic_latency_ms", 0.0)
+            cls._stats["avg_deterministic_latency_ms"] = round(((curr_det_avg * (det_calls - 1)) + latency_ms) / max(1, det_calls), 2)
+
         cls._stats["last_active_at"] = datetime.now(timezone.utc).isoformat()
 
         entry = {

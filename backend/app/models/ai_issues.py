@@ -11,20 +11,28 @@ from pydantic import BaseModel, Field
 class AIIssueCard(BaseModel):
     issue_id: str
     title: str
-    type: str  # e.g., MISSING_LEDGER, MISSING_BANK, AMOUNT_MISMATCH, PERIOD_CUTOFF, FEE_VARIANCE, DUPLICATE
+    type: str  # e.g., MISSING_LEDGER, MISSING_BANK, AMOUNT_MISMATCH, PERIOD_CUTOFF, FEE_VARIANCE, DUPLICATE, INCOMPLETE_DATA, UNRESOLVED_SETTLEMENT
     severity: str  # CRITICAL, HIGH, MEDIUM, LOW
     severity_rank: int = 1  # 1 for CRITICAL, 2 for HIGH, 3 for MEDIUM, 4 for LOW
     financial_impact: float = 0.0  # in INR
     financial_impact_formatted: str = "₹0.00"
+    is_impact_determinable: bool = True
     affected_records: int = 0
     status: str = "Needs Human Review"
     requires_human_review: bool = True
     confidence: float = 0.90  # 0.0 to 1.0
+    confidence_evidence_status: str = "VERIFIED_DETERMINISTIC"  # VERIFIED_DETERMINISTIC, CANNOT_DETERMINE, SUPPORTED_INFERENCE
+    source_dataset: Optional[str] = None  # e.g., "Payment Gateway (gateway.csv)", "General Ledger (general_ledger.csv)"
+    source_file: Optional[str] = None
+    exact_ids: List[str] = Field(default_factory=list)
+    exact_source_amounts: List[str] = Field(default_factory=list)
+    calculation_proof: Optional[str] = None
     what_happened: str = ""
     why_it_matters: str = ""
     likely_cause: str = ""
     likely_cause_is_inference: bool = True
     evidence: List[str] = Field(default_factory=list)
+    evidence_details: Optional[Dict[str, Any]] = None
     recommended_action: str = ""
     owner: str = "Treasury Operations"
     next_step: str = ""

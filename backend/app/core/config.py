@@ -108,21 +108,21 @@ class Settings(BaseSettings):
     PERIOD_END_OVERRIDE: Optional[str] = None     # "YYYY-MM-DD"
 
     # ------------------------------------------------------------------
-    # AI agent runtime bounds (docs/03 §10 contract)
+    # AI agent runtime bounds & Global Budget
     # ------------------------------------------------------------------
     AGENT_MAX_TOOL_CALLS: int = 6
     AGENT_TIMEOUT_SECONDS: int = 60
     AGENT_MAX_CONTEXT_TOKENS: int = 12000
     AGENT_TRIAGE_MODEL: str = "claude-haiku-4-5-20251001"
     AGENT_INVESTIGATION_MODEL: str = "claude-sonnet-5"
-    # Verified reachable via generateContent on 2026-08-29. gemini-2.0-flash and
-    # gemini-2.5-flash are both retired and return 404, which silently disabled
-    # the entire fallback tier. Override via AGENT_GEMINI_MODEL in .env when
-    # Google retires this one too.
     AGENT_GEMINI_MODEL: str = "gemini-3.6-flash"
-    # "anthropic" | "gemini" — whichever key is present wins if the preferred one is missing.
-    AGENT_PRIMARY_PROVIDER: str = "anthropic"
-    AGENT_MAX_RETRIES: int = 2
+    AGENT_PRIMARY_PROVIDER: str = "groq"
+    AGENT_MAX_RETRIES: int = 1
+    MAX_RETRIES_PER_PROVIDER: int = 1
+    MAX_LLM_CALLS_PER_BATCH: int = 3
+    MAX_LLM_CALLS_PER_AGENT: int = 1
+    AI_CIRCUIT_BREAKER_COOLDOWN_SEC: float = 60.0
+    AI_TELEMETRY_STRUCTURED_LOGS: bool = True
 
     # ------------------------------------------------------------------
     # Autonomy limits — the boundary between "code may apply this" and

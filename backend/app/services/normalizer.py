@@ -165,12 +165,28 @@ class NormalizerService:
         except Exception:
             raise ValueError(f"Invalid timestamp/date value '{val}': unrecognized format")
 
-    @staticmethod
-    def _first_present(row: Dict[str, Any], *keys: str) -> Any:
-        """Returns the first non-None, non-empty value from row matching any key."""
+    @classmethod
+    def _first_present(cls, row: Dict[str, Any], *keys: str) -> Any:
+        """Returns the first non-None, non-empty value from row matching any key (case-insensitive and format-agnostic)."""
+        if not row:
+            return None
+        # 1. Exact match check
         for k in keys:
             if k in row and row[k] is not None and str(row[k]).strip() != "":
                 return row[k]
+
+        # 2. Case-insensitive and normalized key lookup
+        norm_map = {}
+        for rk, rv in row.items():
+            if rk is not None and rv is not None and str(rv).strip() != "":
+                norm_key = str(rk).strip().lower().replace(" ", "_").replace("-", "_")
+                if norm_key not in norm_map:
+                    norm_map[norm_key] = rv
+
+        for k in keys:
+            norm_k = str(k).strip().lower().replace(" ", "_").replace("-", "_")
+            if norm_k in norm_map:
+                return norm_map[norm_k]
         return None
 
     @classmethod
@@ -190,14 +206,20 @@ class NormalizerService:
         from app.models.schemas import JournalLine
         scale = resolve_amount_scale(source_kind, amount_scale)
         txn_id = str(uuid.uuid4())
-        raw_desc = str(cls._first_present(raw_row, "description", "Description", "memo") or "")
+        raw_desc = str(cls._first_present(raw_row, "description", "Description", "memo", "narrative") or "")
         norm_desc = cls.normalize_text(raw_desc)
         
         # Search for references in targeted content fields, NOT the dict keys repr
-        search_text = f"{raw_desc} {raw_row.get('ref_no', '')} {raw_row.get('doc_ref', '')} {raw_row.get('reference', '')} {raw_row.get('merchant_reference', '')} {raw_row.get('order_id', '')} {raw_row.get('payment_id', '')}"
+        ref_fields = [
+            raw_desc,
+            cls._first_present(raw_row, "ref_no", "doc_ref", "reference", "merchant_reference", "order_id", "payment_id", "entry_id", "txn_id") or "",
+            cls._first_present(raw_row, "payment_id") or "",
+            cls._first_present(raw_row, "order_id", "merchant_reference") or ""
+        ]
+        search_text = " ".join(str(f) for f in ref_fields if f)
         ref_keys = cls.extract_reference_keys(search_text)
 
-        effective_row_num = row_num if row_num is not None else raw_row.get("__row_num__")
+        effective_row_num = row_num if row_num is not None else cls._first_present(raw_row, "__row_num__")
         source_filename = f"{source_kind.value.lower()}.csv"
         source_row_id = f"{source_filename}:row_{effective_row_num}" if effective_row_num else None
 
@@ -213,9 +235,9 @@ class NormalizerService:
 
         # Source-specific field normalization
         if source_kind == SourceKind.GATEWAY:
-            ext_id = str(cls._first_present(raw_row, "payment_id", "Payment ID", "id") or txn_id)
+            ext_id = str(cls._first_present(raw_row, "payment_id", "Payment ID", "id", "txn_id") or txn_id)
             payment_id_field = ext_id
-            gross_val = cls._first_present(raw_row, "gross_amount", "amount", "Gross Amount", "gross")
+            gross_val = cls._first_present(raw_row, "gross_amount", "amount", "Gross Amount", "gross", "total")
             fee_val = cls._first_present(raw_row, "fee_amount", "fee", "Fee", "fees")
             tax_val = cls._first_present(raw_row, "tax_amount", "tax", "Tax", "tax_on_fees")
             
@@ -233,7 +255,7 @@ class NormalizerService:
             occurred_at, val_date = cls._parse_datetime(date_val)
             
             direction = TxnDirection.INFLOW
-            cp_raw = cls._first_present(raw_row, "customer_email", "Customer Email") or "CUSTOMER_DIRECT"
+            cp_raw = cls._first_present(raw_row, "customer_email", "Customer Email", "customer", "customer_name") or "CUSTOMER_DIRECT"
             cp_norm = cp_raw.split("@")[0].lower() if "@" in cp_raw else cp_raw.lower()
             acct_code = "1210 Accounts Receivable"
 
@@ -249,16 +271,17 @@ class NormalizerService:
                 elif m_str not in ref_keys.order:
                     ref_keys.order.append(m_str)
 
-            if raw_row.get("settlement_id"):
-                s_id = str(raw_row["settlement_id"]).upper().replace("_", "")
+            settle_val = cls._first_present(raw_row, "settlement_id")
+            if settle_val:
+                s_id = str(settle_val).upper().replace("_", "")
                 settlement_id_field = s_id
                 if s_id not in ref_keys.settlement:
                     ref_keys.settlement.append(s_id)
             
-            source_ref_str = str(cls._first_present(raw_row, "merchant_reference", "order_id", "payment_id") or "")
+            source_ref_str = str(cls._first_present(raw_row, "merchant_reference", "order_id", "reference", "payment_id") or "")
 
         elif source_kind == SourceKind.BANK:
-            ext_id = str(cls._first_present(raw_row, "bank_transaction_id", "Ref No", "ref_no", "utr", "id") or txn_id)
+            ext_id = str(cls._first_present(raw_row, "bank_transaction_id", "Ref No", "ref_no", "utr", "id", "txn_id") or txn_id)
             source_ref_str = ext_id
             amt_val = cls._first_present(raw_row, "amount", "Amount", "net_amount", "Net Amount")
             credit_val = cls._first_present(raw_row, "Credit", "credit")
@@ -269,7 +292,7 @@ class NormalizerService:
                 orig_amount_str = str(amt_val)
                 amt_paise_val = cls._to_paise(amt_val, default_zero=False, amount_scale=scale)
                 amount_paise = abs(amt_paise_val)
-                direction = TxnDirection.OUTFLOW if (type_str == "DEBIT" or amt_paise_val < 0) else TxnDirection.INFLOW
+                direction = TxnDirection.OUTFLOW if (type_str in ("DEBIT", "DR", "WITHDRAWAL") or amt_paise_val < 0) else TxnDirection.INFLOW
             elif credit_val is not None and str(credit_val).strip() != "" and str(credit_val).strip() != "0":
                 orig_amount_str = str(credit_val)
                 amount_paise = cls._to_paise(credit_val, default_zero=False, amount_scale=scale)
@@ -285,21 +308,21 @@ class NormalizerService:
             fee_paise = None
             tax_paise = None
             
-            date_val = (
-                raw_row.get("transaction_date") or raw_row.get("txn_date") or raw_row.get("value_date") or
-                raw_row.get("Value Date") or raw_row.get("Txn Date") or raw_row.get("date") or raw_row.get("Date")
+            date_val = cls._first_present(
+                raw_row, "transaction_date", "txn_date", "value_date",
+                "Value Date", "Txn Date", "date", "Date"
             )
             orig_date_str = str(date_val or "")
             occurred_at, val_date = cls._parse_datetime(date_val)
             
-            cp_raw = "RAZORPAY SOFTWARE PVT"
-            cp_norm = "razorpay"
+            cp_raw = cls._first_present(raw_row, "counterparty", "party", "beneficiary", "customer", "customer_name", "merchant") or raw_desc or "BANK_DIRECT"
+            cp_norm = cls.normalize_text(str(cp_raw)).split(" ")[0].lower() if cp_raw else "bank"
             acct_code = "1010 Bank Control"
 
             if ext_id and ext_id not in ref_keys.utr:
                 ref_keys.utr.append(ext_id)
 
-            pay_ref = raw_row.get("payment_id") or raw_row.get("reference")
+            pay_ref = cls._first_present(raw_row, "payment_id", "reference", "ref_no", "doc_ref")
             if pay_ref:
                 p_str = str(pay_ref).strip()
                 p_cleaned = re.sub(r"[-_](?:CR|DR|cr|dr)$", "", p_str)
@@ -309,14 +332,14 @@ class NormalizerService:
                     ref_keys.invoice.append(p_str)
 
         elif source_kind == SourceKind.LEDGER:
-            je_id = str(raw_row.get("journal_id") or raw_row.get("je_id") or raw_row.get("id") or "JE-000")
-            line_no = str(raw_row.get("line_no") or raw_row.get("line") or "1")
+            je_id = str(cls._first_present(raw_row, "journal_id", "je_id", "entry_id", "id") or "JE-000")
+            line_no = str(cls._first_present(raw_row, "line_no", "line") or "1")
             journal_id_field = je_id
             journal_line_no_field = int(line_no) if line_no.isdigit() else 1
             ext_id = f"{je_id}:{line_no}" if ":" not in je_id else je_id
             
-            debit_val = raw_row.get("debit") or raw_row.get("debit_amount")
-            credit_val = raw_row.get("credit") or raw_row.get("credit_amount")
+            debit_val = cls._first_present(raw_row, "debit", "debit_amount")
+            credit_val = cls._first_present(raw_row, "credit", "credit_amount")
             if debit_val is not None and str(debit_val).strip() != "" and str(debit_val).strip() != "0":
                 orig_amount_str = str(debit_val)
                 amount_paise = cls._to_paise(debit_val, default_zero=False, amount_scale=scale)
@@ -332,21 +355,21 @@ class NormalizerService:
             fee_paise = None
             tax_paise = None
             
-            date_val = (
-                raw_row.get("entry_date") or raw_row.get("posted_at") or raw_row.get("posting_date") or
-                raw_row.get("txn_date") or raw_row.get("value_date") or raw_row.get("date") or raw_row.get("Date")
+            date_val = cls._first_present(
+                raw_row, "entry_date", "posted_at", "posting_date",
+                "txn_date", "value_date", "date", "Date"
             )
             orig_date_str = str(date_val or "")
             occurred_at, val_date = cls._parse_datetime(date_val)
             
-            cp_raw = None
-            cp_norm = None
-            acct_code = str(raw_row.get("account") or raw_row.get("account_code") or raw_row.get("account_name") or "1210 Accounts Receivable")
+            cp_raw = cls._first_present(raw_row, "counterparty", "account_name", "customer", "vendor")
+            cp_norm = cls.normalize_text(str(cp_raw)).split(" ")[0].lower() if cp_raw else None
+            acct_code = str(cls._first_present(raw_row, "account", "account_code", "account_name") or "1210 Accounts Receivable")
 
             if je_id and je_id not in ref_keys.je:
                 ref_keys.je.append(je_id)
 
-            doc_ref = raw_row.get("reference") or raw_row.get("doc_ref") or raw_row.get("ref_no")
+            doc_ref = cls._first_present(raw_row, "reference", "doc_ref", "ref_no")
             if doc_ref:
                 d_str = str(doc_ref).strip()
                 source_ref_str = d_str
@@ -360,7 +383,7 @@ class NormalizerService:
             lines_list.append(JournalLine(
                 line_no=journal_line_no_field,
                 account_code=acct_code,
-                account_name=str(raw_row.get("account_name") or ""),
+                account_name=str(cls._first_present(raw_row, "account_name") or ""),
                 direction=direction,
                 amount_minor=amount_paise,
                 original_amount=orig_amount_str,
@@ -369,19 +392,19 @@ class NormalizerService:
             ))
 
         else: # SETTLEMENT
-            ext_id = str(raw_row.get("settlement_id") or txn_id)
-            amount_paise = cls._to_paise(raw_row.get("net", 0), amount_scale=scale)
-            gross_paise = cls._to_paise(raw_row.get("gross", 0), amount_scale=scale)
-            fee_paise = cls._to_paise(raw_row.get("fees", 0), amount_scale=scale)
-            tax_paise = cls._to_paise(raw_row.get("tax_on_fees", 0), amount_scale=scale)
+            ext_id = str(cls._first_present(raw_row, "settlement_id", "id") or txn_id)
+            amount_paise = cls._to_paise(cls._first_present(raw_row, "net", "amount") or 0, amount_scale=scale)
+            gross_paise = cls._to_paise(cls._first_present(raw_row, "gross", "gross_amount") or 0, amount_scale=scale)
+            fee_paise = cls._to_paise(cls._first_present(raw_row, "fees", "fee", "fee_amount") or 0, amount_scale=scale)
+            tax_paise = cls._to_paise(cls._first_present(raw_row, "tax_on_fees", "tax", "tax_amount") or 0, amount_scale=scale)
             
-            date_val = raw_row.get("settlement_date") or raw_row.get("date")
+            date_val = cls._first_present(raw_row, "settlement_date", "date", "txn_date", "value_date")
             orig_date_str = str(date_val or "")
             occurred_at, val_date = cls._parse_datetime(date_val)
             
             direction = TxnDirection.INFLOW
-            cp_raw = "RAZORPAY"
-            cp_norm = "razorpay"
+            cp_raw = cls._first_present(raw_row, "counterparty", "processor", "gateway", "customer") or "PAYMENT_PROCESSOR"
+            cp_norm = cls.normalize_text(str(cp_raw)).split(" ")[0].lower() if cp_raw else "processor"
             acct_code = "1010 Bank"
 
             if ext_id and ext_id not in ref_keys.settlement:
@@ -398,7 +421,7 @@ class NormalizerService:
             gross_minor=gross_paise,
             fee_minor=fee_paise,
             tax_minor=tax_paise,
-            currency="INR",
+            currency=str(cls._first_present(raw_row, "currency", "Currency", "curr") or "INR").upper(),
             occurred_at=occurred_at,
             value_date=val_date,
             counterparty_raw=cp_raw,
@@ -444,8 +467,8 @@ class NormalizerService:
         txn_id = str(uuid.uuid4())
         
         first_row = raw_rows[0]
-        je_id = str(first_row.get("je_id") or first_row.get("journal_id") or first_row.get("id") or "JE-000")
-        row_num = first_row.get("__row_num__")
+        je_id = str(cls._first_present(first_row, "je_id", "journal_id", "entry_id", "id") or "JE-000")
+        row_num = cls._first_present(first_row, "__row_num__")
         source_row_id = f"general_ledger.csv:row_{row_num}" if row_num else None
 
         lines: List[JournalLine] = []
@@ -458,19 +481,19 @@ class NormalizerService:
         dates: List[Any] = []
 
         for r in raw_rows:
-            l_no = int(r.get("line_no") or r.get("line") or len(lines) + 1)
-            acct_code = str(r.get("account_code") or r.get("account") or "")
-            acct_name = str(r.get("account_name") or "")
-            memo = str(r.get("memo") or r.get("description") or "")
-            doc_ref = str(r.get("doc_ref") or r.get("reference") or "")
+            l_no = int(cls._first_present(r, "line_no", "line") or len(lines) + 1)
+            acct_code = str(cls._first_present(r, "account_code", "account") or "")
+            acct_name = str(cls._first_present(r, "account_name") or "")
+            memo = str(cls._first_present(r, "memo", "description") or "")
+            doc_ref = str(cls._first_present(r, "doc_ref", "reference", "ref_no") or "")
             
             if doc_ref:
                 all_doc_refs.append(doc_ref)
             if memo:
                 all_memos.append(memo)
 
-            d_val = r.get("debit") or r.get("debit_amount")
-            c_val = r.get("credit") or r.get("credit_amount")
+            d_val = cls._first_present(r, "debit", "debit_amount")
+            c_val = cls._first_present(r, "credit", "credit_amount")
 
             if d_val is not None and str(d_val).strip() not in ("", "0", "0.0", "0.00"):
                 amt_paise = cls._to_paise(d_val, default_zero=False, amount_scale=scale)
@@ -490,7 +513,7 @@ class NormalizerService:
                 direction = TxnDirection.DEBIT
                 orig_amt = "0"
 
-            dt_val = r.get("posted_at") or r.get("entry_date") or r.get("date") or r.get("txn_date") or r.get("value_date")
+            dt_val = cls._first_present(r, "posted_at", "entry_date", "date", "txn_date", "value_date")
             if dt_val:
                 dates.append(dt_val)
 

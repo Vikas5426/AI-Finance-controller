@@ -184,9 +184,9 @@ def triage_exceptions_node(state: ReconciliationState) -> Dict[str, Any]:
 
 def investigate_exception_agent_node(state: ReconciliationState) -> Dict[str, Any]:
     """
-    Node 4: Specialized Financial Exception Investigation Agent.
-    Invoked strictly for ambiguous exceptions. Employs deterministic tools to construct
-    evidence-backed investigation proposals.
+    Node 4: Specialized Financial Exception Investigation Node.
+    Deterministically triages all exceptions, and caps external LLM reasoning to at most
+    MAX_LLM_CALLS_PER_BATCH top material items to protect API budgets.
     """
     ambiguous = state["ambiguous_exceptions"]
     all_txns = state["canonical_transactions"]
@@ -194,6 +194,10 @@ def investigate_exception_agent_node(state: ReconciliationState) -> Dict[str, An
     agent = AIAgentRuntime()
     proposals = dict(state.get("agent_proposals", {}))
     retry_counts = dict(state.get("retry_counts", {}))
+
+    # Cap external AI calls per batch run to avoid quota exhaustion on large feeds
+    ai_inv_budget = getattr(settings, "MAX_LLM_CALLS_PER_BATCH", 3)
+    ai_inv_count = 0
 
     for idx, item in enumerate(ambiguous):
         exc_id = item["exception_id"]
@@ -233,6 +237,11 @@ def investigate_exception_agent_node(state: ReconciliationState) -> Dict[str, An
         else:
             sev = "LOW"
 
+        # Only allow external LLM reasoning for top material items within budget; use fast deterministic rules for the rest
+        use_deterministic_rule = bool(item.get("sop_action")) or (ai_inv_count >= ai_inv_budget)
+        if not use_deterministic_rule:
+            ai_inv_count += 1
+
         # Agent Investigation
         inv_result = agent.investigate_exception(
             exception_id=exc_id,
@@ -242,7 +251,7 @@ def investigate_exception_agent_node(state: ReconciliationState) -> Dict[str, An
             counterpart_txn=counterpart,
             available_txns=all_txns_dicts,
             severity=sev,
-            has_deterministic_rule=bool(item.get("sop_action")),
+            has_deterministic_rule=use_deterministic_rule,
             force_refresh=is_retry
         )
         proposals[exc_id] = inv_result
@@ -577,14 +586,15 @@ def route_after_triage(state: ReconciliationState) -> str:
 
 
 def route_after_verification(state: ReconciliationState) -> str:
-    """Route after verifier gate: retry if failed and retries < 2, else proceed."""
+    """Route after verifier gate: retry if failed and retries < AGENT_MAX_RETRIES, else proceed."""
     rejected = state.get("rejected_proposals", {})
     retry_counts = state.get("retry_counts", {})
+    max_retries = getattr(settings, "AGENT_MAX_RETRIES", 1)
     
-    # Check if any rejected proposal can be retried (< 2 retries)
+    # Check if any rejected proposal can be retried (< max_retries)
     can_retry = False
     for exc_id in rejected:
-        if retry_counts.get(exc_id, 0) < 2:
+        if retry_counts.get(exc_id, 0) < max_retries:
             can_retry = True
             break
 

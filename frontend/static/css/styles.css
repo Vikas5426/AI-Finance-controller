@@ -1126,17 +1126,11 @@ body {
 /* Bottom Analytics Row Inside Container */
 .reui-bottom-inner-grid {
   display: grid;
-  grid-template-columns: 1.65fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   margin-top: 1.25rem;
   width: 100%;
   grid-column: 1 / -1;
-}
-
-@media (max-width: 1080px) {
-  .reui-bottom-inner-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ==============================================================================

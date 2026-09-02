@@ -1046,6 +1046,22 @@ class ReconciliationEngine:
 
     # --- PASS P6: Residual Classification (Tiers 3 & 4) ---
     def pass_p5_residuals(self, txns: List[CanonicalTransaction]):
+        # Check bank source stream completeness
+        bank_txns = [t for t in txns if t.source_kind == SourceKind.BANK]
+        gw_txns_all = [t for t in txns if t.source_kind == SourceKind.GATEWAY]
+        
+        # Determine if bank data covers the gateway timeline
+        is_bank_stream_complete = False
+        if bank_txns and gw_txns_all:
+            bank_dates = [b.value_date for b in bank_txns if b.value_date]
+            gw_dates = [g.value_date for g in gw_txns_all if g.value_date]
+            if bank_dates and gw_dates:
+                # Check date overlap within 7-day window
+                min_gw, max_gw = min(gw_dates), max(gw_dates)
+                min_bk, max_bk = min(bank_dates), max(bank_dates)
+                if not (max_bk < min_gw or min_bk > max_gw):
+                    is_bank_stream_complete = True
+
         # 1. Identify gateway transactions that have NOT received bank settlement
         gw_txns = [t for t in txns if t.source_kind == SourceKind.GATEWAY and t.id not in self.bank_settled_gw_ids]
         
@@ -1066,7 +1082,7 @@ class ReconciliationEngine:
         for t in inspect_pool:
             investigation_result = None
             if t.match_status == "NEEDS_REVIEW":
-                exc_type = "PERIOD_CUTOFF_TIMING" if t.value_date.day in (28, 29, 30, 31) else "AMBIGUOUS_MATCH"
+                exc_type = "PERIOD_CUTOFF_TIMING" if (t.value_date and t.value_date.day in (28, 29, 30, 31)) else "AMBIGUOUS_MATCH"
                 sev = ExceptionSeverity.LOW
                 findings = [f"Ambiguous or timing cutoff {t.source_kind.value} entry '{t.external_id}' of Rs. {t.amount_minor/100:.2f}. Classification: {exc_type}."]
                 impact_minor = t.amount_minor
@@ -1077,10 +1093,7 @@ class ReconciliationEngine:
                 impact_minor = t.amount_minor
                 findings = [f"Unreconciled BANK deposit '{t.external_id}' of Rs. {t.amount_minor/100:.2f}. No matching gateway capture or GL receivable found. Classification: UNKNOWN_BANK_CREDIT."]
             elif t.source_kind == SourceKind.GATEWAY:
-                exc_type = "MISSING_BANK_SETTLEMENT"
-                sev = ExceptionSeverity.HIGH
                 t.match_status = "UNRESOLVED_EXCEPTION"
-                
                 gross_exp = t.gross_minor if t.gross_minor is not None else t.amount_minor
                 decl_fee = t.fee_minor or 0
                 decl_tax = t.tax_minor or 0
@@ -1096,19 +1109,37 @@ class ReconciliationEngine:
                     net_exp = bd.expected_net_minor
                 
                 impact_minor = gross_exp
-                findings = [
-                    f"Unreconciled GATEWAY payment '{t.external_id}'. "
-                    f"Gross Exposure: Rs. {gross_exp/100:.2f} | "
-                    f"Expected Cash Settlement: Rs. {net_exp/100:.2f} "
-                    f"(MDR Fee: Rs. {fee_exp/100:.2f}, GST: Rs. {tax_exp/100:.2f}). "
-                    f"Classification: MISSING_BANK_SETTLEMENT."
-                ]
+                settle_id = (t.reference_keys.custom.get("settlement_id") or (t.reference_keys.settlement[0] if t.reference_keys.settlement else "")).strip().upper()
+
+                if settle_id in ("SETL_UNSET", "UNSET", "UNSETTLED", "NONE", ""):
+                    exc_type = "UNRESOLVED_SETTLEMENT_ID"
+                    sev = ExceptionSeverity.HIGH
+                    findings = [
+                        f"Gateway payment '{t.external_id}' has unresolved settlement identifier ('{settle_id or 'UNSET'}'). "
+                        f"Gross Exposure: Rs. {gross_exp/100:.2f}. Settlement linkage unresolved."
+                    ]
+                elif not is_bank_stream_complete:
+                    exc_type = "SETTLEMENT_STATUS_CANNOT_BE_VERIFIED"
+                    sev = ExceptionSeverity.MEDIUM
+                    findings = [
+                        f"Gateway payment '{t.external_id}' has settlement identifier '{settle_id}'. "
+                        f"Bank source data is incomplete for this period; settlement status cannot be deterministically verified."
+                    ]
+                else:
+                    exc_type = "MISSING_BANK_SETTLEMENT"
+                    sev = ExceptionSeverity.HIGH
+                    findings = [
+                        f"Unreconciled GATEWAY payment '{t.external_id}' with settlement ID '{settle_id}'. "
+                        f"Gross Exposure: Rs. {gross_exp/100:.2f} | Expected Cash Settlement: Rs. {net_exp/100:.2f}. "
+                        f"Classification: MISSING_BANK_SETTLEMENT."
+                    ]
+
                 from app.models.schemas import InvestigationResult
                 investigation_result = InvestigationResult(
                     exception_id=f"EXC-{t.id[:8]}",
-                    classification="MISSING_BANK_SETTLEMENT",
-                    likely_cause="Payment captured on gateway but no bank settlement credit received within configured timing window.",
-                    recommended_action="Initiate payment gateway settlement trace and verify merchant balance payout schedule.",
+                    classification=exc_type,
+                    likely_cause="Unresolved gateway settlement identifier" if exc_type == "UNRESOLVED_SETTLEMENT_ID" else ("Incomplete bank source dataset" if exc_type == "SETTLEMENT_STATUS_CANNOT_BE_VERIFIED" else "Payment captured on gateway but no bank deposit received in period."),
+                    recommended_action="Update gateway settlement ID" if exc_type == "UNRESOLVED_SETTLEMENT_ID" else ("Ingest complete bank statement for period" if exc_type == "SETTLEMENT_STATUS_CANNOT_BE_VERIFIED" else "Initiate gateway settlement trace."),
                     confidence=0.95,
                     arithmetic_proof={
                         "gross_exposure_minor": gross_exp,
@@ -1116,7 +1147,8 @@ class ReconciliationEngine:
                         "fee_minor": fee_exp,
                         "tax_minor": tax_exp,
                         "gross_exposure_rs": f"Rs. {gross_exp/100:.2f}",
-                        "expected_net_rs": f"Rs. {net_exp/100:.2f}"
+                        "expected_net_rs": f"Rs. {net_exp/100:.2f}",
+                        "settlement_id": settle_id or "UNSET"
                     }
                 )
             elif t.source_kind == SourceKind.LEDGER:
@@ -1145,7 +1177,7 @@ class ReconciliationEngine:
                 checks_performed=["Cross-Source Control Lookup", "Fee Tolerance Gate", "Period Cutoff Gate", "Timing Window Lookup"],
                 findings=findings,
                 investigation=investigation_result,
-                resolution_confidence=0.90 if exc_type == "MISSING_BANK_SETTLEMENT" else 0.60,
+                resolution_confidence=0.90 if exc_type in ("MISSING_BANK_SETTLEMENT", "UNRESOLVED_SETTLEMENT_ID") else 0.60,
                 detected_at=datetime.now(timezone.utc)
             ))
 
@@ -1197,3 +1229,6 @@ class ReconciliationEngine:
             "safeguards_breakdown": self.safeguards_triggered
         }
 
+
+# Type alias for convenience
+MatchingEngine = ReconciliationEngine

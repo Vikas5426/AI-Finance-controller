@@ -566,24 +566,6 @@
 
               <!-- Bottom Analytics Inner Grid -->
               <div class="reui-bottom-inner-grid">
-                <!-- Sliding Analysis Windows Telemetry Panel -->
-                <div class="inner-graph-box">
-                  <div class="graph-header">
-                    <div>
-                      <div class="graph-title">Sliding Analysis Windows</div>
-                      <div class="graph-subtitle">Chunk-by-Chunk Reconciliation Health (20–30 records/window)</div>
-                    </div>
-                    <div style="display: flex; gap: 0.4rem; font-size: 0.7rem; align-items: center;">
-                      <span class="badge-min badge-gray" id="badge-total-windows">0 Windows</span>
-                      <span class="badge-min badge-green" id="badge-healthy-windows" style="display: none;">0 Optimal</span>
-                      <span class="badge-min badge-amber" id="badge-warm-windows">0 Warnings</span>
-                      <span class="badge-min" id="badge-crit-windows"
-                        style="background: rgba(239,68,68,0.15); color: var(--accent-coral);">0 Held</span>
-                    </div>
-                  </div>
-                  <div class="sliding-windows-container" id="cluster-histogram-bars"></div>
-                </div>
-
                 <!-- Active Exception Resolution Lanes -->
                 <div class="inner-graph-box">
                   <div class="graph-header">
@@ -1412,7 +1394,7 @@
               <p class="overview-sub">All financial issues identified from the latest reconciliation, ranked by priority.</p>
             </div>
             <div style="display: flex; gap: 0.6rem;">
-              <button class="btn btn-secondary btn-sm" id="btn-ai-issues-refresh" onclick="loadAIIssuesReport()">
+              <button class="btn btn-secondary btn-sm" id="btn-ai-issues-refresh" onclick="loadAIIssuesReport(null, true, true)">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="23 4 23 10 17 10" />
                   <polyline points="1 20 1 14 7 14" />

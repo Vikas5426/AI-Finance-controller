@@ -34,47 +34,30 @@ class AIIssuesReasoningAgent(BaseReasoningAgent):
         if not exceptions:
             return None
 
-        # Build clean, condensed context envelope
+        # Build clean, condensed context envelope (compact to stay well within Groq TPM limits)
         exc_summaries = []
-        for e in exceptions[:30]:  # Cap at 30 to stay within prompt token budget
+        for e in exceptions[:8]:
             p_txn = e.get("primary_txn") or {}
             c_txn = e.get("counterpart_txn") or {}
             exc_summaries.append({
-                "exception_id": e.get("id"),
                 "type": e.get("exception_type"),
                 "severity": e.get("severity"),
-                "impact_minor": e.get("impact_minor", 0),
                 "impact_inr": f"₹{(e.get('impact_minor', 0) / 100):,.2f}",
-                "state": e.get("state"),
-                "primary_txn": {
-                    "id": p_txn.get("external_id") or p_txn.get("id"),
-                    "amount_inr": f"₹{(p_txn.get('amount_minor', 0) / 100):,.2f}" if p_txn.get("amount_minor") is not None else None,
-                    "source": p_txn.get("source_kind"),
-                    "date": p_txn.get("occurred_at"),
-                    "desc": p_txn.get("description_raw")
-                } if p_txn else None,
-                "counterpart_txn": {
-                    "id": c_txn.get("external_id") or c_txn.get("id"),
-                    "amount_inr": f"₹{(c_txn.get('amount_minor', 0) / 100):,.2f}" if c_txn.get("amount_minor") is not None else None,
-                    "source": c_txn.get("source_kind"),
-                    "date": c_txn.get("occurred_at"),
-                    "desc": c_txn.get("description_raw")
-                } if c_txn else None
+                "primary_ref": p_txn.get("external_id"),
+                "counterpart_ref": c_txn.get("external_id"),
+                "description": (p_txn.get("description_raw") or c_txn.get("description_raw") or "")[:60]
             })
 
         system_prompt = (
-            "You are the Senior AI Financial Controller and Chartered Accountant.\n"
-            "Your task is to analyze all reconciliation discrepancies in the financial batch and structure them "
-            "into a clean, prioritized report sorted strictly from CRITICAL to LOW severity.\n\n"
-            "Severity Ranking Rules:\n"
-            "1. CRITICAL: Missing GL journal entries, unreconciled unrecorded cash, direct financial exposure.\n"
-            "2. HIGH: Missing bank settlement wires, unreceived acquirer deposits, major timing variances.\n"
-            "3. MEDIUM: Period cutoff timing lags, gateway fee deviations.\n"
-            "4. LOW: Duplicate records, minor rounding adjustments.\n\n"
-            "Requirements for Output:\n"
-            "- Return strictly valid JSON adhering to the specified schema.\n"
-            "- Explain what happened, why it matters, likely root cause, evidence points, recommended action, responsible owner, and immediate next step.\n"
-            "- Provide systemic patterns across feeds and an executive controller takeaway."
+            "You are an expert AI Financial Controller.\n"
+            "Your task is to analyze verified deterministic reconciliation discrepancies and structure them into a simple, clear, and easy-to-understand executive summary.\n"
+            "STRICT FINANCIAL SAFETY RULES:\n"
+            "1. NEVER invent, fabricate, or hallucinate transaction IDs, amounts, invoice numbers, bank deposits, or references (e.g. never invent B001, B002, B003, ₹31,250, ₹45,000).\n"
+            "2. NEVER recalculate or alter any financial figures. Use only the exact numbers provided in the verified discrepancy envelope.\n"
+            "3. Clearly distinguish VERIFIED FACT from LIKELY CAUSE.\n"
+            "4. If bank data is incomplete, explicitly state that settlement arrival cannot be verified rather than assuming funds are missing.\n"
+            "5. Write in simple, clear, plain English so that any manager or auditor can understand immediately.\n"
+            "6. Return strictly valid JSON adhering to the specified schema."
         )
 
         user_prompt = f"""
@@ -89,23 +72,23 @@ Batch Discrepancy Envelope:
 
 Please analyze these issues and return a structured JSON response with this exact structure:
 {{
-  "summary": "<Concise overview of situation>",
+  "summary": "<Concise 1-2 sentence overview in plain English>",
   "overall_health": "CRITICAL_RISK" | "ACTION_REQUIRED" | "HEALTHY",
   "issues": [
     {{
       "issue_id": "ISSUE-01",
-      "title": "<Crisp Issue Title>",
+      "title": "<Simple Issue Title>",
       "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
       "affected_records": 1,
       "financial_impact_inr": 150.00,
-      "what_happened": "<Clear description of the discrepancy>",
-      "why_it_matters": "<Accounting, balance sheet, or audit impact>",
-      "likely_cause": "<Operational root cause>",
+      "what_happened": "<Simple plain English description of what happened>",
+      "why_it_matters": "<Why this matters to the business>",
+      "likely_cause": "<Simple explanation of why it happened>",
       "evidence": ["<Fact 1>", "<Fact 2>"],
-      "recommended_action": "<Concrete resolution advice>",
-      "owner": "<Responsible Team (e.g. Treasury & GL Operations)>",
-      "next_step": "<Immediate action>",
-      "citations": ["SOP-01 §3", "GAAP ASC 606"]
+      "recommended_action": "<Clear action step to fix it>",
+      "owner": "<Responsible Team (e.g. Accounting Team)>",
+      "next_step": "<Immediate next action>",
+      "citations": ["SOP-01", "GAAP ASC 606"]
     }}
   ],
   "systemic_patterns": [
@@ -114,48 +97,24 @@ Please analyze these issues and return a structured JSON response with this exac
       "pattern_name": "<Pattern Title>",
       "affected_count": 1,
       "impact_inr": 150.00,
-      "likely_systemic_cause": "<Root cause>",
-      "recommended_remediation": "<Remediation action>",
+      "likely_systemic_cause": "<Simple root cause>",
+      "recommended_remediation": "<Simple remediation action>",
       "remediation_owner": "<Team>",
       "root_cause_status": "IDENTIFIED"
     }}
   ],
-  "controller_takeaway": "<Executive CFO conclusion paragraph>"
+  "controller_takeaway": "<Simple 2-3 sentence summary explaining what needs to be done next>"
 }}
 """
 
-        if self._groq_client:
-            try:
-                completion = self._groq_client.chat.completions.create(
-                    model=self.groq_model or "openai/gpt-oss-120b",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.1,
-                    max_completion_tokens=2048,
-                    timeout=3.5
-                )
-                raw_text = completion.choices[0].message.content or ""
-                parsed_json = self.extract_json(raw_text)
-                if parsed_json and isinstance(parsed_json.get("issues"), list):
-                    return parsed_json
-            except Exception:
-                pass
-
-        if self._gemini_client:
-            try:
-                gemini_model = "gemini-2.5-flash"
-                combined_prompt = f"{system_prompt}\n\nUser Context:\n{user_prompt}"
-                response = self._gemini_client.models.generate_content(
-                    model=gemini_model,
-                    contents=combined_prompt
-                )
-                raw_text = response.text or ""
-                parsed_json = self.extract_json(raw_text)
-                if parsed_json and isinstance(parsed_json.get("issues"), list):
-                    return parsed_json
-            except Exception:
-                pass
+        parsed_json, _, _ = self.execute_prompt(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=2048,
+            batch_id=batch_id,
+            purpose="ai_issues_report"
+        )
+        if parsed_json and isinstance(parsed_json.get("issues"), list):
+            return parsed_json
 
         return None

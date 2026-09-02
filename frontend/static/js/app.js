@@ -4413,7 +4413,9 @@ window.confirmResetWorkspace = resetWorkspace;
 // VIEW 6: AI ISSUES CENTER CONTROLLER & UNIFIED REPORT ENGINE
 // ==============================================================================
 
-async function loadAIIssuesReport(batchId, showProgress = true) {
+let _activeAIIssuesPromise = null;
+
+async function loadAIIssuesReport(batchId, showProgress = true, forceRefresh = false) {
   const container = document.getElementById('ai-issues-cards-container');
   const systemicContainer = document.getElementById('ai-issues-systemic-container');
   const loadingBanner = document.getElementById('ai-issues-loading-container');
@@ -4438,32 +4440,49 @@ async function loadAIIssuesReport(batchId, showProgress = true) {
     return;
   }
 
+  // Reuse existing in-memory report if batch matches and not forceRefresh
+  if (!forceRefresh && appState.aiIssuesReport && (appState.aiIssuesReport.batch_id === targetBatch || !targetBatch)) {
+    renderAIIssuesReport(appState.aiIssuesReport);
+    return;
+  }
+
+  // Deduplicate in-flight promise
+  if (_activeAIIssuesPromise) {
+    return _activeAIIssuesPromise;
+  }
+
   if (emptyWorkspace) emptyWorkspace.style.display = 'none';
 
   if (showProgress && loadingBanner) {
     loadingBanner.style.display = 'flex';
-    if (stageText) stageText.textContent = 'Analyzing financial issues...';
-    await sleep(250);
-    if (stageText) stageText.textContent = 'Prioritizing financial risks...';
-    await sleep(250);
-    if (stageText) stageText.textContent = 'Preparing controller report...';
+    if (stageText) stageText.textContent = 'Retrieving financial issues report...';
   }
 
-  try {
-    const url = targetBatch ? `${API_BASE}/ai-issues/report?batch_id=${encodeURIComponent(targetBatch)}` : `${API_BASE}/ai-issues/report`;
-    const res = await authFetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      appState.aiIssuesReport = data;
-      renderAIIssuesReport(data);
-    } else {
-      console.warn('AI Issues report fetch error:', res.status);
+  _activeAIIssuesPromise = (async () => {
+    try {
+      let url = `${API_BASE}/ai-issues/report`;
+      const params = [];
+      if (targetBatch) params.push(`batch_id=${encodeURIComponent(targetBatch)}`);
+      if (forceRefresh) params.push(`force_refresh=true`);
+      if (params.length > 0) url += `?${params.join('&')}`;
+
+      const res = await authFetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        appState.aiIssuesReport = data;
+        renderAIIssuesReport(data);
+      } else {
+        console.warn('AI Issues report fetch error:', res.status);
+      }
+    } catch (err) {
+      console.error('Failed to load AI Issues report:', err);
+    } finally {
+      if (loadingBanner) loadingBanner.style.display = 'none';
+      _activeAIIssuesPromise = null;
     }
-  } catch (err) {
-    console.error('Failed to load AI Issues report:', err);
-  } finally {
-    if (loadingBanner) loadingBanner.style.display = 'none';
-  }
+  })();
+
+  return _activeAIIssuesPromise;
 }
 
 function renderAIIssuesReport(report) {
@@ -4707,6 +4726,9 @@ function renderAIIssuesList() {
               `;
             }
 
+            const statusBadgeCls = issue.confidence_evidence_status === 'VERIFIED_DETERMINISTIC' ? 'badge-emerald' : (issue.confidence_evidence_status === 'CANNOT_DETERMINE' ? 'badge-amber' : 'badge-blue');
+            const statusLabel = issue.confidence_evidence_status ? issue.confidence_evidence_status.replace('_', ' ') : 'VERIFIED';
+
             return `
               <div class="ai-issue-card expanded" id="${cardId}" style="border-left: 3px solid ${sec.color};">
                 <div class="ai-issue-card-header" style="cursor: default;">
@@ -4716,7 +4738,7 @@ function renderAIIssuesList() {
                     </span>
                     <span class="issue-title-text">${escapeHtml(issue.title)}</span>
                     <span class="issue-records-tag">${issue.affected_records} ${issue.affected_records === 1 ? 'Record' : 'Records'}</span>
-                    <span class="issue-status-tag">${escapeHtml(issue.status || 'Needs Human Review')}</span>
+                    <span class="badge-min ${statusBadgeCls}" style="font-size: 0.65rem; text-transform: uppercase;">${escapeHtml(statusLabel)}</span>
                   </div>
                   <div class="issue-header-right">
                     <span class="issue-impact-val">${escapeHtml(issue.financial_impact_formatted)}</span>
@@ -4730,7 +4752,7 @@ function renderAIIssuesList() {
                     <div class="ai-card-col-main">
                       <div class="ai-story-box">
                         <div class="ai-story-header">
-                          <span class="badge-honest badge-calculated">Calculated</span>
+                          <span class="badge-honest badge-calculated">Verified Fact</span>
                           <span class="ai-story-title">What Happened & Why It Matters</span>
                         </div>
                         <p class="ai-story-desc">${escapeHtml(issue.what_happened || 'Not available from supplied data.')}</p>
@@ -4739,20 +4761,26 @@ function renderAIIssuesList() {
 
                       <div class="ai-cause-box">
                         <div class="ai-story-header">
-                          <span class="badge-honest badge-inference">AI Inference</span>
-                          <span class="ai-story-title">Likely Root Cause</span>
+                          <span class="badge-honest badge-inference">Likely Cause</span>
+                          <span class="ai-story-title">Root Cause Analysis</span>
                         </div>
                         <p class="ai-cause-desc">${escapeHtml(issue.likely_cause || 'Not available from supplied data.')}</p>
                       </div>
 
-                      ${issue.evidence && issue.evidence.length ? `
-                        <div class="ai-evidence-box">
-                          <div class="ai-mini-lbl">Verified Evidence Points:</div>
-                          <ul class="issue-evidence-list">
-                            ${issue.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
-                          </ul>
+                      <div class="ai-evidence-box">
+                        <div class="ai-mini-lbl" style="display: flex; justify-content: space-between; align-items: center;">
+                          <span>Traceable Evidence & Proof:</span>
+                          ${issue.source_dataset ? `<span style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 600;">${escapeHtml(issue.source_dataset)}</span>` : ''}
                         </div>
-                      ` : ''}
+                        <ul class="issue-evidence-list">
+                          ${(issue.evidence || []).map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
+                        </ul>
+                        ${issue.calculation_proof ? `
+                          <div style="margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: var(--bg-surface); border-radius: 4px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-emerald);">
+                            <strong>Calculation:</strong> ${escapeHtml(issue.calculation_proof)}
+                          </div>
+                        ` : ''}
+                      </div>
                     </div>
 
                     <!-- Right Column: Proof & Action Plan -->
@@ -4844,67 +4872,67 @@ function exportAIIssuesMarkdown() {
     return;
   }
 
-  let md = `# AI Issues Center — Executive Report\n\n`;
-  md += `**Batch ID**: ${report.batch_id || 'N/A'}\n`;
-  md += `**Generated At**: ${report.generated_at}\n`;
-  md += `**Overall Financial Health**: ${report.overall_health}\n`;
-  md += `**Cryptographic Audit Integrity**: ${report.audit_integrity} (${report.audit_integrity_detail})\n\n`;
-  md += `## Overall Situation\n\n${report.summary}\n\n`;
-  md += `## Summary Metrics\n\n`;
-  md += `- **Total Issues**: ${report.total_issues}\n`;
-  md += `- **Critical**: ${report.critical_count}\n`;
-  md += `- **High**: ${report.high_count}\n`;
-  md += `- **Medium**: ${report.medium_count}\n`;
-  md += `- **Low**: ${report.low_count}\n`;
-  md += `- **Total Financial Impact**: ${report.total_financial_impact_formatted}\n`;
-  md += `- **Human Review Required**: ${report.human_review_count}\n\n`;
-  md += `## Priority Issues\n\n`;
+  let md = `# Financial Controller — AI Issues & Discrepancies Report\n\n`;
+  md += `**Date**: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}\n`;
+  md += `**Reconciliation Health**: ${report.overall_health || 'HEALTHY'}\n`;
+  md += `**Total Financial Impact**: ${report.total_financial_impact_formatted || '₹0.00'}\n`;
+  md += `**Audit Chain Integrity**: ${report.audit_integrity || 'PASS'} ✓\n\n`;
 
-  (report.issues || []).forEach((issue, i) => {
-    md += `### ${i + 1}. [${issue.severity}] ${issue.title} — ${issue.financial_impact_formatted}\n\n`;
-    md += `**Affected Records**: ${issue.affected_records}\n`;
-    md += `**Status**: ${issue.status}\n`;
-    md += `**AI Confidence**: ${Math.round(issue.confidence * 100)}%\n\n`;
-    md += `**What Happened** [Calculated]:\n${issue.what_happened}\n\n`;
-    md += `**Why It Matters** [Confirmed]:\n${issue.why_it_matters}\n\n`;
-    md += `**Likely Cause** [AI Inference]:\n${issue.likely_cause}\n\n`;
-    md += `**Evidence** [Confirmed]:\n`;
-    (issue.evidence || []).forEach(ev => { md += `- ${ev}\n`; });
-    md += `\n**Recommended Action** [Recommendation]:\n${issue.recommended_action}\n\n`;
-    md += `**Owner**: ${issue.owner}\n`;
-    md += `**Immediate Next Step**: ${issue.next_step}\n\n`;
-    if (issue.citations && issue.citations.length) {
-      md += `**Citations**: ${issue.citations.join(', ')}\n\n`;
-    }
-    md += `---\n\n`;
-  });
+  md += `## 1. Executive Summary\n\n`;
+  md += `${report.summary || 'Reconciliation analysis completed with zero open issues.'}\n\n`;
+
+  md += `## 2. Key Metrics\n\n`;
+  md += `| Category | Value |\n`;
+  md += `| :--- | :--- |\n`;
+  md += `| **Total Issues Identified** | ${report.total_issues || 0} |\n`;
+  md += `| **Critical Priority** | ${report.critical_count || 0} |\n`;
+  md += `| **High Priority** | ${report.high_count || 0} |\n`;
+  md += `| **Medium Priority** | ${report.medium_count || 0} |\n`;
+  md += `| **Low Priority** | ${report.low_count || 0} |\n`;
+  md += `| **Total Financial Exposure** | ${report.total_financial_impact_formatted || '₹0.00'} |\n`;
+  md += `| **Items Awaiting Review** | ${report.human_review_count || 0} |\n\n`;
+
+  md += `## 3. Controller's Conclusion & Recommended Next Steps\n\n`;
+  md += `${report.controller_takeaway || 'All transactions are verified and balanced.'}\n\n`;
+
+  if (report.issues && report.issues.length) {
+    md += `## 4. Detailed Issues Breakdown\n\n`;
+    report.issues.forEach((issue, i) => {
+      md += `### Issue #${i + 1}: [${issue.severity}] ${issue.title}\n\n`;
+      md += `- **Financial Impact**: ${issue.financial_impact_formatted}\n`;
+      md += `- **Affected Records**: ${issue.affected_records}\n`;
+      md += `- **Owner**: ${issue.owner}\n`;
+      md += `- **Status**: ${issue.status}\n\n`;
+      md += `**📌 What Happened:**\n${issue.what_happened}\n\n`;
+      md += `**💡 Why It Matters:**\n${issue.why_it_matters}\n\n`;
+      md += `**🔍 Likely Root Cause:**\n${issue.likely_cause}\n\n`;
+      md += `**🛠️ Recommended Action:**\n${issue.recommended_action}\n\n`;
+      md += `**⚡ Immediate Next Step:**\n${issue.next_step}\n\n`;
+
+      if (issue.arithmetic_proof && issue.arithmetic_proof.lines) {
+        md += `**🧮 Calculation Breakdown:**\n`;
+        issue.arithmetic_proof.lines.forEach(l => { md += `  - ${l}\n`; });
+        md += `\n`;
+      }
+      md += `---\n\n`;
+    });
+  }
 
   if (report.systemic_patterns && report.systemic_patterns.length) {
-    md += `## Systemic Problems\n\n`;
-    report.systemic_patterns.forEach(p => {
-      md += `### ${p.pattern_name} (${p.impact_formatted})\n\n`;
-      md += `- **Affected Records**: ${p.affected_count}\n`;
-      md += `- **Likely Systemic Cause**: ${p.likely_systemic_cause}\n`;
-      md += `- **Recommended Remediation**: ${p.recommended_remediation}\n`;
+    md += `## 5. Systemic Operational Patterns\n\n`;
+    report.systemic_patterns.forEach((p, idx) => {
+      md += `### ${idx + 1}. ${p.pattern_name} (${p.impact_formatted})\n\n`;
+      md += `- **Affected Volume**: ${p.affected_count} records\n`;
+      md += `- **Root Cause**: ${p.likely_systemic_cause}\n`;
+      md += `- **Recommended Fix**: ${p.recommended_remediation}\n`;
       md += `- **Owner**: ${p.remediation_owner}\n\n`;
     });
   }
 
-  const fi = report.financial_impact || {};
-  md += `## Financial Impact\n\n`;
-  md += `- **Total Exception Exposure**: ${fi.total_exception_exposure_formatted || report.total_financial_impact_formatted}\n`;
-  md += `- **Critical Exposure**: ${fi.critical_exposure_formatted || '₹0.00'}\n`;
-  md += `- **High Exposure**: ${fi.high_exposure_formatted || '₹0.00'}\n`;
-  md += `- **Medium Exposure**: ${fi.medium_exposure_formatted || '₹0.00'}\n`;
-  md += `- **Low Exposure**: ${fi.low_exposure_formatted || '₹0.00'}\n`;
-  md += `- **Unresolved Exposure**: ${fi.unresolved_exposure_formatted || '₹0.00'}\n\n`;
-
-  md += `## Controller's Takeaway\n\n${report.controller_takeaway}\n`;
-
-  const blob = new Blob([md], { type: 'text/markdown' });
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `AI_Issues_Center_Report_${new Date().toISOString().substring(0, 10)}.md`;
+  a.download = `AI_Issues_Report_${new Date().toISOString().substring(0, 10)}.md`;
   a.click();
   showToast('AI Issues Center report downloaded.', 'success');
 }

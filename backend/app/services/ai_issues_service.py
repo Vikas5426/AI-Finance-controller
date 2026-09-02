@@ -36,9 +36,16 @@ class AIIssuesService:
         "LOW": 4
     }
 
+    _REPORT_CACHE: Dict[str, AIIssuesReport] = {}
+
     @classmethod
-    def generate_report(cls, org_id: str, batch_id: Optional[str] = None) -> AIIssuesReport:
-        """Generates the unified AI Issues Center report from real batch data."""
+    def generate_report(
+        cls,
+        org_id: str,
+        batch_id: Optional[str] = None,
+        force_refresh: bool = False
+    ) -> AIIssuesReport:
+        """Generates the unified AI Issues Center report from real batch data with caching."""
         # 1. Load batch context
         ctx = DatabaseService.load_batch_context(org_id, batch_id=batch_id)
         batch_meta = ctx.get("batch") or {}
@@ -49,6 +56,10 @@ class AIIssuesService:
         state_batch = tenant_state.get("active_batch") or STATE.get("active_batch") or {}
         if not active_batch_id and state_batch.get("org_id") == org_id:
             active_batch_id = state_batch.get("id")
+
+        cache_key = f"{org_id}:{active_batch_id or 'default'}"
+        if not force_refresh and cache_key in cls._REPORT_CACHE:
+            return cls._REPORT_CACHE[cache_key]
 
         # 2. Gather exceptions from DB and in-memory state
         exceptions: List[Dict[str, Any]] = []
@@ -169,25 +180,38 @@ class AIIssuesService:
             card_index += 1
             issue_cards.append(card)
 
-            # Accumulate metrics
-            total_impact += card.financial_impact
-            sev = card.severity.upper()
-            if sev == "CRITICAL":
-                critical_count += 1
-                crit_exposure += card.financial_impact
-            elif sev == "HIGH":
-                high_count += 1
-                high_exposure += card.financial_impact
-            elif sev == "MEDIUM":
-                medium_count += 1
-                med_exposure += card.financial_impact
-            else:
-                low_count += 1
-                low_exposure += card.financial_impact
+            # Accumulate metrics strictly for verified determinable exposures
+            if card.is_impact_determinable:
+                total_impact += card.financial_impact
+                sev = card.severity.upper()
+                if sev == "CRITICAL":
+                    critical_count += 1
+                    crit_exposure += card.financial_impact
+                elif sev == "HIGH":
+                    high_count += 1
+                    high_exposure += card.financial_impact
+                elif sev == "MEDIUM":
+                    medium_count += 1
+                    med_exposure += card.financial_impact
+                else:
+                    low_count += 1
+                    low_exposure += card.financial_impact
 
-            if card.requires_human_review:
-                human_review_count += 1
-                unresolved_exposure += card.financial_impact
+                if card.requires_human_review:
+                    human_review_count += 1
+                    unresolved_exposure += card.financial_impact
+            else:
+                sev = card.severity.upper()
+                if sev == "CRITICAL":
+                    critical_count += 1
+                elif sev == "HIGH":
+                    high_count += 1
+                elif sev == "MEDIUM":
+                    medium_count += 1
+                else:
+                    low_count += 1
+                if card.requires_human_review:
+                    human_review_count += 1
 
         # 6. Sort issues strictly:
         # 1. CRITICAL -> 2. HIGH -> 3. MEDIUM -> 4. LOW
@@ -218,19 +242,20 @@ class AIIssuesService:
             systemic_patterns=systemic_patterns
         )
 
-        # 10. Synthesize Overall Summary
+        # 10. Synthesize Overall Summary in Simple Plain English
         top_issue_names = ", ".join([c.title for c in issue_cards[:3]])
         summary_text = (
-            f"The latest reconciliation batch identified {len(issue_cards)} issue categories affecting "
-            f"{len(exceptions)} transaction records with a total financial exposure of ₹{total_impact:,.2f}. "
-            f"Key risk areas include {top_issue_names}."
+            f"We analyzed your reconciliation data and found {len(issue_cards)} issue categories across "
+            f"{len(exceptions)} transactions totaling ₹{total_impact:,.2f} in financial exposure. "
+            f"Main attention areas: {top_issue_names}."
         )
 
         # 11. Invoke LLM Reasoning Agent to enrich structured executive synthesis
         try:
             agent = AIIssuesReasoningAgent()
+            total_txns_count = len(ctx.get("transactions", [])) or (len(exceptions) if exceptions else 0)
             batch_summary = {
-                "total_records": len(exceptions) * 10,
+                "total_records": total_txns_count,
                 "exception_count": len(exceptions),
                 "total_impact_inr": f"₹{total_impact:,.2f}",
                 "audit_integrity": audit_integrity
@@ -251,8 +276,176 @@ class AIIssuesService:
         except Exception:
             pass
 
-        return AIIssuesReport(
+        report_obj = AIIssuesReport(
             batch_id=active_batch_id,
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            summary=summary_text,
+            overall_health=overall_health,
+            audit_integrity=audit_integrity,
+            audit_integrity_detail=audit_integrity_detail,
+            total_issues=len(issue_cards),
+            total_financial_impact=round(total_impact, 2),
+            total_financial_impact_formatted=f"₹{total_impact:,.2f}",
+            critical_count=critical_count,
+            high_count=high_count,
+            medium_count=medium_count,
+            low_count=low_count,
+            human_review_count=human_review_count,
+            issues=issue_cards,
+            systemic_patterns=systemic_patterns,
+            financial_impact=FinancialImpactBreakdown(
+                total_exception_exposure=round(total_impact, 2),
+                total_exception_exposure_formatted=f"₹{total_impact:,.2f}",
+                critical_exposure=round(crit_exposure, 2),
+                critical_exposure_formatted=f"₹{crit_exposure:,.2f}",
+                high_exposure=round(high_exposure, 2),
+                high_exposure_formatted=f"₹{high_exposure:,.2f}",
+                medium_exposure=round(med_exposure, 2),
+                medium_exposure_formatted=f"₹{med_exposure:,.2f}",
+                low_exposure=round(low_exposure, 2),
+                low_exposure_formatted=f"₹{low_exposure:,.2f}",
+                unresolved_exposure=round(unresolved_exposure, 2),
+                unresolved_exposure_formatted=f"₹{unresolved_exposure:,.2f}"
+            ),
+            controller_takeaway=controller_takeaway
+        )
+
+        cls._REPORT_CACHE[cache_key] = report_obj
+        if len(cls._REPORT_CACHE) > 50:
+            oldest_k = next(iter(cls._REPORT_CACHE))
+            cls._REPORT_CACHE.pop(oldest_k, None)
+
+        return report_obj
+
+    @classmethod
+    def generate_ai_issues_report(
+        cls,
+        batch_id: str,
+        exceptions: List[Dict[str, Any]],
+        batch_summary: Optional[Dict[str, Any]] = None,
+        audit_integrity: str = "PASS",
+        audit_integrity_detail: str = "Cryptographic SHA-256 state chain unbroken across all transactions."
+    ) -> AIIssuesReport:
+        """Constructs and returns an AIIssuesReport directly from a list of exceptions and batch summary."""
+        batch_summary = batch_summary or {}
+        
+        # Handle Clean Batch (0 Exceptions)
+        if not exceptions:
+            return AIIssuesReport(
+                batch_id=batch_id or "NO-ACTIVE-BATCH",
+                generated_at=datetime.now(timezone.utc).isoformat(),
+                summary="✓ No financial issues detected in this reconciliation batch.",
+                overall_health="HEALTHY",
+                audit_integrity=audit_integrity,
+                audit_integrity_detail=audit_integrity_detail,
+                total_issues=0,
+                total_financial_impact=0.0,
+                total_financial_impact_formatted="₹0.00",
+                critical_count=0,
+                high_count=0,
+                medium_count=0,
+                low_count=0,
+                human_review_count=0,
+                issues=[],
+                systemic_patterns=[],
+                financial_impact=FinancialImpactBreakdown(),
+                controller_takeaway="All transaction streams across payment gateway captures, bank wire deposits, and general ledger journal entries are fully balanced and verified to 0 paise residual. No financial exposure exists in this batch."
+            )
+
+        # 1. Group exceptions into prioritized issue categories
+        issues_map: Dict[str, List[Dict[str, Any]]] = {}
+        for e in exceptions:
+            group_key = cls._classify_issue_type(e.get("exception_type") or "")
+            issues_map.setdefault(group_key, []).append(e)
+
+        # 2. Build AIIssueCards with deterministic math
+        issue_cards: List[AIIssueCard] = []
+        critical_count = 0
+        high_count = 0
+        medium_count = 0
+        low_count = 0
+        human_review_count = 0
+
+        crit_exposure = 0.0
+        high_exposure = 0.0
+        med_exposure = 0.0
+        low_exposure = 0.0
+        unresolved_exposure = 0.0
+        total_impact = 0.0
+
+        card_index = 1
+        for group_type, group_excs in issues_map.items():
+            card = cls._build_issue_card(card_index, group_type, group_excs)
+            card_index += 1
+            issue_cards.append(card)
+
+            if card.is_impact_determinable:
+                total_impact += card.financial_impact
+                sev = card.severity.upper()
+                if sev == "CRITICAL":
+                    critical_count += 1
+                    crit_exposure += card.financial_impact
+                elif sev == "HIGH":
+                    high_count += 1
+                    high_exposure += card.financial_impact
+                elif sev == "MEDIUM":
+                    medium_count += 1
+                    med_exposure += card.financial_impact
+                else:
+                    low_count += 1
+                    low_exposure += card.financial_impact
+
+                if card.requires_human_review:
+                    human_review_count += 1
+                    unresolved_exposure += card.financial_impact
+            else:
+                sev = card.severity.upper()
+                if sev == "CRITICAL":
+                    critical_count += 1
+                elif sev == "HIGH":
+                    high_count += 1
+                elif sev == "MEDIUM":
+                    medium_count += 1
+                else:
+                    low_count += 1
+                if card.requires_human_review:
+                    human_review_count += 1
+
+        # Sort issues strictly: CRITICAL -> HIGH -> MEDIUM -> LOW
+        issue_cards.sort(key=lambda c: (c.severity_rank, -c.financial_impact))
+
+        # Extract Systemic Patterns
+        systemic_patterns = cls._extract_systemic_patterns(issues_map)
+
+        # Determine Overall Financial Health
+        if critical_count > 0 or crit_exposure > 0:
+            overall_health = "CRITICAL_RISK"
+        elif high_count > 0 or high_exposure > 0:
+            overall_health = "UNHEALTHY"
+        elif medium_count > 0:
+            overall_health = "ACTION_REQUIRED"
+        else:
+            overall_health = "HEALTHY"
+
+        controller_takeaway = cls._generate_controller_takeaway(
+            overall_health=overall_health,
+            total_impact=total_impact,
+            critical_count=critical_count,
+            high_count=high_count,
+            human_review_count=human_review_count,
+            all_issues=issue_cards,
+            systemic_patterns=systemic_patterns
+        )
+
+        top_issue_names = ", ".join([c.title for c in issue_cards[:3]])
+        summary_text = (
+            f"We analyzed your reconciliation data and found {len(issue_cards)} issue categories across "
+            f"{len(exceptions)} transactions totaling ₹{total_impact:,.2f} in financial exposure. "
+            f"Main attention areas: {top_issue_names}."
+        )
+
+        return AIIssuesReport(
+            batch_id=batch_id,
             generated_at=datetime.now(timezone.utc).isoformat(),
             summary=summary_text,
             overall_health=overall_health,
@@ -288,9 +481,13 @@ class AIIssuesService:
     @classmethod
     def _classify_issue_type(cls, exc_type: str) -> str:
         t = (exc_type or "").upper()
+        if any(k in t for k in ("UNRESOLVED_SETTLEMENT", "SETL_UNSET", "UNSETTLED_GATEWAY_RECORD")):
+            return "UNRESOLVED_SETTLEMENT"
+        if any(k in t for k in ("SETTLEMENT_STATUS_CANNOT_BE_VERIFIED", "BANK_DATA_INCOMPLETE", "INCOMPLETE_DATA", "INCOMPLETE_BANK_DATA")):
+            return "INCOMPLETE_DATA"
         if any(k in t for k in ("MISSING_LEDGER", "UNALLOCATED_BANK", "UNKNOWN_BANK", "ANONYMOUS_BANK")):
             return "MISSING_LEDGER"
-        if any(k in t for k in ("MISSING_BANK", "UNSETTLED", "MISSING_SETTLEMENT", "MISSING_WIRE", "UNMATCHED_GATEWAY")):
+        if any(k in t for k in ("MISSING_BANK", "MISSING_SETTLEMENT", "MISSING_WIRE", "UNMATCHED_GATEWAY")):
             return "MISSING_BANK"
         if any(k in t for k in ("AMOUNT_MISMATCH", "VALUE_MISMATCH", "VARIANCE")):
             return "AMOUNT_MISMATCH"
@@ -314,18 +511,30 @@ class AIIssuesService:
         total_minor = sum(int(e.get("impact_minor") or 0) for e in group_excs)
         impact_inr = round(total_minor / 100, 2)
         impact_formatted = f"₹{impact_inr:,.2f}"
+        is_determinable = True
+        evidence_status = "VERIFIED_DETERMINISTIC"
 
-        # Collect references
+        # Collect references and source metadata
         ref_ids: List[str] = []
+        source_kinds: Set[str] = set()
+        exact_amounts: List[str] = []
         for e in group_excs:
-            if e.get("primary_txn") and e["primary_txn"].get("external_id"):
-                ref_ids.append(e["primary_txn"]["external_id"])
-            elif e.get("counterpart_txn") and e["counterpart_txn"].get("external_id"):
-                ref_ids.append(e["counterpart_txn"]["external_id"])
+            pt = e.get("primary_txn") or {}
+            ct = e.get("counterpart_txn") or {}
+            if pt.get("external_id"):
+                ref_ids.append(pt["external_id"])
+            elif ct.get("external_id"):
+                ref_ids.append(ct["external_id"])
             elif e.get("primary_txn_id"):
                 ref_ids.append(e["primary_txn_id"])
+            
+            if pt.get("source_kind"):
+                source_kinds.add(pt["source_kind"])
+            if pt.get("amount_minor"):
+                exact_amounts.append(f"₹{pt['amount_minor']/100:,.2f}")
 
         unique_refs = list(dict.fromkeys(ref_ids))[:8]
+        primary_source_name = "Payment Gateway (gateway.csv)" if "GATEWAY" in source_kinds else ("Bank Statement (bank.csv)" if "BANK" in source_kinds else ("General Ledger (general_ledger.csv)" if "LEDGER" in source_kinds else "Multi-Stream Feeds"))
 
         # Determine average confidence
         conf_scores = [
@@ -333,225 +542,266 @@ class AIIssuesService:
             for e in group_excs
             if e.get("proposal") and e["proposal"].get("confidence")
         ]
-        avg_conf = round(sum(conf_scores) / len(conf_scores), 2) if conf_scores else 0.92
+        avg_conf = round(sum(conf_scores) / len(conf_scores), 2) if conf_scores else 0.95
 
         # Check if any require human review
         has_pending = any(e.get("state") in ("DETECTED", "INVESTIGATING", "PROPOSED", "PENDING_APPROVAL") for e in group_excs)
 
-        # Collect primary and counterpart metadata from actual transactions
-        p_refs = []
-        c_refs = []
-        p_dates = []
-        for e in group_excs:
-            if e.get("primary_txn"):
-                pt = e["primary_txn"]
-                if pt.get("external_id"):
-                    p_refs.append(pt["external_id"])
-                if pt.get("occurred_at"):
-                    p_dates.append(str(pt["occurred_at"])[:10])
-            if e.get("counterpart_txn"):
-                ct = e["counterpart_txn"]
-                if ct.get("external_id"):
-                    c_refs.append(ct["external_id"])
+        first_p_ref = unique_refs[0] if unique_refs else "N/A"
+        first_amt = exact_amounts[0] if exact_amounts else impact_formatted
 
-        first_p_ref = p_refs[0] if p_refs else "N/A"
-        first_c_ref = c_refs[0] if c_refs else "N/A"
-        first_date = p_dates[0] if p_dates else "2026-08-01"
+        calc_proof = None
+        evidence_details = {
+            "source_dataset": primary_source_name,
+            "exact_ids": unique_refs,
+            "rows_found": count,
+            "amount_per_row": first_amt,
+            "verified_exposure": impact_formatted
+        }
 
-        if group_type == "MISSING_LEDGER":
-            title = "Missing Ledger Entries"
-            severity = "CRITICAL"
-            rank = cls.SEVERITY_RANKS["CRITICAL"]
-            owner = "Treasury & General Ledger Operations"
-            what_happened = (
-                f"The reconciliation engine detected {count} verified bank deposit transaction{'s' if count > 1 else ''} "
-                f"present in the bank feed but completely missing from the General Ledger. "
-                f"Total unallocated financial exposure is {impact_formatted}."
-            )
-            why_it_matters = (
-                "Unposted bank receipts cause cash understatements and defer revenue recognition, violating GAAP ASC 606 "
-                "and creating open audit exposure during book closing."
-            )
-            likely_cause = "Delayed ERP posting, batch sync latency, or an unmapped deposit channel in the automated reconciliation pipeline."
-            recommended_action = "Review deposit references, assign customer/revenue account codes, and post missing journal entry vouchers."
-            next_step = f"Investigate and approve journal vouchers for the {count} missing ledger entries."
-            citations = ["SOP-01 §3: Three-Way Multi-Source Matching", "GAAP ASC 606: Revenue Recognition Integrity"]
-            proof = {
-                "title": "Deterministic Calculation: Missing General Ledger Records",
-                "bank_amount": impact_formatted,
-                "ledger_amount": "₹0.00",
-                "difference": impact_formatted,
-                "lines": [
-                    f"Bank Statement Verified Deposit ({first_p_ref}): {impact_formatted}",
-                    f"General Ledger Posted Credits: ₹0.00",
-                    f"Net Unallocated Variance: {impact_formatted}"
-                ],
-                "explanation": f"Bank statement records {impact_formatted} in receipts without matching credits in the General Ledger.",
-                "is_balanced": True
-            }
-
-        elif group_type == "MISSING_BANK":
-            title = "Missing Bank Settlements (Unreceived Wires)"
-            severity = "HIGH"
-            rank = cls.SEVERITY_RANKS["HIGH"]
-            owner = "Treasury Operations & Acquiring Bank Relations"
-            what_happened = (
-                f"The system identified {count} payment gateway capture{'s' if count > 1 else ''} totaling {impact_formatted} "
-                f"where the standard banking settlement window has elapsed, but no matching credit appears in bank statements."
-            )
-            why_it_matters = (
-                "Unsettled gateway captures represent cash held at the acquiring bank or payment processor. "
-                "If uncollected, this represents trapped liquidity and potential settlement dispute exposure."
-            )
-            likely_cause = "Payment gateway settlement batch delay, acquiring bank processing hold, or weekend/holiday cutoff timing window."
-            recommended_action = "Issue UTR tracking inquiries to the acquiring bank partner and monitor upcoming clearing cycles."
-            next_step = f"Initiate UTR trace inquiries for the {count} overdue settlement wire(s)."
-            citations = ["SOP-05 §1: Unresolved Exceptions & UTR Tracing Protocol"]
-            proof = {
-                "title": "Deterministic Calculation: Unsettled Payment Gateway Captures",
-                "gateway_amount": impact_formatted,
-                "bank_amount": "₹0.00",
-                "difference": impact_formatted,
-                "lines": [
-                    f"Gateway Captured Inflow ({first_p_ref}): {impact_formatted}",
-                    f"Bank Statement Received Settlement: ₹0.00",
-                    f"Net Overdue Settlement Variance: {impact_formatted}"
-                ],
-                "explanation": f"Gateway captures of {impact_formatted} have not settled into the bank account within the agreed SLA window.",
-                "is_balanced": True
-            }
-
-        elif group_type == "AMOUNT_MISMATCH":
-            title = "Transaction Amount Mismatch"
-            severity = "MEDIUM"
-            rank = cls.SEVERITY_RANKS["MEDIUM"]
-            owner = "Billing Operations & Revenue Accounting"
-            what_happened = (
-                f"Identified {count} transaction pair{'s' if count > 1 else ''} with matching external reference IDs "
-                f"but differing transaction values, creating a net discrepancy of {impact_formatted}."
-            )
-            why_it_matters = (
-                "Amount variances indicate partial captures, unrecorded partial refunds, or localized foreign exchange conversion rounding."
-            )
-            likely_cause = "Partial fulfillment adjustments, unauthorized discounts, or foreign currency conversion rate discrepancies."
-            recommended_action = "Inspect source invoices and bank credit notes to adjust the receivable ledger balance."
-            next_step = f"Reconcile line-item invoice amounts for the {count} mismatched record(s)."
-            citations = ["SOP-01 §2: Amount Matching & Tolerances"]
-            proof = {
-                "title": "Deterministic Calculation: Value Variance",
-                "difference": impact_formatted,
-                "lines": [
-                    f"Primary Ref: {first_p_ref} vs Counterpart: {first_c_ref}",
-                    f"Aggregate Discrepancy Amount: {impact_formatted}",
-                    f"Affected Transaction Pairs: {count}"
-                ],
-                "explanation": f"Deterministic matching identified a mathematical difference of {impact_formatted} across paired records.",
-                "is_balanced": True
-            }
-
-        elif group_type == "PERIOD_CUTOFF":
-            title = "Period Cutoff Timing Lags (T+2 Accruals)"
-            severity = "MEDIUM"
-            rank = cls.SEVERITY_RANKS["MEDIUM"]
-            owner = "Accounting Controller & Financial Reporting"
-            what_happened = (
-                f"Found {count} transaction{'s' if count > 1 else ''} captured near the monthly reporting boundary "
-                f"representing {impact_formatted} that settled in the subsequent value period under standard T+2 banking SLAs."
-            )
-            why_it_matters = (
-                "Boundary timing differences cause temporary balance sheet imbalances between reporting periods if not accrued to in-transit clearing accounts."
-            )
-            likely_cause = "Legitimate clearing latency for transactions captured within 15 minutes of the period cutoff (23:59:59 IST)."
-            recommended_action = "Accrue the gross amount to Account 1290 (In-Transit Clearing); no merchant dispute required as funds clear automatically."
-            next_step = f"Post monthly period-end in-transit accrual for {impact_formatted}."
-            citations = ["SOP-02 §4: Period Boundary Cut-off Accounting", "Ind AS 115 / ASC 606"]
-            proof = {
-                "title": "Deterministic Calculation: Period Boundary Accrual",
-                "difference": impact_formatted,
-                "lines": [
-                    f"Period End In-Transit Volume ({first_p_ref}): {impact_formatted}",
-                    f"Standard Settlement SLA: T+2 Banking Days (0 <= days <= 7)",
-                    f"Clearing Account: Debit Acc 1290 (In-Transit Clearing)"
-                ],
-                "explanation": f"Timing difference of {impact_formatted} settles in subsequent accounting cycle.",
-                "is_balanced": True
-            }
-
-        elif group_type == "FEE_VARIANCE":
-            title = "Gateway MDR Processing Fee Deductions"
+        if group_type == "DUPLICATE":
+            title = "Duplicate Gateway Records Detected"
             severity = "LOW"
             rank = cls.SEVERITY_RANKS["LOW"]
-            owner = "Payment Gateway Operations & AP Accounting"
+            owner = "Data Integration & Operations"
+            dup_rows = count
+            calc_proof = f"{first_amt} × {dup_rows} duplicate = {impact_formatted}"
             what_happened = (
-                f"Found {count} settlement deposit{'s' if count > 1 else ''} where net bank credits differ from gross captures "
-                f"due to standard 2.0% MDR fees + 18% GST deductions totaling {impact_formatted}."
+                f"Found {dup_rows} duplicate record{'s' if dup_rows > 1 else ''} with identical reference ID '{first_p_ref}' "
+                f"in the {primary_source_name}, totaling {impact_formatted} in duplicate volume."
             )
             why_it_matters = (
-                "Processing fees deducted at source must be split out as operating expenses (Debit Acc 5010) rather than treated as lost revenue."
+                "Duplicate rows must be isolated so they are excluded from unique transaction counts and revenue totals."
             )
-            likely_cause = "Standard contract fee schedule deductions calculated at source prior to wire remittance."
-            recommended_action = "Auto-post the fee & GST decomposition vouchers to Debit Account 5010 (Processing Fees)."
-            next_step = f"Decompose and post fee vouchers for {count} transaction(s)."
-            citations = ["SOP-04 §2: Merchant Discount Rate Settlement Rules"]
-            policy = FeePolicyRegistry.get_default_policy()
-            proof = {
-                "title": "Deterministic Calculation: Fee & GST Decomposition",
-                "difference": impact_formatted,
-                "lines": [
-                    f"Standard MDR Fee ({policy.mdr_rate_pct}%): ₹{(total_minor * 0.02) / 100:,.2f}",
-                    f"GST on MDR ({policy.gst_rate_pct}%): ₹{(total_minor * 0.02 * 0.18) / 100:,.2f}",
-                    f"Total Operating Expense Split: {impact_formatted}"
-                ],
-                "explanation": f"Standard fee deductions of {impact_formatted} verified to zero residual imbalance.",
-                "is_balanced": True
-            }
-
-        elif group_type == "DUPLICATE":
-            title = "Duplicate Transaction Records"
-            severity = "LOW"
-            rank = cls.SEVERITY_RANKS["LOW"]
-            owner = "Data Ingestion & Integration Operations"
-            what_happened = (
-                f"Detected {count} duplicate transaction row{'s' if count > 1 else ''} in the uploaded feed with identical external reference keys, "
-                f"representing {impact_formatted} in duplicate records."
-            )
-            why_it_matters = (
-                "Duplicate records can cause double-counting of revenues or erroneous multiple payments if not de-duplicated."
-            )
-            likely_cause = "Multiple webhook deliveries, feed re-transmission, or duplicate rows in source export."
-            recommended_action = "Quarantine the duplicate rows and retain only the idempotent primary transaction."
-            next_step = f"Confirm idempotency quarantine for {count} duplicate record(s)."
-            citations = ["SOP-03 §1: Idempotency & Duplicate Guards"]
+            likely_cause = "Source export contained duplicate webhook lines or re-ingested batch rows."
+            recommended_action = "Retain the first unique transaction and exclude duplicate lines from reporting."
+            next_step = f"Exclude the {dup_rows} duplicate record(s) from financial reporting."
+            citations = ["SOP-03: Duplicate & Idempotency Guards"]
             proof = {
                 "title": "Deterministic Calculation: Duplicate Exposure",
                 "difference": impact_formatted,
                 "lines": [
-                    f"Duplicate Row Count: {count}",
-                    f"Duplicate External Key: {first_p_ref}",
-                    f"Duplicate Volume: {impact_formatted}"
+                    f"Duplicate Reference: {first_p_ref}",
+                    f"Rows Found: {dup_rows + 1} (1 original + {dup_rows} duplicate)",
+                    f"Duplicate Exposure: {calc_proof}"
                 ],
-                "explanation": f"Idempotent guards flagged {count} duplicate rows totaling {impact_formatted}.",
+                "explanation": f"Identified {dup_rows} duplicate row(s) totaling {impact_formatted}. Excluded from unique volume.",
+                "is_balanced": True
+            }
+
+        elif group_type == "UNRESOLVED_SETTLEMENT":
+            title = "Unresolved Gateway Settlement Identifier"
+            severity = "HIGH"
+            rank = cls.SEVERITY_RANKS["HIGH"]
+            owner = "Treasury & Gateway Operations"
+            calc_proof = f"Gross Captured {impact_formatted} - Unassigned Settlement ID = {impact_formatted} Pending Trace"
+            what_happened = (
+                f"Gateway payment '{first_p_ref}' for {impact_formatted} was captured with an unresolved settlement identifier ('setl_UNSET')."
+            )
+            why_it_matters = (
+                "Payments without valid processor settlement batch IDs cannot be automatically matched to bank deposits."
+            )
+            likely_cause = "The payment processor has not yet batched this transaction into a confirmed bank payout file."
+            recommended_action = "Confirm settlement batch ID in payment aggregator portal and update linkage."
+            next_step = f"Trace settlement status for gateway payment {first_p_ref}."
+            citations = ["SOP-05: Gateway Payout & Settlement Verification"]
+            proof = {
+                "title": "Deterministic Calculation: Unresolved Settlement Linkage",
+                "gateway_amount": impact_formatted,
+                "bank_amount": "Unlinked",
+                "difference": impact_formatted,
+                "lines": [
+                    f"Gateway Payment: {first_p_ref}",
+                    f"Declared Settlement ID: setl_UNSET (Unresolved)",
+                    f"Gross Exposure: {impact_formatted}"
+                ],
+                "explanation": f"Payment of {impact_formatted} has not been grouped into a confirmed processor settlement batch.",
+                "is_balanced": False
+            }
+
+        elif group_type == "INCOMPLETE_DATA":
+            title = "Bank Source Data Incomplete / Unlinked"
+            severity = "MEDIUM"
+            rank = cls.SEVERITY_RANKS["MEDIUM"]
+            owner = "Treasury & Finance Operations"
+            is_determinable = False
+            impact_formatted = "Not determinable from supplied data"
+            evidence_status = "CANNOT_DETERMINE"
+            calc_proof = "Bank reconciliation cannot be completed: bank feed lacks matching timeline records."
+            what_happened = (
+                "Bank source data is incomplete or does not cover this reporting period. "
+                "Deterministic bank reconciliation cannot be completed for these gateway payments."
+            )
+            why_it_matters = (
+                "Without a verified bank statement for this date window, settlement receipt cannot be confirmed or disproven."
+            )
+            likely_cause = "Uploaded bank statement is from a different account or date range than the gateway export."
+            recommended_action = "Upload the complete bank statement covering the corresponding settlement dates."
+            next_step = "Ingest the complete bank statement for this period."
+            citations = ["SOP-01: Multi-Source Reconciliation Completeness"]
+            proof = None
+
+        elif group_type == "MISSING_LEDGER":
+            title = "Unallocated Bank Receipts (Missing Accounting Entries)"
+            severity = "HIGH"
+            rank = cls.SEVERITY_RANKS["HIGH"]
+            owner = "Accounting & Finance Team"
+            calc_proof = f"Bank Received {impact_formatted} - Ledger Recorded ₹0.00 = {impact_formatted} Unallocated"
+            what_happened = (
+                f"We identified {count} bank deposit{'s' if count > 1 else ''} ({first_p_ref}) totaling {impact_formatted} "
+                f"in the bank statement without a corresponding General Ledger entry or customer invoice."
+            )
+            why_it_matters = (
+                "Unallocated cash deposits create unmatched bank balances and delay revenue recognition."
+            )
+            likely_cause = "Direct wire deposit received without customer invoice reference, or manual journal posting delayed."
+            recommended_action = "Identify customer or invoice from bank reference UTR and post journal entry."
+            next_step = f"Approve journal voucher for the unallocated bank deposit of {impact_formatted}."
+            citations = ["SOP-01: Three-Way Multi-Source Matching", "GAAP ASC 606"]
+            proof = {
+                "title": "Deterministic Calculation: Unallocated Bank Cash",
+                "bank_amount": impact_formatted,
+                "ledger_amount": "₹0.00",
+                "difference": impact_formatted,
+                "lines": [
+                    f"Bank Deposit Received ({first_p_ref}): {impact_formatted}",
+                    f"Accounting Ledger Record: ₹0.00",
+                    f"Unallocated Cash Variance: {impact_formatted}"
+                ],
+                "explanation": f"Bank received {impact_formatted}, but no matching entry exists in the General Ledger.",
+                "is_balanced": True
+            }
+
+        elif group_type == "MISSING_BANK":
+            title = "Unsettled Gateway Payments (Awaiting Bank Deposit)"
+            severity = "HIGH"
+            rank = cls.SEVERITY_RANKS["HIGH"]
+            owner = "Treasury & Gateway Operations"
+            calc_proof = f"Gateway Gross {impact_formatted} - Bank Received ₹0.00 = {impact_formatted}"
+            what_happened = (
+                f"Gateway captured {count} payment{'s' if count > 1 else ''} totaling {impact_formatted}, "
+                f"which has not yet settled in the verified bank statement."
+            )
+            why_it_matters = (
+                "Funds collected from customers are pending transfer from the payment processor to the bank account."
+            )
+            likely_cause = "Standard 1-2 day processor settlement window, bank holiday, or payout hold."
+            recommended_action = "Verify payout schedule in processor portal and check UTR status."
+            next_step = f"Track payout for {count} pending settlement(s)."
+            citations = ["SOP-05: Unresolved Exceptions & UTR Tracing"]
+            proof = {
+                "title": "Deterministic Calculation: Unsettled Gateway Payments",
+                "gateway_amount": impact_formatted,
+                "bank_amount": "₹0.00",
+                "difference": impact_formatted,
+                "lines": [
+                    f"Gateway Captured Volume ({first_p_ref}): {impact_formatted}",
+                    f"Bank Deposit Received: ₹0.00",
+                    f"Pending Payout Amount: {impact_formatted}"
+                ],
+                "explanation": f"Payments of {impact_formatted} are awaiting deposit from the payment gateway.",
+                "is_balanced": True
+            }
+
+        elif group_type == "AMOUNT_MISMATCH":
+            title = "Transaction Amount Difference"
+            severity = "MEDIUM"
+            rank = cls.SEVERITY_RANKS["MEDIUM"]
+            owner = "Billing & Accounts Receivable"
+            calc_proof = f"Recorded Feeds Variance = {impact_formatted}"
+            what_happened = (
+                f"Found {count} matched transaction{'s' if count > 1 else ''} where references match, "
+                f"but recorded amounts differ by {impact_formatted}."
+            )
+            why_it_matters = "Amount differences indicate partial payments, unrecorded refunds, or fee discrepancies."
+            likely_cause = "Partial payment, discount deduction, or currency rate difference."
+            recommended_action = "Review source invoice against remittance details and record adjusting entry."
+            next_step = f"Review and adjust the {count} amount variance(s)."
+            citations = ["SOP-01: Amount Matching & Tolerances"]
+            proof = {
+                "title": "Deterministic Calculation: Amount Variance",
+                "difference": impact_formatted,
+                "lines": [
+                    f"Primary Reference: {first_p_ref}",
+                    f"Total Variance Amount: {impact_formatted}",
+                    f"Affected Transaction Pairs: {count}"
+                ],
+                "explanation": f"Calculated a variance of {impact_formatted} between matched transaction records.",
+                "is_balanced": True
+            }
+
+        elif group_type == "PERIOD_CUTOFF":
+            title = "Month-End Timing Lags (T+2 In-Transit Payments)"
+            severity = "LOW"
+            rank = cls.SEVERITY_RANKS["LOW"]
+            owner = "Financial Accounting Team"
+            calc_proof = f"Month-End Inflow = {impact_formatted} (T+2 Transit)"
+            what_happened = (
+                f"Found {count} payment{'s' if count > 1 else ''} totaling {impact_formatted} captured near month-end "
+                f"that settled in the bank in the subsequent reporting period."
+            )
+            why_it_matters = "Revenue belongs to this month's financials even if bank clearing completes in the next period."
+            likely_cause = "Standard 1-2 banking days settlement clearing window across month-end boundary."
+            recommended_action = "Apply in-transit accrual entry to Account 1290 (In-Transit Clearing)."
+            next_step = f"Post in-transit accrual for {impact_formatted}."
+            citations = ["SOP-02: Period Boundary Cut-off Accounting", "Ind AS 115 / ASC 606"]
+            proof = {
+                "title": "Deterministic Calculation: Month-End In-Transit Clearing",
+                "difference": impact_formatted,
+                "lines": [
+                    f"Month-End Inflow ({first_p_ref}): {impact_formatted}",
+                    f"Standard Settlement Window: T+2 Banking Days",
+                    f"Accrual Account: 1290 In-Transit Clearing"
+                ],
+                "explanation": f"In-transit volume of {impact_formatted} belongs to this reporting period.",
+                "is_balanced": True
+            }
+
+        elif group_type == "FEE_VARIANCE":
+            title = "Payment Gateway Fee & Tax Deductions"
+            severity = "LOW"
+            rank = cls.SEVERITY_RANKS["LOW"]
+            owner = "Accounts Payable & Payments"
+            calc_proof = f"Gross {impact_formatted} Net Settlement Deduction"
+            what_happened = (
+                f"Found {count} settlement deposit{'s' if count > 1 else ''} where net deposit is less than gross capture "
+                f"due to standard MDR processing fees and GST totaling {impact_formatted}."
+            )
+            why_it_matters = "Processing fees deducted by gateways should be recorded as expenses rather than lost revenue."
+            likely_cause = "Payment gateway automatically deducted contractual MDR fee (2.0%) and GST (18%) net."
+            recommended_action = "Post fee expense journal entry debiting Account 5010 (Payment Gateway Expense)."
+            next_step = f"Approve fee expense voucher for {impact_formatted}."
+            citations = ["SOP-04: Merchant Processing Fee Rules"]
+            proof = {
+                "title": "Deterministic Calculation: Processing Fees & Tax",
+                "difference": impact_formatted,
+                "lines": [
+                    f"Contractual MDR Fee: ₹{(total_minor * 0.02) / 100:,.2f}",
+                    f"GST on Processing Fee: ₹{(total_minor * 0.02 * 0.18) / 100:,.2f}",
+                    f"Total Verified Expense: {impact_formatted}"
+                ],
+                "explanation": f"Fee deduction of {impact_formatted} is mathematically verified.",
                 "is_balanced": True
             }
 
         else:
-            title = f"Unresolved {group_type.replace('_', ' ').title()} Discrepancies"
+            title = f"Unresolved {group_type.replace('_', ' ').title()} Items"
             severity = "MEDIUM"
             rank = cls.SEVERITY_RANKS["MEDIUM"]
-            owner = "Controller Operations"
+            owner = "Finance & Accounting Operations"
             what_happened = f"Identified {count} transaction exception(s) with an aggregate impact of {impact_formatted}."
-            why_it_matters = "Unresolved financial items require controller review to ensure accurate closing balances."
-            likely_cause = "Feed discrepancies or missing reference keys in uploaded data."
-            recommended_action = "Review individual exception records and verify supporting documentation."
-            next_step = f"Review the {count} exception(s) in the controller queue."
-            citations = ["SOP-05: Exception Management & Maker-Checker Governance"]
+            why_it_matters = "Unresolved financial items require review to ensure books are fully balanced."
+            likely_cause = "Missing reference numbers or discrepancies in the uploaded data."
+            recommended_action = "Review the transaction details and confirm supporting documentation."
+            next_step = f"Review the {count} exception(s) in the review queue."
+            citations = ["SOP-05: Exception Management"]
             proof = None
 
         evidence_items = [
-            f"{count} affected record{'s' if count > 1 else ''}",
-            f"Total financial exposure: {impact_formatted}",
-            "Source: 3-way reconciliation engine & deterministic validation gates",
-            f"Reference IDs: {', '.join(unique_refs) if unique_refs else 'Available in transaction logs'}"
+            f"Dataset: {primary_source_name}",
+            f"Reference IDs: {', '.join(unique_refs) if unique_refs else 'Refer to detailed transaction list'}",
+            f"Rows found: {count} | Financial impact: {impact_formatted}",
+            f"Status: {evidence_status}"
         ]
 
         return AIIssueCard(
@@ -560,17 +810,24 @@ class AIIssuesService:
             type=group_type,
             severity=severity,
             severity_rank=rank,
-            financial_impact=impact_inr,
+            financial_impact=impact_inr if is_determinable else 0.0,
             financial_impact_formatted=impact_formatted,
+            is_impact_determinable=is_determinable,
             affected_records=count,
             status="Needs Human Review" if has_pending else "Auto-Verified",
             requires_human_review=has_pending,
             confidence=avg_conf,
+            confidence_evidence_status=evidence_status,
+            source_dataset=primary_source_name,
+            exact_ids=unique_refs,
+            exact_source_amounts=exact_amounts,
+            calculation_proof=calc_proof,
             what_happened=what_happened,
             why_it_matters=why_it_matters,
             likely_cause=likely_cause,
             likely_cause_is_inference=True,
             evidence=evidence_items,
+            evidence_details=evidence_details,
             recommended_action=recommended_action,
             owner=owner,
             next_step=next_step,
@@ -584,7 +841,7 @@ class AIIssuesService:
         cls,
         issues_map: Dict[str, List[Dict[str, Any]]]
     ) -> List[SystemicPattern]:
-        """Extracts systemic operational patterns from real grouped exceptions."""
+        """Extracts systemic operational patterns strictly from real verified exceptions."""
         patterns: List[SystemicPattern] = []
         p_idx = 1
 
@@ -594,59 +851,76 @@ class AIIssuesService:
             impact_inr = round(total_minor / 100, 2)
             impact_formatted = f"₹{impact_inr:,.2f}"
 
-            if group_type == "MISSING_LEDGER":
+            if group_type == "MISSING_LEDGER" and count >= 1:
                 patterns.append(SystemicPattern(
                     pattern_id=f"PAT-{p_idx:02d}",
-                    pattern_name="Systemic Ledger Ingestion & Posting Delay",
+                    pattern_name="Unrecorded Bank Receipts",
                     affected_count=count,
                     impact_inr=impact_inr,
                     impact_formatted=impact_formatted,
-                    root_cause_status="CONFIRMED" if count > 5 else "SUPPORTED_HYPOTHESIS",
-                    likely_systemic_cause="Delayed ERP posting batch schedules or unmapped bank deposit accounts in the automated sync workflow.",
-                    recommended_remediation="Automate real-time ledger posting for verified bank webhooks and implement proactive alerting for unmatched deposits.",
-                    remediation_owner="Treasury & ERP Integration Engineering",
+                    root_cause_status="CONFIRMED" if count >= 3 else "SUPPORTED_HYPOTHESIS",
+                    likely_systemic_cause="Direct customer bank deposits received without automated accounting journal creation.",
+                    recommended_remediation="Enable automatic journal creation for verified bank receipts and require customer reference tagging.",
+                    remediation_owner="Accounting & Finance Operations",
                     observed_evidence=[
-                        f"{count} bank deposits without GL entries",
-                        f"Cumulative exposure: {impact_formatted}",
-                        "Recurring across multiple transaction references"
+                        f"{count} bank deposit(s) missing from accounting ledger",
+                        f"Total unrecorded cash: {impact_formatted}",
+                        "Requires manual journal entry posting"
                     ]
                 ))
                 p_idx += 1
 
-            elif group_type == "MISSING_BANK":
+            elif group_type == "UNRESOLVED_SETTLEMENT" and count >= 1:
                 patterns.append(SystemicPattern(
                     pattern_id=f"PAT-{p_idx:02d}",
-                    pattern_name="Acquiring Bank Settlement SLA Latency",
+                    pattern_name="Unassigned Gateway Settlement Batch IDs",
                     affected_count=count,
                     impact_inr=impact_inr,
                     impact_formatted=impact_formatted,
-                    root_cause_status="SUPPORTED_HYPOTHESIS",
-                    likely_systemic_cause="Acquiring bank settlement processing hold or clearing batch schedule misalignment with payment gateway capture timestamps.",
-                    recommended_remediation="Establish automated UTR polling with acquiring banks and configure SLA breach escalation triggers at T+48 hours.",
-                    remediation_owner="Treasury Operations & Banking Partnerships",
+                    root_cause_status="CONFIRMED",
+                    likely_systemic_cause="Payment processor captures pending payout batch grouping.",
+                    recommended_remediation="Configure webhook to receive payout batch ID notifications upon clearing.",
+                    remediation_owner="Treasury & Gateway Operations",
                     observed_evidence=[
-                        f"{count} gateway captures awaiting bank settlement credit",
-                        f"Cumulative unsettled funds: {impact_formatted}",
-                        "Settlement window exceeded standard SLA"
+                        f"{count} transaction(s) with 'setl_UNSET' settlement identifier",
+                        f"Gross volume: {impact_formatted}"
                     ]
                 ))
+                p_idx += 1
+
+            elif group_type == "FEE_VARIANCE" and count >= 1:
+                patterns.append(SystemicPattern(
+                    pattern_id=f"PAT-{p_idx:02d}",
+                    pattern_name="Standard Gateway MDR Deductions",
+                    affected_count=count,
+                    impact_inr=impact_inr,
+                    impact_formatted=impact_formatted,
+                    root_cause_status="CONFIRMED",
+                    likely_systemic_cause="Payment gateway automatically deducts contractual processing fees and GST before bank credit.",
+                    recommended_remediation="Automate fee splitting rule to book gross revenue and debit MDR expense Account 5010.",
+                    remediation_owner="Accounting Operations",
+                    observed_evidence=[
+                        f"{count} settlement deduction(s) totaling {impact_formatted}"
+                    ]
+                ))
+                p_idx += 1
                 p_idx += 1
 
             elif group_type == "PERIOD_CUTOFF":
                 patterns.append(SystemicPattern(
                     pattern_id=f"PAT-{p_idx:02d}",
-                    pattern_name="Reporting Period Boundary Cutoff Timing",
+                    pattern_name="Month-End In-Transit Settlements",
                     affected_count=count,
                     impact_inr=impact_inr,
                     impact_formatted=impact_formatted,
                     root_cause_status="CONFIRMED",
-                    likely_systemic_cause="Standard T+2 settlement latency for high-volume transactions captured right at month-end closing boundary.",
-                    recommended_remediation="Formalize automated month-end in-transit accrual rules (Debit Acc 1290) in the period-end closing checklist.",
-                    remediation_owner="Accounting Controller & Reporting",
+                    likely_systemic_cause="Standard 1-2 day clearing time for transactions occurring right on the last day of the month.",
+                    recommended_remediation="Post a standard month-end in-transit accrual entry as part of the monthly close checklist.",
+                    remediation_owner="Accounting & Financial Reporting",
                     observed_evidence=[
-                        f"{count} boundary-timed transactions",
-                        f"In-transit volume: {impact_formatted}",
-                        "Consistent with standard banking clearing windows"
+                        f"{count} month-end in-transit payments",
+                        f"Total in-transit amount: {impact_formatted}",
+                        "Standard banking transit timing"
                     ]
                 ))
                 p_idx += 1
@@ -654,18 +928,18 @@ class AIIssuesService:
             elif group_type == "FEE_VARIANCE":
                 patterns.append(SystemicPattern(
                     pattern_id=f"PAT-{p_idx:02d}",
-                    pattern_name="Merchant Processing Fee Source Deductions",
+                    pattern_name="Payment Gateway Fee Deductions",
                     affected_count=count,
                     impact_inr=impact_inr,
                     impact_formatted=impact_formatted,
                     root_cause_status="CONFIRMED",
-                    likely_systemic_cause="Standard contractual 2.0% MDR + 18% GST fee deductions applied by gateway before net bank deposit remittance.",
-                    recommended_remediation="Ensure automated split-journal rules debit Account 5010 automatically upon receipt of gateway settlement reports.",
-                    remediation_owner="Payment Gateway Accounting",
+                    likely_systemic_cause="Contractual payment processing fees (MDR + GST) deducted before bank remittance.",
+                    recommended_remediation="Automatically post fee deductions to the Processing Fees expense account when deposits arrive.",
+                    remediation_owner="Accounts Payable",
                     observed_evidence=[
-                        f"{count} fee split transactions",
-                        f"Cumulative fee volume: {impact_formatted}",
-                        "Exact adherence to configured 2.0% MDR + 18% GST formula"
+                        f"{count} transactions with fee deductions",
+                        f"Total fee deductions: {impact_formatted}",
+                        "Consistent with gateway fee schedule"
                     ]
                 ))
                 p_idx += 1
@@ -683,9 +957,9 @@ class AIIssuesService:
         all_issues: List[AIIssueCard],
         systemic_patterns: List[SystemicPattern]
     ) -> str:
-        """Generates dynamic, professional CFO/Controller executive conclusion."""
+        """Generates dynamic, simple, plain-English executive takeaway."""
         if total_impact == 0 or not all_issues:
-            return "The current batch is fully reconciled with zero residual exposure. All internal controls and cryptographic audit chains have passed verification."
+            return "✓ Everything is balanced. All payments, deposits, and accounting ledger records match 100% with zero discrepancies."
 
         top_critical = all_issues[0]
         largest_exposure_issue = max(all_issues, key=lambda c: c.financial_impact)
@@ -693,15 +967,15 @@ class AIIssuesService:
 
         if overall_health in ("CRITICAL_RISK", "UNHEALTHY"):
             return (
-                f"The current reconciliation batch requires immediate financial controller intervention primarily due to {top_critical.title.lower()}{secondary_clause}. "
-                f"The largest single exposure is {largest_exposure_issue.financial_impact_formatted} originating from {largest_exposure_issue.title.lower()} ({largest_exposure_issue.affected_records} affected record{'s' if largest_exposure_issue.affected_records > 1 else ''}). "
-                f"A total of {human_review_count} issue {'categories' if human_review_count > 1 else 'category'} totaling ₹{total_impact:,.2f} require maker-checker sign-off before this batch can be certified for period-end book closing."
+                f"Action is required before closing your books. The main items needing attention are {top_critical.title.lower()}{secondary_clause}. "
+                f"The largest single variance is {largest_exposure_issue.financial_impact_formatted} from {largest_exposure_issue.title.lower()} ({largest_exposure_issue.affected_records} record{'s' if largest_exposure_issue.affected_records > 1 else ''}). "
+                f"Please review and approve the {human_review_count} pending item{'s' if human_review_count > 1 else ''} totaling ₹{total_impact:,.2f} to finalize your financial statements."
             )
         else:
             return (
-                f"The current batch shows high overall reconciliation health with total manageable variance of ₹{total_impact:,.2f}. "
-                f"The primary variances are {largest_exposure_issue.title.lower()} ({largest_exposure_issue.financial_impact_formatted}), which represent standard operational adjustments rather than financial losses. "
-                f"Recommended next action is to sign off on the proposed adjustment vouchers to finalize period-end closing."
+                f"Your reconciliation is in good health with ₹{total_impact:,.2f} in minor routine adjustments. "
+                f"The primary items are {largest_exposure_issue.title.lower()} ({largest_exposure_issue.financial_impact_formatted}), which are standard operational timings or fee deductions. "
+                f"Approve the routine adjustment entries to complete your period close."
             )
 
     @classmethod

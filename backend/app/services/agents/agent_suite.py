@@ -44,9 +44,13 @@ class FinancialAgentSuite:
         safeguards: List[Dict[str, Any]],
         cash_forecast: List[Dict[str, Any]],
         audit_events: List[Dict[str, Any]],
-        approvals: List[Dict[str, Any]]
+        approvals: List[Dict[str, Any]],
+        force_refresh: bool = False
     ) -> Dict[str, Any]:
-        """Runs RCA, Financial Insights, Audit Explanation, and Report Generation agents in sequence."""
+        """Runs RCA, Financial Insights, Audit Explanation, and Report Generation agents in sequence with caching."""
+        if not force_refresh and batch_id and batch_id in self._cached_batch_analyses:
+            return self._cached_batch_analyses[batch_id]
+
         # 1. Run RCA Agent (Agent 10)
         rca_res = self.rca_agent.analyze_batch_exceptions(
             batch_id=batch_id,
@@ -72,7 +76,7 @@ class FinancialAgentSuite:
 
         # 4. Run Report Generation Agent (Agent 13)
         report_res = self.report_agent.generate_controller_report(
-            batch_id=batch_id,
+            contract_or_batch_id=batch_id,
             batch_summary=batch_summary,
             rca_results=rca_res,
             insights_results=insights_res,

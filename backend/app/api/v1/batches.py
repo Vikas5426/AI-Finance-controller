@@ -127,7 +127,16 @@ def execute_batch_reconciliation(
                 for u in uploads:
                     # Find source kind from profile
                     prof = db.query(schema.SourceProfile).filter_by(id=u.source_profile_id).first()
-                    s_kind_str = prof.source_kind if prof else "GATEWAY"
+                    if prof:
+                        s_kind_str = prof.source_kind
+                    elif "bank" in (u.source_profile_id or "").lower() or "bank" in (u.file_name or "").lower():
+                        s_kind_str = "BANK"
+                    elif "ledger" in (u.source_profile_id or "").lower() or "gl" in (u.source_profile_id or "").lower() or "ledger" in (u.file_name or "").lower():
+                        s_kind_str = "LEDGER"
+                    elif "settlement" in (u.source_profile_id or "").lower() or "settlement" in (u.file_name or "").lower():
+                        s_kind_str = "SETTLEMENT"
+                    else:
+                        s_kind_str = "GATEWAY"
                     resolved_files[s_kind_str] = u.storage_path
                     if u.file_hash:
                         file_hashes_to_verify[s_kind_str] = u.file_hash

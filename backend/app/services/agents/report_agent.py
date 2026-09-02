@@ -39,18 +39,20 @@ class ReportGenerationAgent(BaseReasoningAgent):
 
     def generate_controller_report(
         self,
-        contract_or_batch_id: Union[ExecutiveReportInputContract, Dict[str, Any], str],
+        contract_or_batch_id: Optional[Union[ExecutiveReportInputContract, Dict[str, Any], str]] = None,
         batch_summary: Optional[Dict[str, Any]] = None,
         rca_results: Optional[Dict[str, Any]] = None,
         insights_results: Optional[Dict[str, Any]] = None,
         audit_results: Optional[Dict[str, Any]] = None,
         exceptions: Optional[List[Dict[str, Any]]] = None,
-        provenance: Optional[Dict[str, Any]] = None
+        provenance: Optional[Dict[str, Any]] = None,
+        batch_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Synthesizes an executive controller brief strictly consuming verified component outputs."""
+        target_contract = contract_or_batch_id or batch_id or "BATCH-ACTIVE"
         # 1. Normalize into ExecutiveReportInputContract
         contract = self._normalize_input_contract(
-            contract_or_batch_id=contract_or_batch_id,
+            contract_or_batch_id=target_contract,
             batch_summary=batch_summary,
             rca_results=rca_results,
             insights_results=insights_results,

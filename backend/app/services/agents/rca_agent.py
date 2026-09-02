@@ -149,7 +149,9 @@ class RootCauseAnalysisAgent(BaseReasoningAgent):
                 preventative_action_items=parsed_json.get("preventative_action_items", []),
                 telemetry=telemetry
             )
-            return result.model_dump()
+            d = result.model_dump()
+            d["primary_bottleneck"] = parsed_json.get("primary_bottleneck") or (sanitized_findings[0].pattern_name if sanitized_findings else "General Discrepancies")
+            return d
 
         # Deterministic Verified Fallback
         res = SystemicRCAResult(
@@ -166,7 +168,9 @@ class RootCauseAnalysisAgent(BaseReasoningAgent):
             ],
             telemetry=telemetry
         )
-        return res.model_dump()
+        d = res.model_dump()
+        d["primary_bottleneck"] = deterministic_findings[0].pattern_name if deterministic_findings else "General Discrepancies"
+        return d
 
     def _build_deterministic_findings(
         self,

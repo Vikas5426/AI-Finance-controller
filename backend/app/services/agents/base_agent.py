@@ -1,17 +1,83 @@
-"""
-Base Reasoning Agent Infrastructure for AI Financial Controller.
-Provides unified Groq LLM integration, telemetry logging, structured JSON extraction,
-and deterministic fallback gates.
-"""
-
 import json
 import logging
+import re
 import time
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+class AICircuitBreaker:
+    """
+    Tracks AI provider rate limits (HTTP 429), quota exhaustion, and temporary outages.
+    Enforces global batch/agent call budgets and avoids hammering exhausted APIs.
+    """
+    _cooldowns: Dict[str, float] = {}  # provider -> timestamp until available
+    _batch_call_counts: Dict[str, int] = {}  # batch_id -> total LLM calls made
+    _agent_call_counts: Dict[str, Dict[str, int]] = {}  # batch_id -> {agent_name: count}
+
+    @classmethod
+    def is_provider_available(cls, provider: str) -> Tuple[bool, float]:
+        """Returns (is_available, remaining_cooldown_seconds)."""
+        now = time.time()
+        until = cls._cooldowns.get(provider.upper(), 0.0)
+        if now < until:
+            return False, round(until - now, 1)
+        return True, 0.0
+
+    @classmethod
+    def record_429(cls, provider: str, retry_after_sec: Optional[float] = None):
+        """Trips the circuit breaker for this provider upon receiving HTTP 429."""
+        cooldown = retry_after_sec or getattr(settings, "AI_CIRCUIT_BREAKER_COOLDOWN_SEC", 60.0)
+        cooldown = max(10.0, min(cooldown, 300.0))  # Bound between 10s and 5m
+        cls._cooldowns[provider.upper()] = time.time() + cooldown
+        logger.warning(
+            "[AI_CIRCUIT_BREAKER] Provider '%s' rate limited (429). Cooldown for %.1fs.",
+            provider.upper(), cooldown
+        )
+
+    @classmethod
+    def record_success(cls, provider: str):
+        """Clears cooldown upon a verified successful response."""
+        cls._cooldowns.pop(provider.upper(), None)
+
+    @classmethod
+    def can_make_call(cls, batch_id: Optional[str], agent_name: str) -> Tuple[bool, str]:
+        """Enforces global budget limits per batch and per agent."""
+        if not batch_id:
+            return True, "OK"
+
+        max_batch = getattr(settings, "MAX_LLM_CALLS_PER_BATCH", 3)
+        max_agent = getattr(settings, "MAX_LLM_CALLS_PER_AGENT", 1)
+
+        curr_batch = cls._batch_call_counts.get(batch_id, 0)
+        if curr_batch >= max_batch:
+            return False, f"BATCH_BUDGET_EXCEEDED (max={max_batch})"
+
+        agent_counts = cls._agent_call_counts.setdefault(batch_id, {})
+        curr_agent = agent_counts.get(agent_name, 0)
+        if curr_agent >= max_agent:
+            return False, f"AGENT_BUDGET_EXCEEDED (agent={agent_name}, max={max_agent})"
+
+        return True, "OK"
+
+    @classmethod
+    def increment_call(cls, batch_id: Optional[str], agent_name: str):
+        """Increments telemetry counter for batch and agent."""
+        if not batch_id:
+            return
+        cls._batch_call_counts[batch_id] = cls._batch_call_counts.get(batch_id, 0) + 1
+        agent_counts = cls._agent_call_counts.setdefault(batch_id, {})
+        agent_counts[agent_name] = agent_counts.get(agent_name, 0) + 1
+
+    @classmethod
+    def reset_batch(cls, batch_id: str):
+        """Resets call counters for a specific batch."""
+        cls._batch_call_counts.pop(batch_id, None)
+        cls._agent_call_counts.pop(batch_id, None)
 
 
 class AgentTelemetryTracker:
@@ -109,7 +175,6 @@ class BaseReasoningAgent:
         if not raw_text:
             return None
         text = raw_text.strip()
-        # Strip markdown fences if present
         if text.startswith("```json"):
             text = text[7:]
         elif text.startswith("```"):
@@ -131,120 +196,206 @@ class BaseReasoningAgent:
         self,
         system_prompt: str,
         user_prompt: str,
-        temperature: float = 0.1,
+        temperature: float = 1.0,
         max_tokens: int = 2048,
-        reasoning_effort: str = "medium"
+        reasoning_effort: str = "medium",
+        batch_id: Optional[str] = None,
+        purpose: str = "financial_reasoning"
     ) -> Tuple[Optional[Dict[str, Any]], str, Dict[str, Any]]:
         """
-        Executes reasoning prompt on Groq with fallback to Gemini or deterministic logic.
+        Executes reasoning prompt with:
+        1. Global budget gate
+        2. Circuit breaker check
+        3. Structured trace logging ([AI_CALL], [AI_CALL_COMPLETE])
+        4. Bounded fallback: Groq -> Gemini -> Deterministic logic
         Returns: (parsed_json, raw_text, telemetry_dict)
         """
         start_t = time.time()
+        request_id = uuid.uuid4().hex[:8]
 
-        # 1. Attempt Groq
-        if self._groq_client:
-            candidate_models = [self.groq_model]
-            for m in ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"]:
-                if m not in candidate_models:
-                    candidate_models.append(m)
+        # 0. Check Global Batch Budget
+        allowed, budget_reason = AICircuitBreaker.can_make_call(batch_id, self.agent_name)
+        if not allowed:
+            logger.info(
+                "[AI_CALL_SKIPPED] agent=%s request_id=%s batch_id=%s reason=%s -> routing to deterministic fallback",
+                self.agent_name, request_id, batch_id or "N/A", budget_reason
+            )
+            lat = round((time.time() - start_t) * 1000, 2)
+            telemetry = {
+                "provider": "DETERMINISTIC_REASONER",
+                "model": "rule_engine_v1",
+                "latency_ms": lat,
+                "tokens_est": 0,
+                "status": "BUDGET_FALLBACK"
+            }
+            AgentTelemetryTracker.record_call(
+                agent_name=self.agent_name,
+                provider="DETERMINISTIC_REASONER",
+                model="rule_engine_v1",
+                latency_ms=lat,
+                tokens_est=0,
+                status="BUDGET_FALLBACK",
+                metadata={"request_id": request_id, "reason": budget_reason}
+            )
+            return None, "", telemetry
 
-            for g_model in candidate_models:
-                try:
-                    kwargs: Dict[str, Any] = {
-                        "model": g_model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        "temperature": temperature,
-                        "max_completion_tokens": max_tokens,
-                        "timeout": 12.0
-                    }
-                    
-                    # Some models support reasoning_effort
-                    if "openai" in g_model:
-                        try:
-                            kwargs["reasoning_effort"] = reasoning_effort
-                            completion = self._groq_client.chat.completions.create(**kwargs)
-                        except Exception:
-                            kwargs.pop("reasoning_effort", None)
-                            completion = self._groq_client.chat.completions.create(**kwargs)
-                    else:
-                        completion = self._groq_client.chat.completions.create(**kwargs)
+        # 1. Attempt Groq if available and not on 429 cooldown
+        groq_avail, groq_cooldown = AICircuitBreaker.is_provider_available("GROQ")
+        if self._groq_client and groq_avail:
+            g_model = self.groq_model
+            logger.info(
+                "[AI_CALL] agent=%s provider=GROQ model=%s request_id=%s batch_id=%s purpose=%s",
+                self.agent_name, g_model, request_id, batch_id or "N/A", purpose
+            )
 
-                    raw_text = completion.choices[0].message.content or ""
-                    latency_ms = (time.time() - start_t) * 1000
-                    tokens_est = max(50, len(raw_text) // 4)
-                    parsed_json = self.extract_json(raw_text)
-
-                    if parsed_json:
-                        telemetry = {
-                            "provider": "GROQ",
-                            "model": g_model,
-                            "latency_ms": round(latency_ms, 2),
-                            "tokens_est": tokens_est,
-                            "status": "SUCCESS"
-                        }
-
-                        AgentTelemetryTracker.record_call(
-                            agent_name=self.agent_name,
-                            provider="GROQ",
-                            model=g_model,
-                            latency_ms=latency_ms,
-                            tokens_est=tokens_est,
-                            status="SUCCESS"
-                        )
-
-                        return parsed_json, raw_text, telemetry
-                except Exception as e:
-                    logger.warning(f"[{self.agent_name}] Groq execution on {g_model} failed: {e}. Trying next model...")
-                    continue
-
-        # 2. Attempt Gemini Fallback
-        if self._gemini_client:
             try:
-                # The setting is AGENT_GEMINI_MODEL; reading a non-existent
-                # GEMINI_MODEL silently pinned every fallback to a retired model
-                # id, so the fallback tier 404'd instead of answering.
-                gemini_model = settings.AGENT_GEMINI_MODEL
+                kwargs: Dict[str, Any] = {
+                    "model": g_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": temperature,
+                    "top_p": 1,
+                    "max_completion_tokens": max_tokens,
+                    "timeout": 12.0
+                }
+                if "openai" in g_model:
+                    try:
+                        kwargs["reasoning_effort"] = reasoning_effort
+                        completion = self._groq_client.chat.completions.create(**kwargs)
+                    except Exception:
+                        kwargs.pop("reasoning_effort", None)
+                        completion = self._groq_client.chat.completions.create(**kwargs)
+                else:
+                    completion = self._groq_client.chat.completions.create(**kwargs)
+
+                raw_text = completion.choices[0].message.content or ""
+                if not raw_text.strip():
+                    kwargs_stream = dict(kwargs)
+                    kwargs_stream["stream"] = True
+                    stream_comp = self._groq_client.chat.completions.create(**kwargs_stream)
+                    stream_chunks = []
+                    for chunk in stream_comp:
+                        if chunk.choices and chunk.choices[0].delta:
+                            stream_chunks.append(chunk.choices[0].delta.content or "")
+                    raw_text = "".join(stream_chunks)
+
+                latency_ms = round((time.time() - start_t) * 1000, 2)
+                tokens_est = max(50, len(raw_text) // 4)
+                parsed_json = self.extract_json(raw_text)
+
+                if parsed_json:
+                    AICircuitBreaker.record_success("GROQ")
+                    AICircuitBreaker.increment_call(batch_id, self.agent_name)
+
+                    logger.info(
+                        "[AI_CALL_COMPLETE] request_id=%s tokens_est=%d duration_ms=%.1f status=SUCCESS provider=GROQ",
+                        request_id, tokens_est, latency_ms
+                    )
+
+                    telemetry = {
+                        "provider": "GROQ",
+                        "model": g_model,
+                        "latency_ms": latency_ms,
+                        "tokens_est": tokens_est,
+                        "status": "SUCCESS"
+                    }
+                    AgentTelemetryTracker.record_call(
+                        agent_name=self.agent_name,
+                        provider="GROQ",
+                        model=g_model,
+                        latency_ms=latency_ms,
+                        tokens_est=tokens_est,
+                        status="SUCCESS",
+                        metadata={"request_id": request_id}
+                    )
+                    return parsed_json, raw_text, telemetry
+
+            except Exception as e:
+                err_str = str(e)
+                if "429" in err_str or "rate_limit" in err_str.lower() or "quota" in err_str.lower():
+                    # Parse retry-after if provided
+                    retry_match = re.search(r"retry\s+in\s+([\d\.]+)", err_str, re.IGNORECASE)
+                    retry_sec = float(retry_match.group(1)) if retry_match else 60.0
+                    AICircuitBreaker.record_429("GROQ", retry_sec)
+                    logger.warning(
+                        "[AI_PROVIDER_UNAVAILABLE] provider=groq reason=rate_limit retry_after=%.1fs",
+                        retry_sec
+                    )
+                else:
+                    logger.warning(f"[{self.agent_name}] Groq execution error: {e}")
+
+        # 2. Attempt Gemini Fallback if available and not on 429 cooldown
+        gemini_avail, gemini_cooldown = AICircuitBreaker.is_provider_available("GEMINI")
+        if self._gemini_client and gemini_avail:
+            gemini_model = getattr(settings, "AGENT_GEMINI_MODEL", "gemini-3.6-flash")
+            logger.info(
+                "[AI_CALL] agent=%s provider=GEMINI model=%s request_id=%s batch_id=%s purpose=%s (fallback tier)",
+                self.agent_name, gemini_model, request_id, batch_id or "N/A", purpose
+            )
+            try:
                 combined_prompt = f"{system_prompt}\n\nUser Context:\n{user_prompt}"
                 response = self._gemini_client.models.generate_content(
                     model=gemini_model,
                     contents=combined_prompt
                 )
                 raw_text = response.text or ""
-                latency_ms = (time.time() - start_t) * 1000
+                latency_ms = round((time.time() - start_t) * 1000, 2)
                 tokens_est = max(50, len(raw_text) // 4)
                 parsed_json = self.extract_json(raw_text)
 
-                telemetry = {
-                    "provider": "GEMINI",
-                    "model": gemini_model,
-                    "latency_ms": round(latency_ms, 2),
-                    "tokens_est": tokens_est,
-                    "status": "SUCCESS"
-                }
+                if parsed_json:
+                    AICircuitBreaker.record_success("GEMINI")
+                    AICircuitBreaker.increment_call(batch_id, self.agent_name)
 
-                AgentTelemetryTracker.record_call(
-                    agent_name=self.agent_name,
-                    provider="GEMINI",
-                    model=gemini_model,
-                    latency_ms=latency_ms,
-                    tokens_est=tokens_est,
-                    status="SUCCESS"
-                )
+                    logger.info(
+                        "[AI_CALL_COMPLETE] request_id=%s tokens_est=%d duration_ms=%.1f status=SUCCESS provider=GEMINI",
+                        request_id, tokens_est, latency_ms
+                    )
 
-                return parsed_json, raw_text, telemetry
+                    telemetry = {
+                        "provider": "GEMINI",
+                        "model": gemini_model,
+                        "latency_ms": latency_ms,
+                        "tokens_est": tokens_est,
+                        "status": "SUCCESS"
+                    }
+                    AgentTelemetryTracker.record_call(
+                        agent_name=self.agent_name,
+                        provider="GEMINI",
+                        model=gemini_model,
+                        latency_ms=latency_ms,
+                        tokens_est=tokens_est,
+                        status="SUCCESS",
+                        metadata={"request_id": request_id}
+                    )
+                    return parsed_json, raw_text, telemetry
 
             except Exception as e:
-                logger.warning(f"[{self.agent_name}] Gemini fallback failed: {e}")
+                err_str = str(e)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    retry_match = re.search(r"retryDelay':\s*'([\d]+)", err_str)
+                    retry_sec = float(retry_match.group(1)) if retry_match else 60.0
+                    AICircuitBreaker.record_429("GEMINI", retry_sec)
+                    logger.warning(
+                        "[AI_PROVIDER_UNAVAILABLE] provider=gemini reason=rate_limit retry_after=%.1fs",
+                        retry_sec
+                    )
+                else:
+                    logger.warning(f"[{self.agent_name}] Gemini fallback failed: {e}")
 
-        # 3. Fallback to Empty Telemetry
-        latency_ms = (time.time() - start_t) * 1000
+        # 3. Controlled Deterministic Fallback
+        latency_ms = round((time.time() - start_t) * 1000, 2)
+        logger.info(
+            "[AI_CALL_COMPLETE] request_id=%s tokens_est=0 duration_ms=%.1f status=DETERMINISTIC_FALLBACK",
+            request_id, latency_ms
+        )
+
         telemetry = {
             "provider": "DETERMINISTIC_REASONER",
             "model": "rule_engine_v1",
-            "latency_ms": round(latency_ms, 2),
+            "latency_ms": latency_ms,
             "tokens_est": 0,
             "status": "FALLBACK"
         }
@@ -254,6 +405,8 @@ class BaseReasoningAgent:
             model="rule_engine_v1",
             latency_ms=latency_ms,
             tokens_est=0,
-            status="FALLBACK"
+            status="FALLBACK",
+            metadata={"request_id": request_id}
         )
         return None, "", telemetry
+

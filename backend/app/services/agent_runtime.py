@@ -568,16 +568,47 @@ class AIAgentRuntime:
 
         user_prompt = json.dumps(targeted_context, indent=2, default=str)
 
+        # 0. Check Global Batch Budget & Circuit Breaker
+        try:
+            from app.services.agents.base_agent import AICircuitBreaker
+            batch_id_val = None
+            if primary_txn and primary_txn.get("batch_id"):
+                batch_id_val = primary_txn["batch_id"]
+            
+            allowed, budget_reason = AICircuitBreaker.can_make_call(batch_id_val, "Agent 9: Exception Investigation Agent")
+            if not allowed:
+                inv = self._generate_rule_based_investigation(
+                    exception_id=exception_id,
+                    exception_type=exception_type,
+                    impact_minor=impact_minor,
+                    primary_txn=primary_txn,
+                    counterpart_txn=counterpart_txn,
+                    targeted_context=self.build_targeted_context(
+                        exception_id, exception_type, severity, impact_minor, primary_txn, counterpart_txn
+                    )
+                )
+                return inv
+        except Exception:
+            pass
+
         # 4. Determine Provider Priority Order based on settings
-        primary_pref = getattr(settings, "AGENT_PRIMARY_PROVIDER", "anthropic").lower()
+        primary_pref = getattr(settings, "AGENT_PRIMARY_PROVIDER", "groq").lower()
         if primary_pref == "groq":
-            providers = ["groq", "gemini", "anthropic"]
+            providers = ["groq", "gemini"]
         elif primary_pref == "gemini":
-            providers = ["gemini", "groq", "anthropic"]
+            providers = ["gemini", "groq"]
         else:
-            providers = ["anthropic", "gemini", "groq"]
+            providers = ["groq", "gemini"]
 
         for prov in providers:
+            try:
+                from app.services.agents.base_agent import AICircuitBreaker
+                avail, _ = AICircuitBreaker.is_provider_available(prov)
+                if not avail:
+                    continue
+            except Exception:
+                pass
+
             if prov == "groq" and self._groq_client:
                 groq_model = getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
                 try:
@@ -587,16 +618,42 @@ class AIAgentRuntime:
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": f"Targeted Context:\n{user_prompt}"}
                         ],
-                        temperature=0.1,
+                        temperature=1.0,
+                        top_p=1,
                         max_completion_tokens=1500,
                         timeout=float(getattr(settings, "AGENT_TIMEOUT_SECONDS", 12))
                     )
                     raw_text = completion.choices[0].message.content or ""
+                    if not raw_text.strip():
+                        # Stream collection
+                        stream_comp = self._groq_client.chat.completions.create(
+                            model=groq_model,
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": f"Targeted Context:\n{user_prompt}"}
+                            ],
+                            temperature=1.0,
+                            top_p=1,
+                            max_completion_tokens=1500,
+                            timeout=float(getattr(settings, "AGENT_TIMEOUT_SECONDS", 12)),
+                            stream=True
+                        )
+                        stream_chunks = []
+                        for chunk in stream_comp:
+                            if chunk.choices and chunk.choices[0].delta:
+                                stream_chunks.append(chunk.choices[0].delta.content or "")
+                        raw_text = "".join(stream_chunks)
+
                     json_start = raw_text.find("{")
                     json_end = raw_text.rfind("}") + 1
                     if json_start != -1 and json_end != -1:
                         data = json.loads(raw_text[json_start:json_end])
                         data["exception_id"] = exception_id
+                        if "evidence" in data and isinstance(data["evidence"], list):
+                            fallback_id = str(primary_txn.get("id") if primary_txn else (counterpart_txn.get("id") if counterpart_txn else exception_id))
+                            for ev in data["evidence"]:
+                                if isinstance(ev, dict) and not ev.get("record_id"):
+                                    ev["record_id"] = fallback_id
                         inv = InvestigationResult(**data)
                         is_valid, _ = DeterministicVerifier.verify_proposal(
                             inv,
@@ -615,6 +672,15 @@ class AIAgentRuntime:
                             }
                             self.stats["ai_investigated"] += 1
                             self._L1_CACHE[cache_key] = inv
+
+                            try:
+                                from app.services.agents.base_agent import AICircuitBreaker
+                                AICircuitBreaker.record_success("GROQ")
+                                if batch_id_val:
+                                    AICircuitBreaker.increment_call(batch_id_val, "Agent 9: Exception Investigation Agent")
+                            except Exception:
+                                pass
+
                             _record_agent_telemetry(
                                 agent_name="Agent 9: Exception Investigation Agent",
                                 provider="GROQ",
@@ -626,6 +692,13 @@ class AIAgentRuntime:
                             )
                             return inv
                 except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "rate_limit" in err_str.lower() or "quota" in err_str.lower():
+                        try:
+                            from app.services.agents.base_agent import AICircuitBreaker
+                            AICircuitBreaker.record_429("GROQ", 60.0)
+                        except Exception:
+                            pass
                     logger.warning("[agent_runtime] Groq investigation failed (model=%s): %s", groq_model, e)
 
             elif prov == "gemini" and self._gemini_client:
@@ -641,6 +714,11 @@ class AIAgentRuntime:
                     if json_start != -1 and json_end != -1:
                         data = json.loads(raw_text[json_start:json_end])
                         data["exception_id"] = exception_id
+                        if "evidence" in data and isinstance(data["evidence"], list):
+                            fallback_id = str(primary_txn.get("id") if primary_txn else (counterpart_txn.get("id") if counterpart_txn else exception_id))
+                            for ev in data["evidence"]:
+                                if isinstance(ev, dict) and not ev.get("record_id"):
+                                    ev["record_id"] = fallback_id
                         inv = InvestigationResult(**data)
                         is_valid, _ = DeterministicVerifier.verify_proposal(
                             inv,
@@ -659,6 +737,15 @@ class AIAgentRuntime:
                             }
                             self.stats["ai_investigated"] += 1
                             self._L1_CACHE[cache_key] = inv
+
+                            try:
+                                from app.services.agents.base_agent import AICircuitBreaker
+                                AICircuitBreaker.record_success("GEMINI")
+                                if batch_id_val:
+                                    AICircuitBreaker.increment_call(batch_id_val, "Agent 9: Exception Investigation Agent")
+                            except Exception:
+                                pass
+
                             _record_agent_telemetry(
                                 agent_name="Agent 9: Exception Investigation Agent",
                                 provider="GEMINI",
@@ -670,6 +757,13 @@ class AIAgentRuntime:
                             )
                             return inv
                 except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                        try:
+                            from app.services.agents.base_agent import AICircuitBreaker
+                            AICircuitBreaker.record_429("GEMINI", 60.0)
+                        except Exception:
+                            pass
                     logger.warning("[agent_runtime] Gemini investigation fallback failed (model=%s): %s", gemini_model, e)
 
             elif prov == "anthropic" and (self._anthropic_client or self.anthropic_api_key):

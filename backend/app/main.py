@@ -9,7 +9,7 @@ from starlette.responses import Response
 from app.core.config import settings
 from app.core.redis import redis_manager
 from app.db.database import init_db
-from app.api.v1 import auth, sources, batches, transactions, exceptions, approvals, qa, audit, reports, agents
+from app.api.v1 import auth, sources, batches, transactions, exceptions, approvals, qa, audit, reports, agents, ai_issues
 
 
 class RevalidatingStaticFiles(StaticFiles):
@@ -75,6 +75,7 @@ app.include_router(qa.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 app.include_router(reports.router, prefix=settings.API_V1_STR)
 app.include_router(agents.router, prefix=settings.API_V1_STR)
+app.include_router(ai_issues.router, prefix=settings.API_V1_STR)
 
 # Mount Frontend static directory dynamically
 candidates = [

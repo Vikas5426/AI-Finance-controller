@@ -174,6 +174,16 @@
         </a>
 
         <div class="nav-group-title">AI Intelligence Suite</div>
+        <a class="nav-link" data-view="ai-issues" id="nav-ai-issues">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="nav-label">AI Issues Center</span>
+          <span class="nav-badge-soon" id="nav-badge-ai-issues-count"
+            style="background: rgba(239,68,68,0.15); color: var(--accent-coral);">0 Issues</span>
+        </a>
         <a class="nav-link" data-view="agents" id="nav-agents">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="4" y="4" width="16" height="16" rx="3" />
@@ -1386,6 +1396,250 @@
               <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 3rem 1rem;">
                 Select any agent above or click <strong>"Run Agent"</strong> to execute LLM reasoning on the active financial batch.
               </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ==============================================================================
+             VIEW 6: AI ISSUES CENTER (ONE UNIFIED CONTINUOUS REPORT)
+             ============================================================================== -->
+        <section class="view-container" id="view-ai-issues">
+          <!-- View Header -->
+          <div class="overview-header" style="margin-bottom: 1.25rem;">
+            <div>
+              <h1 class="overview-title">AI Issues Center</h1>
+              <p class="overview-sub">All financial issues identified from the latest reconciliation, ranked by priority.</p>
+            </div>
+            <div style="display: flex; gap: 0.6rem;">
+              <button class="btn btn-secondary btn-sm" id="btn-ai-issues-refresh" onclick="loadAIIssuesReport()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10" />
+                  <polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+                Refresh Analysis
+              </button>
+              <button class="btn btn-primary btn-sm" id="btn-ai-issues-export" onclick="exportAIIssuesMarkdown()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading Experience Banner -->
+          <div id="ai-issues-loading-container" class="ai-issues-loading-banner" style="display: none;">
+            <div class="ai-issues-loading-spinner"></div>
+            <div class="ai-issues-loading-content">
+              <div class="ai-issues-loading-stage" id="ai-issues-loading-stage-text">Analyzing financial issues...</div>
+              <div class="ai-issues-loading-sub">Examining multi-stream discrepancies, calculating deterministic proofs, and ranking risk exposures.</div>
+            </div>
+          </div>
+
+          <!-- Top Compact Summary: 7 Cards Grid -->
+          <div class="ai-issues-summary-grid">
+            <div class="ai-issues-summary-card">
+              <div class="summary-label">Total Issues</div>
+              <div class="summary-value" id="ai-issues-kpi-total">0</div>
+              <div class="summary-sub" id="ai-issues-kpi-total-sub">Ranked by risk</div>
+            </div>
+            <div class="ai-issues-summary-card card-critical">
+              <div class="summary-label">Critical</div>
+              <div class="summary-value" id="ai-issues-kpi-critical" style="color: var(--accent-coral);">0</div>
+              <div class="summary-sub">Immediate action</div>
+            </div>
+            <div class="ai-issues-summary-card card-high">
+              <div class="summary-label">High</div>
+              <div class="summary-value" id="ai-issues-kpi-high" style="color: var(--accent-amber);">0</div>
+              <div class="summary-sub">Urgent review</div>
+            </div>
+            <div class="ai-issues-summary-card card-medium">
+              <div class="summary-label">Medium</div>
+              <div class="summary-value" id="ai-issues-kpi-medium" style="color: var(--accent-blue);">0</div>
+              <div class="summary-sub">Standard triage</div>
+            </div>
+            <div class="ai-issues-summary-card card-low">
+              <div class="summary-label">Low</div>
+              <div class="summary-value" id="ai-issues-kpi-low" style="color: var(--accent-cyan);">0</div>
+              <div class="summary-sub">Minor adjustments</div>
+            </div>
+            <div class="ai-issues-summary-card card-impact">
+              <div class="summary-label">Total Financial Impact</div>
+              <div class="summary-value" id="ai-issues-kpi-impact" style="color: var(--text-primary); font-family: var(--font-mono);">₹0.00</div>
+              <div class="summary-sub">Batch total exposure</div>
+            </div>
+            <div class="ai-issues-summary-card card-review">
+              <div class="summary-label">Human Review Required</div>
+              <div class="summary-value" id="ai-issues-kpi-review" style="color: var(--accent-amber);">0</div>
+              <div class="summary-sub">Awaiting sign-off</div>
+            </div>
+          </div>
+
+          <!-- Overall Situation Callout with Decoupled Audit & Financial Health -->
+          <div class="ai-issues-situation-card" id="ai-issues-situation-card">
+            <div class="situation-header">
+              <div class="situation-title-wrap">
+                <span class="situation-dot"></span>
+                <span class="situation-title">Overall Situation</span>
+              </div>
+              <div class="situation-badges-wrap">
+                <span class="badge-min" id="ai-issues-audit-status-badge" style="background: rgba(16,185,129,0.12); color: var(--accent-emerald);">
+                  Audit Integrity: PASS ✓
+                </span>
+                <span class="badge-min" id="ai-issues-health-status-badge" style="background: rgba(239,68,68,0.12); color: var(--accent-coral);">
+                  Financial Health: UNHEALTHY
+                </span>
+              </div>
+            </div>
+            <div class="situation-body" id="ai-issues-situation-text">
+              The latest reconciliation batch is being analyzed...
+            </div>
+            <div class="situation-footnote">
+              <span class="label-muted">Audit Integrity verifies SHA-256 block ledger immutability · Financial Health reflects transaction balancing status.</span>
+            </div>
+          </div>
+
+          <!-- Filter & Search Controls -->
+          <div class="ai-issues-filter-bar">
+            <div class="ai-issues-filter-pills" id="ai-issues-filter-pills">
+              <button class="filter-pill active" data-filter="ALL" onclick="setAIIssuesFilter('ALL')">
+                <span>All Issues</span>
+                <span class="filter-badge" id="filter-badge-all">0</span>
+              </button>
+              <button class="filter-pill pill-critical" data-filter="CRITICAL" onclick="setAIIssuesFilter('CRITICAL')">
+                <span>🔴 Critical</span>
+                <span class="filter-badge" id="filter-badge-critical">0</span>
+              </button>
+              <button class="filter-pill pill-high" data-filter="HIGH" onclick="setAIIssuesFilter('HIGH')">
+                <span>🟠 High</span>
+                <span class="filter-badge" id="filter-badge-high">0</span>
+              </button>
+              <button class="filter-pill pill-medium" data-filter="MEDIUM" onclick="setAIIssuesFilter('MEDIUM')">
+                <span>🔵 Medium</span>
+                <span class="filter-badge" id="filter-badge-medium">0</span>
+              </button>
+              <button class="filter-pill pill-low" data-filter="LOW" onclick="setAIIssuesFilter('LOW')">
+                <span>🟢 Low</span>
+                <span class="filter-badge" id="filter-badge-low">0</span>
+              </button>
+            </div>
+            <div class="ai-issues-search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" id="ai-issues-search-input" placeholder="Search issues, references, or amounts..." oninput="filterAIIssuesList()" autocomplete="off">
+              <button id="ai-issues-search-clear" onclick="clearAIIssuesSearch()" style="display: none;" title="Clear search">✕</button>
+            </div>
+          </div>
+
+          <!-- Clean / Empty State -->
+          <div id="ai-issues-clean-state" class="ai-issues-clean-card" style="display: none;">
+            <div class="clean-icon-circle">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-emerald);">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="clean-title">✓ No financial issues detected</div>
+            <div class="clean-sub">All gateway captures, bank deposits, and general ledger journal entries in this batch are 100% matched and verified with zero discrepancy.</div>
+          </div>
+
+          <!-- Empty Workspace State (No Reconciliation Run Yet) -->
+          <div id="ai-issues-empty-workspace" class="ai-issues-clean-card" style="display: none;">
+            <div class="clean-icon-circle">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-dim);">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div class="clean-title">No reconciliation batch processed yet</div>
+            <div class="clean-sub">Upload financial files in the Reconciliation workflow to automatically generate the unified AI Issues Center report.</div>
+            <button class="btn btn-primary btn-sm" onclick="switchView('workflow', 'Dashboards > Reconciliation')" style="margin-top: 1rem;">
+              Start Reconciliation Workflow →
+            </button>
+          </div>
+
+          <!-- Section: Issues Priority List -->
+          <div id="ai-issues-list-section">
+            <div class="ai-issues-section-header">
+              <div class="ai-issues-section-title">Priority Issues</div>
+              <div class="ai-issues-section-sub">Ranked strictly by Severity (Critical &rarr; High &rarr; Medium &rarr; Low) and Financial Impact</div>
+            </div>
+            <div class="ai-issues-cards-container" id="ai-issues-cards-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Section: Systemic Problems -->
+          <div class="ai-issues-section" id="ai-issues-systemic-section" style="margin-top: 2rem;">
+            <div class="ai-issues-section-header">
+              <div class="ai-issues-section-title">Systemic Problems</div>
+              <div class="ai-issues-section-sub">Identified repeated operational patterns and root causes across batch feeds</div>
+            </div>
+            <div class="ai-issues-systemic-grid" id="ai-issues-systemic-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Section: Financial Impact Breakdown -->
+          <div class="ai-issues-section" id="ai-issues-financial-impact-section" style="margin-top: 2rem;">
+            <div class="ai-issues-section-header">
+              <div class="ai-issues-section-title">Financial Impact</div>
+              <div class="ai-issues-section-sub">Deterministic exposure totals calculated directly from the reconciliation engine</div>
+            </div>
+            <div class="ai-issues-impact-grid">
+              <div class="impact-metric-box">
+                <div class="impact-lbl">Total Exception Exposure</div>
+                <div class="impact-val" id="impact-val-total" style="color: var(--text-primary);">₹0.00</div>
+                <div class="impact-sub">Cumulative variance</div>
+              </div>
+              <div class="impact-metric-box">
+                <div class="impact-lbl">Critical Exposure</div>
+                <div class="impact-val" id="impact-val-critical" style="color: var(--accent-coral);">₹0.00</div>
+                <div class="impact-sub">Highest risk tier</div>
+              </div>
+              <div class="impact-metric-box">
+                <div class="impact-lbl">High Exposure</div>
+                <div class="impact-val" id="impact-val-high" style="color: var(--accent-amber);">₹0.00</div>
+                <div class="impact-sub">Material items</div>
+              </div>
+              <div class="impact-metric-box">
+                <div class="impact-lbl">Medium Exposure</div>
+                <div class="impact-val" id="impact-val-medium" style="color: var(--accent-blue);">₹0.00</div>
+                <div class="impact-sub">Operational items</div>
+              </div>
+              <div class="impact-metric-box">
+                <div class="impact-lbl">Low Exposure</div>
+                <div class="impact-val" id="impact-val-low" style="color: var(--accent-cyan);">₹0.00</div>
+                <div class="impact-sub">Minor adjustments</div>
+              </div>
+              <div class="impact-metric-box">
+                <div class="impact-lbl">Unresolved Exposure</div>
+                <div class="impact-val" id="impact-val-unresolved" style="color: var(--accent-amber);">₹0.00</div>
+                <div class="impact-sub">Requires sign-off</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Controller's Takeaway -->
+          <div class="ai-issues-section" id="ai-issues-takeaway-section" style="margin-top: 2rem; margin-bottom: 3rem;">
+            <div class="ai-issues-section-header">
+              <div class="ai-issues-section-title">Controller's Takeaway</div>
+              <div class="ai-issues-section-sub">Executive financial conclusion for the CFO and Audit Committee</div>
+            </div>
+            <div class="ai-issues-takeaway-box" id="ai-issues-takeaway-box">
+              <div class="takeaway-badge-row">
+                <span class="badge-min badge-cyan">Executive Conclusion</span>
+                <span class="badge-min badge-gray" id="takeaway-generated-time">Latest Batch</span>
+              </div>
+              <p class="takeaway-paragraph" id="ai-issues-takeaway-text">
+                Analyzing reconciliation batch data...
+              </p>
             </div>
           </div>
         </section>

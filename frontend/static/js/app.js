@@ -83,6 +83,9 @@ const appState = {
   activeCategory: 'matched',
   charts: {},
   qaContext: {},
+  aiIssuesReport: null,
+  aiIssuesFilter: 'ALL',
+  aiIssuesSearchQuery: '',
   isProcessed: false,
   authToken: localStorage.getItem('fin_jwt_token') || null,
   currentUser: JSON.parse(localStorage.getItem('fin_user_profile') || 'null')
@@ -613,6 +616,10 @@ function initEventListeners() {
   document.getElementById('nav-workflow')?.addEventListener('click', () => switchView('workflow'));
   document.getElementById('nav-exceptions')?.addEventListener('click', () => switchView('exceptions'));
   document.getElementById('nav-audit')?.addEventListener('click', () => switchView('audit'));
+  document.getElementById('nav-ai-issues')?.addEventListener('click', () => {
+    switchView('ai-issues');
+    loadAIIssuesReport();
+  });
   document.getElementById('nav-agents')?.addEventListener('click', () => {
     switchView('agents');
     fetchAgentTelemetry();
@@ -794,6 +801,7 @@ const VIEW_META = {
   workflow: { section: 'Dashboards', page: 'Reconciliation' },
   exceptions: { section: 'Governance & Risk', page: 'Exceptions Queue' },
   audit: { section: 'Governance & Risk', page: 'Audit Trail' },
+  'ai-issues': { section: 'AI Intelligence Suite', page: 'AI Issues Center' },
   agents: { section: 'AI Intelligence Suite', page: 'Reasoning Agents' }
 };
 
@@ -840,6 +848,11 @@ function updateBreadcrumbUI(viewName, breadcrumbText) {
     } else if (viewName === 'audit') {
       viewBadge.textContent = 'SHA-256 Validated ✓';
       viewBadge.className = 'breadcrumb-view-badge badge-emerald';
+      viewBadge.style.display = 'inline-block';
+    } else if (viewName === 'ai-issues') {
+      const count = appState.aiIssuesReport?.total_issues || 0;
+      viewBadge.textContent = `${count} Priority Issues`;
+      viewBadge.className = count > 0 ? 'breadcrumb-view-badge badge-amber' : 'breadcrumb-view-badge badge-emerald';
       viewBadge.style.display = 'inline-block';
     } else if (viewName === 'agents') {
       viewBadge.textContent = '5 Agents Active';
@@ -897,6 +910,8 @@ function switchView(viewName, breadcrumbText) {
     renderWorkflowLiquidityChart();
   } else if (viewName === 'audit') {
     verifyAuditChain();
+  } else if (viewName === 'ai-issues') {
+    loadAIIssuesReport();
   }
 }
 
@@ -1429,6 +1444,36 @@ async function resetWorkspace() {
     setElemText('wf-badge-fee', '0');
     setElemText('wf-badge-missing', '0');
     setElemText('wf-badge-unmatched', '0');
+    setElemText('nav-badge-ai-issues-count', '0 Issues');
+    setElemText('ai-issues-kpi-total', '0');
+    setElemText('ai-issues-kpi-critical', '0');
+    setElemText('ai-issues-kpi-high', '0');
+    setElemText('ai-issues-kpi-medium', '0');
+    setElemText('ai-issues-kpi-low', '0');
+    setElemText('ai-issues-kpi-impact', '₹0.00');
+    setElemText('ai-issues-kpi-review', '0');
+    setElemText('impact-val-total', '₹0.00');
+    setElemText('impact-val-critical', '₹0.00');
+    setElemText('impact-val-high', '₹0.00');
+    setElemText('impact-val-medium', '₹0.00');
+    setElemText('impact-val-low', '₹0.00');
+    setElemText('impact-val-unresolved', '₹0.00');
+    const aiIssuesContainer = document.getElementById('ai-issues-cards-container');
+    if (aiIssuesContainer) aiIssuesContainer.innerHTML = '';
+    const aiSystemicContainer = document.getElementById('ai-issues-systemic-container');
+    if (aiSystemicContainer) aiSystemicContainer.innerHTML = '';
+    const emptyWorkspace = document.getElementById('ai-issues-empty-workspace');
+    if (emptyWorkspace) emptyWorkspace.style.display = 'flex';
+    const cleanState = document.getElementById('ai-issues-clean-state');
+    if (cleanState) cleanState.style.display = 'none';
+    const listSection = document.getElementById('ai-issues-list-section');
+    if (listSection) listSection.style.display = 'none';
+    const systemicSection = document.getElementById('ai-issues-systemic-section');
+    if (systemicSection) systemicSection.style.display = 'none';
+    const impactSection = document.getElementById('ai-issues-financial-impact-section');
+    if (impactSection) impactSection.style.display = 'none';
+    const takeawaySection = document.getElementById('ai-issues-takeaway-section');
+    if (takeawaySection) takeawaySection.style.display = 'none';
     const verdictBanner = document.getElementById('overview-verdict-banner');
     if (verdictBanner) verdictBanner.style.display = 'none';
 
@@ -1727,6 +1772,7 @@ async function fetchProcessedData() {
     renderAuditTrail();
     renderResultsTable();
     renderSidebarActiveFeeds();
+    loadAIIssuesReport(appState.batchId, false);
     updateBreadcrumbUI(appState.currentView);
 
     return appState.isProcessed;
@@ -4362,6 +4408,516 @@ window.selectAgent = selectAgent;
 window.explainAuditChainWithAgent12 = explainAuditChainWithAgent12;
 window.resetWorkspace = resetWorkspace;
 window.confirmResetWorkspace = resetWorkspace;
+
+// ==============================================================================
+// VIEW 6: AI ISSUES CENTER CONTROLLER & UNIFIED REPORT ENGINE
+// ==============================================================================
+
+async function loadAIIssuesReport(batchId, showProgress = true) {
+  const container = document.getElementById('ai-issues-cards-container');
+  const systemicContainer = document.getElementById('ai-issues-systemic-container');
+  const loadingBanner = document.getElementById('ai-issues-loading-container');
+  const stageText = document.getElementById('ai-issues-loading-stage-text');
+  const cleanState = document.getElementById('ai-issues-clean-state');
+  const emptyWorkspace = document.getElementById('ai-issues-empty-workspace');
+  const listSection = document.getElementById('ai-issues-list-section');
+  const systemicSection = document.getElementById('ai-issues-systemic-section');
+  const impactSection = document.getElementById('ai-issues-financial-impact-section');
+  const takeawaySection = document.getElementById('ai-issues-takeaway-section');
+
+  const targetBatch = batchId || appState.batchId;
+
+  if (!appState.isProcessed && !targetBatch) {
+    if (emptyWorkspace) emptyWorkspace.style.display = 'flex';
+    if (cleanState) cleanState.style.display = 'none';
+    if (listSection) listSection.style.display = 'none';
+    if (systemicSection) systemicSection.style.display = 'none';
+    if (impactSection) impactSection.style.display = 'none';
+    if (takeawaySection) takeawaySection.style.display = 'none';
+    if (loadingBanner) loadingBanner.style.display = 'none';
+    return;
+  }
+
+  if (emptyWorkspace) emptyWorkspace.style.display = 'none';
+
+  if (showProgress && loadingBanner) {
+    loadingBanner.style.display = 'flex';
+    if (stageText) stageText.textContent = 'Analyzing financial issues...';
+    await sleep(250);
+    if (stageText) stageText.textContent = 'Prioritizing financial risks...';
+    await sleep(250);
+    if (stageText) stageText.textContent = 'Preparing controller report...';
+  }
+
+  try {
+    const url = targetBatch ? `${API_BASE}/ai-issues/report?batch_id=${encodeURIComponent(targetBatch)}` : `${API_BASE}/ai-issues/report`;
+    const res = await authFetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      appState.aiIssuesReport = data;
+      renderAIIssuesReport(data);
+    } else {
+      console.warn('AI Issues report fetch error:', res.status);
+    }
+  } catch (err) {
+    console.error('Failed to load AI Issues report:', err);
+  } finally {
+    if (loadingBanner) loadingBanner.style.display = 'none';
+  }
+}
+
+function renderAIIssuesReport(report) {
+  if (!report) return;
+
+  const total = report.total_issues || 0;
+  const critical = report.critical_count || 0;
+  const high = report.high_count || 0;
+  const medium = report.medium_count || 0;
+  const low = report.low_count || 0;
+  const review = report.human_review_count || 0;
+  const impactFormatted = report.total_financial_impact_formatted || '₹0.00';
+
+  // 1. Update Top Summary KPIs
+  const setElemText = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+  setElemText('ai-issues-kpi-total', total.toLocaleString());
+  setElemText('ai-issues-kpi-critical', critical.toLocaleString());
+  setElemText('ai-issues-kpi-high', high.toLocaleString());
+  setElemText('ai-issues-kpi-medium', medium.toLocaleString());
+  setElemText('ai-issues-kpi-low', low.toLocaleString());
+  setElemText('ai-issues-kpi-impact', impactFormatted);
+  setElemText('ai-issues-kpi-review', review.toLocaleString());
+
+  // Update Sidebar Badge
+  const navBadge = document.getElementById('nav-badge-ai-issues-count');
+  if (navBadge) {
+    navBadge.textContent = total > 0 ? `${total} Issue${total > 1 ? 's' : ''}` : '0 Issues';
+    navBadge.style.background = total > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
+    navBadge.style.color = total > 0 ? 'var(--accent-coral)' : 'var(--accent-emerald)';
+  }
+
+  // Update Filter Badges
+  setElemText('filter-badge-all', total.toLocaleString());
+  setElemText('filter-badge-critical', critical.toLocaleString());
+  setElemText('filter-badge-high', high.toLocaleString());
+  setElemText('filter-badge-medium', medium.toLocaleString());
+  setElemText('filter-badge-low', low.toLocaleString());
+
+  // 2. Update Overall Situation Callout
+  const situationText = document.getElementById('ai-issues-situation-text');
+  if (situationText) situationText.textContent = report.summary || 'Reconciliation analysis completed.';
+
+  const auditBadge = document.getElementById('ai-issues-audit-status-badge');
+  if (auditBadge) {
+    const isPass = report.audit_integrity === 'PASS';
+    auditBadge.textContent = `Audit Integrity: ${report.audit_integrity || 'PASS'} ${isPass ? '✓' : ''}`;
+    auditBadge.style.background = isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+    auditBadge.style.color = isPass ? 'var(--accent-emerald)' : 'var(--accent-coral)';
+    auditBadge.title = report.audit_integrity_detail || '';
+  }
+
+  const healthBadge = document.getElementById('ai-issues-health-status-badge');
+  if (healthBadge) {
+    const h = report.overall_health || 'HEALTHY';
+    healthBadge.textContent = `Financial Health: ${h.replace('_', ' ')}`;
+    if (h === 'HEALTHY') {
+      healthBadge.style.background = 'rgba(16,185,129,0.12)';
+      healthBadge.style.color = 'var(--accent-emerald)';
+    } else if (h === 'ACTION_REQUIRED') {
+      healthBadge.style.background = 'rgba(59,130,246,0.12)';
+      healthBadge.style.color = 'var(--accent-blue)';
+    } else {
+      healthBadge.style.background = 'rgba(239,68,68,0.12)';
+      healthBadge.style.color = 'var(--accent-coral)';
+    }
+  }
+
+  // Handle Clean Batch (0 issues)
+  const cleanState = document.getElementById('ai-issues-clean-state');
+  const emptyWorkspace = document.getElementById('ai-issues-empty-workspace');
+  const listSection = document.getElementById('ai-issues-list-section');
+  const systemicSection = document.getElementById('ai-issues-systemic-section');
+  const impactSection = document.getElementById('ai-issues-financial-impact-section');
+  const takeawaySection = document.getElementById('ai-issues-takeaway-section');
+
+  if (emptyWorkspace) emptyWorkspace.style.display = 'none';
+
+  if (total === 0) {
+    if (cleanState) cleanState.style.display = 'flex';
+    if (listSection) listSection.style.display = 'none';
+    if (systemicSection) systemicSection.style.display = 'none';
+    if (impactSection) impactSection.style.display = 'block';
+    if (takeawaySection) takeawaySection.style.display = 'block';
+  } else {
+    if (cleanState) cleanState.style.display = 'none';
+    if (listSection) listSection.style.display = 'block';
+    if (systemicSection) systemicSection.style.display = 'block';
+    if (impactSection) impactSection.style.display = 'block';
+    if (takeawaySection) takeawaySection.style.display = 'block';
+    renderAIIssuesList();
+  }
+
+  // 3. Render Systemic Problems
+  const sysContainer = document.getElementById('ai-issues-systemic-container');
+  if (sysContainer) {
+    const patterns = report.systemic_patterns || [];
+    if (!patterns.length) {
+      sysContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; padding: 1rem;">No systemic operational patterns detected in this batch.</div>';
+    } else {
+      sysContainer.innerHTML = patterns.map(p => `
+        <div class="ai-systemic-card">
+          <div class="systemic-top">
+            <div>
+              <span class="badge-min badge-gray" style="font-size: 0.65rem; margin-right: 0.4rem;">${escapeHtml(p.pattern_id)}</span>
+              <span class="systemic-title">${escapeHtml(p.pattern_name)}</span>
+            </div>
+            <span class="systemic-impact">${escapeHtml(p.impact_formatted)} (${p.affected_count} records)</span>
+          </div>
+          <div class="systemic-body-text">
+            <strong>Likely systemic cause:</strong> ${escapeHtml(p.likely_systemic_cause || 'Not available from supplied data.')}
+          </div>
+          <div class="systemic-body-text" style="color: var(--accent-cyan);">
+            <strong>Recommended remediation:</strong> ${escapeHtml(p.recommended_remediation || 'Not available from supplied data.')}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px solid var(--border-subtle);">
+            <span>Owner: <strong style="color: var(--text-primary);">${escapeHtml(p.remediation_owner || 'Treasury Operations')}</strong></span>
+            <span class="badge-min badge-blue" style="font-size: 0.62rem;">${escapeHtml(p.root_cause_status)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 4. Render Financial Impact Breakdown
+  const fi = report.financial_impact || {};
+  setElemText('impact-val-total', fi.total_exception_exposure_formatted || impactFormatted);
+  setElemText('impact-val-critical', fi.critical_exposure_formatted || '₹0.00');
+  setElemText('impact-val-high', fi.high_exposure_formatted || '₹0.00');
+  setElemText('impact-val-medium', fi.medium_exposure_formatted || '₹0.00');
+  setElemText('impact-val-low', fi.low_exposure_formatted || '₹0.00');
+  setElemText('impact-val-unresolved', fi.unresolved_exposure_formatted || '₹0.00');
+
+  // 5. Render Controller's Takeaway
+  const takeawayText = document.getElementById('ai-issues-takeaway-text');
+  if (takeawayText) {
+    takeawayText.textContent = report.controller_takeaway || 'The current batch is fully balanced with zero detected exceptions.';
+  }
+}
+
+function renderAIIssuesList() {
+  const container = document.getElementById('ai-issues-cards-container');
+  if (!container || !appState.aiIssuesReport) return;
+
+  const filter = appState.aiIssuesFilter || 'ALL';
+  const query = (appState.aiIssuesSearchQuery || '').toLowerCase().trim();
+
+  let issues = appState.aiIssuesReport.issues || [];
+
+  // Apply Severity Filter
+  if (filter !== 'ALL') {
+    issues = issues.filter(i => i.severity === filter);
+  }
+
+  // Apply Live Text Search
+  if (query) {
+    issues = issues.filter(i => {
+      const matchTitle = (i.title || '').toLowerCase().includes(query);
+      const matchWhat = (i.what_happened || '').toLowerCase().includes(query);
+      const matchCause = (i.likely_cause || '').toLowerCase().includes(query);
+      const matchOwner = (i.owner || '').toLowerCase().includes(query);
+      const matchImpact = (i.financial_impact_formatted || '').toLowerCase().includes(query);
+      const matchRefs = (i.source_references || []).some(r => r.toLowerCase().includes(query));
+      return matchTitle || matchWhat || matchCause || matchOwner || matchImpact || matchRefs;
+    });
+  }
+
+  if (!issues.length) {
+    container.innerHTML = `
+      <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+        No issues matching the selected filter criteria.
+      </div>
+    `;
+    return;
+  }
+
+  // Group issues into distinct Criticality Sections: CRITICAL -> HIGH -> MEDIUM -> LOW
+  const SEVERITY_SECTIONS = [
+    { key: 'CRITICAL', label: 'Critical Priority Issues', emoji: '🔴', color: 'var(--accent-coral)', badgeCls: 'sev-critical', sub: 'Immediate Controller Action & Journal Voucher Approval Required' },
+    { key: 'HIGH', label: 'High Priority Issues', emoji: '🟠', color: 'var(--accent-amber)', badgeCls: 'sev-high', sub: 'Material Exposure & Acquiring Bank Settlement Latency' },
+    { key: 'MEDIUM', label: 'Medium Priority Issues', emoji: '🔵', color: 'var(--accent-blue)', badgeCls: 'sev-medium', sub: 'Operational Period Cutoff & Gateway Fee Adjustments' },
+    { key: 'LOW', label: 'Low Priority Issues', emoji: '🟢', color: 'var(--accent-cyan)', badgeCls: 'sev-low', sub: 'Minor Rounding & Informational Adjustments' }
+  ];
+
+  let fullHtml = '';
+
+  SEVERITY_SECTIONS.forEach(sec => {
+    const secIssues = issues.filter(i => i.severity === sec.key);
+    if (!secIssues.length) return;
+
+    const secImpact = secIssues.reduce((acc, i) => acc + (i.financial_impact || 0), 0);
+    const secImpactFormatted = `₹${secImpact.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    fullHtml += `
+      <div class="ai-criticality-section" style="margin-bottom: 2rem;">
+        <div class="ai-criticality-section-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-left: 4px solid ${sec.color}; border-radius: 8px; margin-bottom: 0.85rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 1.1rem;">${sec.emoji}</span>
+            <div>
+              <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">${sec.label}</span>
+              <span class="filter-badge" style="background: rgba(255,255,255,0.08); padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; margin-left: 0.4rem; color: ${sec.color};">${secIssues.length} ${secIssues.length === 1 ? 'Issue' : 'Issues'}</span>
+              <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem;">${sec.sub}</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Section Exposure</div>
+            <div style="font-size: 1rem; font-weight: 800; font-family: var(--font-mono); color: ${sec.color};">${secImpactFormatted}</div>
+          </div>
+        </div>
+
+        <div class="ai-issues-cards-stack" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          ${secIssues.map((issue, idx) => {
+            const cardId = `ai-issue-card-${sec.key}-${idx}`;
+            const proof = issue.arithmetic_proof;
+
+            let proofHtml = '';
+            if (proof) {
+              proofHtml = `
+                <div class="issue-block">
+                  <div class="issue-block-label-row">
+                    <span class="issue-block-label">Deterministic Arithmetic Proof</span>
+                    <span class="badge-honest badge-calculated">Calculated</span>
+                  </div>
+                  <div class="issue-proof-box">
+                    <div class="proof-header">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span>${escapeHtml(proof.title || 'Deterministic Calculation')}</span>
+                    </div>
+                    ${proof.lines ? `
+                      <div class="proof-lines">
+                        ${proof.lines.map(line => `<div>${escapeHtml(line)}</div>`).join('')}
+                      </div>
+                    ` : ''}
+                    ${proof.explanation ? `
+                      <div class="proof-explanation">${escapeHtml(proof.explanation)}</div>
+                    ` : ''}
+                  </div>
+                </div>
+              `;
+            }
+
+            return `
+              <div class="ai-issue-card expanded" id="${cardId}" style="border-left: 3px solid ${sec.color};">
+                <div class="ai-issue-card-header" style="cursor: default;">
+                  <div class="issue-header-left">
+                    <span class="severity-pill ${sec.badgeCls}">
+                      <span>●</span> ${escapeHtml(issue.severity)}
+                    </span>
+                    <span class="issue-title-text">${escapeHtml(issue.title)}</span>
+                    <span class="issue-records-tag">${issue.affected_records} ${issue.affected_records === 1 ? 'Record' : 'Records'}</span>
+                    <span class="issue-status-tag">${escapeHtml(issue.status || 'Needs Human Review')}</span>
+                  </div>
+                  <div class="issue-header-right">
+                    <span class="issue-impact-val">${escapeHtml(issue.financial_impact_formatted)}</span>
+                    <span class="issue-conf-badge">${Math.round(issue.confidence * 100)}% Conf</span>
+                  </div>
+                </div>
+
+                <div class="ai-issue-card-body" style="display: block;">
+                  <div class="ai-card-content-grid">
+                    <!-- Left Column: Story & Root Cause -->
+                    <div class="ai-card-col-main">
+                      <div class="ai-story-box">
+                        <div class="ai-story-header">
+                          <span class="badge-honest badge-calculated">Calculated</span>
+                          <span class="ai-story-title">What Happened & Why It Matters</span>
+                        </div>
+                        <p class="ai-story-desc">${escapeHtml(issue.what_happened || 'Not available from supplied data.')}</p>
+                        <div class="ai-story-sub">${escapeHtml(issue.why_it_matters || '')}</div>
+                      </div>
+
+                      <div class="ai-cause-box">
+                        <div class="ai-story-header">
+                          <span class="badge-honest badge-inference">AI Inference</span>
+                          <span class="ai-story-title">Likely Root Cause</span>
+                        </div>
+                        <p class="ai-cause-desc">${escapeHtml(issue.likely_cause || 'Not available from supplied data.')}</p>
+                      </div>
+
+                      ${issue.evidence && issue.evidence.length ? `
+                        <div class="ai-evidence-box">
+                          <div class="ai-mini-lbl">Verified Evidence Points:</div>
+                          <ul class="issue-evidence-list">
+                            ${issue.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
+                          </ul>
+                        </div>
+                      ` : ''}
+                    </div>
+
+                    <!-- Right Column: Proof & Action Plan -->
+                    <div class="ai-card-col-side">
+                      ${proofHtml}
+
+                      <div class="ai-action-plan-box">
+                        <div class="ai-action-plan-header">
+                          <span class="badge-honest badge-recommendation">Recommendation</span>
+                          <span class="ai-action-plan-title">Action Plan</span>
+                        </div>
+                        <div class="ai-action-plan-text">${escapeHtml(issue.recommended_action || 'Not available from supplied data.')}</div>
+                        
+                        <div class="ai-action-meta-row">
+                          <div class="ai-meta-item">
+                            <span class="ai-meta-lbl">Owner:</span>
+                            <span class="ai-meta-val">${escapeHtml(issue.owner || 'Treasury Operations')}</span>
+                          </div>
+                          <div class="ai-meta-item">
+                            <span class="ai-meta-lbl">Immediate Next Step:</span>
+                            <span class="ai-meta-val ai-next-step-val">${escapeHtml(issue.next_step || 'Review records')}</span>
+                          </div>
+                        </div>
+
+                        ${issue.citations && issue.citations.length ? `
+                          <div class="ai-citations-row">
+                            ${issue.citations.map(c => `<span class="badge-min badge-blue">${escapeHtml(c)}</span>`).join('')}
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = fullHtml;
+}
+
+function toggleAIIssueCard(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.classList.toggle('expanded');
+  }
+}
+
+function setAIIssuesFilter(filterKey) {
+  appState.aiIssuesFilter = filterKey;
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    if (pill.getAttribute('data-filter') === filterKey) {
+      pill.classList.add('active');
+    } else {
+      pill.classList.remove('active');
+    }
+  });
+  renderAIIssuesList();
+}
+
+function filterAIIssuesList() {
+  const input = document.getElementById('ai-issues-search-input');
+  const clearBtn = document.getElementById('ai-issues-search-clear');
+  const query = input ? input.value : '';
+  appState.aiIssuesSearchQuery = query;
+
+  if (clearBtn) {
+    clearBtn.style.display = query.length > 0 ? 'inline-block' : 'none';
+  }
+  renderAIIssuesList();
+}
+
+function clearAIIssuesSearch() {
+  const input = document.getElementById('ai-issues-search-input');
+  const clearBtn = document.getElementById('ai-issues-search-clear');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  appState.aiIssuesSearchQuery = '';
+  renderAIIssuesList();
+}
+
+function exportAIIssuesMarkdown() {
+  const report = appState.aiIssuesReport;
+  if (!report) {
+    showToast('No AI Issues report available to export.', 'info');
+    return;
+  }
+
+  let md = `# AI Issues Center — Executive Report\n\n`;
+  md += `**Batch ID**: ${report.batch_id || 'N/A'}\n`;
+  md += `**Generated At**: ${report.generated_at}\n`;
+  md += `**Overall Financial Health**: ${report.overall_health}\n`;
+  md += `**Cryptographic Audit Integrity**: ${report.audit_integrity} (${report.audit_integrity_detail})\n\n`;
+  md += `## Overall Situation\n\n${report.summary}\n\n`;
+  md += `## Summary Metrics\n\n`;
+  md += `- **Total Issues**: ${report.total_issues}\n`;
+  md += `- **Critical**: ${report.critical_count}\n`;
+  md += `- **High**: ${report.high_count}\n`;
+  md += `- **Medium**: ${report.medium_count}\n`;
+  md += `- **Low**: ${report.low_count}\n`;
+  md += `- **Total Financial Impact**: ${report.total_financial_impact_formatted}\n`;
+  md += `- **Human Review Required**: ${report.human_review_count}\n\n`;
+  md += `## Priority Issues\n\n`;
+
+  (report.issues || []).forEach((issue, i) => {
+    md += `### ${i + 1}. [${issue.severity}] ${issue.title} — ${issue.financial_impact_formatted}\n\n`;
+    md += `**Affected Records**: ${issue.affected_records}\n`;
+    md += `**Status**: ${issue.status}\n`;
+    md += `**AI Confidence**: ${Math.round(issue.confidence * 100)}%\n\n`;
+    md += `**What Happened** [Calculated]:\n${issue.what_happened}\n\n`;
+    md += `**Why It Matters** [Confirmed]:\n${issue.why_it_matters}\n\n`;
+    md += `**Likely Cause** [AI Inference]:\n${issue.likely_cause}\n\n`;
+    md += `**Evidence** [Confirmed]:\n`;
+    (issue.evidence || []).forEach(ev => { md += `- ${ev}\n`; });
+    md += `\n**Recommended Action** [Recommendation]:\n${issue.recommended_action}\n\n`;
+    md += `**Owner**: ${issue.owner}\n`;
+    md += `**Immediate Next Step**: ${issue.next_step}\n\n`;
+    if (issue.citations && issue.citations.length) {
+      md += `**Citations**: ${issue.citations.join(', ')}\n\n`;
+    }
+    md += `---\n\n`;
+  });
+
+  if (report.systemic_patterns && report.systemic_patterns.length) {
+    md += `## Systemic Problems\n\n`;
+    report.systemic_patterns.forEach(p => {
+      md += `### ${p.pattern_name} (${p.impact_formatted})\n\n`;
+      md += `- **Affected Records**: ${p.affected_count}\n`;
+      md += `- **Likely Systemic Cause**: ${p.likely_systemic_cause}\n`;
+      md += `- **Recommended Remediation**: ${p.recommended_remediation}\n`;
+      md += `- **Owner**: ${p.remediation_owner}\n\n`;
+    });
+  }
+
+  const fi = report.financial_impact || {};
+  md += `## Financial Impact\n\n`;
+  md += `- **Total Exception Exposure**: ${fi.total_exception_exposure_formatted || report.total_financial_impact_formatted}\n`;
+  md += `- **Critical Exposure**: ${fi.critical_exposure_formatted || '₹0.00'}\n`;
+  md += `- **High Exposure**: ${fi.high_exposure_formatted || '₹0.00'}\n`;
+  md += `- **Medium Exposure**: ${fi.medium_exposure_formatted || '₹0.00'}\n`;
+  md += `- **Low Exposure**: ${fi.low_exposure_formatted || '₹0.00'}\n`;
+  md += `- **Unresolved Exposure**: ${fi.unresolved_exposure_formatted || '₹0.00'}\n\n`;
+
+  md += `## Controller's Takeaway\n\n${report.controller_takeaway}\n`;
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `AI_Issues_Center_Report_${new Date().toISOString().substring(0, 10)}.md`;
+  a.click();
+  showToast('AI Issues Center report downloaded.', 'success');
+}
+
+window.loadAIIssuesReport = loadAIIssuesReport;
+window.renderAIIssuesReport = renderAIIssuesReport;
+window.renderAIIssuesList = renderAIIssuesList;
+window.toggleAIIssueCard = toggleAIIssueCard;
+window.setAIIssuesFilter = setAIIssuesFilter;
+window.filterAIIssuesList = filterAIIssuesList;
+window.clearAIIssuesSearch = clearAIIssuesSearch;
+window.exportAIIssuesMarkdown = exportAIIssuesMarkdown;
+
 
 
 

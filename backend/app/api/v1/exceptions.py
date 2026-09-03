@@ -48,19 +48,34 @@ def get_exceptions(
         if exception_type:
             query = query.filter(schema.ExceptionRecord.exception_type == exception_type)
         if state:
-            query = query.filter(schema.ExceptionRecord.state == state)
+            s_up = state.upper()
+            if s_up in ("UNRESOLVED", "HELD", "OPEN", "PENDING"):
+                query = query.filter(schema.ExceptionRecord.state.notin_(["RESOLVED", "APPROVED", "REJECTED"]))
+            else:
+                query = query.filter(schema.ExceptionRecord.state == state)
 
         total = query.count()
         db_items = query.order_by(schema.ExceptionRecord.detected_at.desc()).offset(offset).limit(limit).all()
 
-        if db_items:
+        if db_items or target_batch is not None or all_batches:
             items = []
+            exc_ids = [e.id for e in db_items]
+            prop_map = {}
+            if exc_ids:
+                for p in db.query(schema.ResolutionProposal).filter(
+                    schema.ResolutionProposal.exception_id.in_(exc_ids),
+                    schema.ResolutionProposal.org_id == org_id
+                ).all():
+                    prop_map[p.exception_id] = p
+
             for e in db_items:
-                prop = db.query(schema.ResolutionProposal.id).filter_by(exception_id=e.id).first()
+                prop = prop_map.get(e.id)
                 items.append({
                     "id": e.id,
                     "batch_id": e.batch_id,
-                    "proposal_id": prop[0] if prop else None,
+                    "proposal_id": prop.id if prop else None,
+                    "proposal_action": prop.action if prop else None,
+                    "proposal_status": prop.status if prop else None,
                     "primary_txn_id": e.primary_txn_id,
                     "counterpart_txn_id": e.counterpart_txn_id,
                     "exception_type": e.exception_type,
@@ -71,7 +86,7 @@ def get_exceptions(
                     "detected_at": e.detected_at.isoformat() if e.detected_at else None,
                     "resolved_at": e.resolved_at.isoformat() if e.resolved_at else None
                 })
-            return {"total": total, "batch_id": batch_id, "limit": limit, "offset": offset, "items": items}
+            return {"total": total, "batch_id": target_batch or batch_id, "limit": limit, "offset": offset, "items": items}
 
     # Fallback to in-memory state. STATE is process-global and shared across
     # tenants, so it must be filtered to the caller's organisation.
@@ -90,14 +105,20 @@ def get_exceptions(
     if exception_type:
         exceptions = [e for e in exceptions if e.get("exception_type") == exception_type]
     if state:
-        exceptions = [e for e in exceptions if e.get("state") == state]
+        s_up = state.upper()
+        if s_up in ("UNRESOLVED", "HELD", "OPEN", "PENDING"):
+            exceptions = [e for e in exceptions if e.get("state") not in ("RESOLVED", "APPROVED", "REJECTED")]
+        else:
+            exceptions = [e for e in exceptions if e.get("state") == state]
 
     enriched_items = []
     for e in exceptions[offset : offset + limit]:
         item_copy = dict(e)
-        if "proposal_id" not in item_copy or not item_copy["proposal_id"]:
-            matching_prop = next((p for p in proposals if p.get("exception_id") == e.get("id")), None)
-            item_copy["proposal_id"] = matching_prop.get("id") if matching_prop else None
+        matching_prop = next((p for p in proposals if p.get("exception_id") == e.get("id")), None)
+        if matching_prop:
+            item_copy.setdefault("proposal_id", matching_prop.get("id"))
+            item_copy.setdefault("proposal_action", matching_prop.get("action"))
+            item_copy.setdefault("proposal_status", matching_prop.get("status"))
         enriched_items.append(item_copy)
 
     return {

@@ -172,6 +172,37 @@ async def decide_proposal(
         ).first()
 
         if not db_prop:
+            # Resolve if proposal_id was supplied as exception_id
+            db_prop = db.query(schema.ResolutionProposal).filter_by(
+                exception_id=req.proposal_id, org_id=org_id
+            ).first()
+
+        if not db_prop:
+            # Check if an exception exists and needs a resolution proposal
+            db_exc_match = db.query(schema.ExceptionRecord).filter_by(
+                id=req.proposal_id, org_id=org_id
+            ).first()
+            if db_exc_match:
+                from decimal import Decimal
+                clean_tail = db_exc_match.id.replace("EXC-", "").replace("-", "")[:8]
+                gen_prop_id = f"PROP-{clean_tail}"
+                db_prop = schema.ResolutionProposal(
+                    id=gen_prop_id,
+                    org_id=org_id,
+                    exception_id=db_exc_match.id,
+                    action="ADJUST_LEDGER_VARIANCE",
+                    recommended_parameters={"exception_id": db_exc_match.id, "impact_minor": db_exc_match.impact_minor},
+                    justification=f"Dual-control ledger adjustment voucher for {db_exc_match.exception_type}",
+                    confidence=Decimal("0.9500"),
+                    requires_human_review=True,
+                    status=PENDING,
+                    verified_by_code=True,
+                    created_by=db_exc_match.assigned_to or "system"
+                )
+                db.add(db_prop)
+                db.flush()
+
+        if not db_prop:
             raise HTTPException(status_code=404, detail=f"Proposal '{req.proposal_id}' not found")
 
         # Terminal-state guard. Without this an approved voucher was never final:

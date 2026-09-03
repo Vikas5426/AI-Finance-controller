@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css?v=6">
+  <link rel="stylesheet" href="/static/css/styles.css?v=7">
   <link rel="icon" type="image/png" href="/static/img/favicon.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
 </head>
@@ -1115,65 +1115,136 @@
           </div>
         </section>
 
-
         <!-- ==============================================================================
              VIEW 3: DEDICATED EXCEPTIONS QUEUE
              ============================================================================== -->
         <section class="view-container" id="view-exceptions">
-          <div class="overview-header">
+          <div class="overview-header" style="margin-bottom: 1.25rem;">
             <div>
-              <h1 class="overview-title">Exceptions & Maker-Checker Queue</h1>
-              <p class="overview-sub">Dual-control review and AI-proposed journal adjustment vouchers.</p>
+              <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+                <h1 class="overview-title" style="margin-bottom: 0;">Exceptions & Maker-Checker Queue</h1>
+                <span class="badge-min badge-blue" style="font-size: 0.65rem; font-family: var(--font-mono);">SOX-404 DUAL CONTROL</span>
+              </div>
+              <p class="overview-sub">Deterministic discrepancy detection, 1-paise micro-arithmetic verification, and dual-control voucher authorization.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <button class="btn btn-secondary btn-sm" onclick="fetchProcessedData();" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Refresh Feed</span>
+              </button>
             </div>
           </div>
 
-          <div class="reui-card" style="padding: 0; overflow: hidden;">
-            <div
-              style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span style="font-size: 0.85rem; font-weight: 700;">Pending Dual-Control Review Vouchers</span>
-                <select id="excs-batch-filter" class="select-custom" onchange="renderExceptionsQueue()">
-                  <option value="">All Batches</option>
-                </select>
+          <!-- 4 Top Stat KPI Cards -->
+          <div class="kpi-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="reui-card" style="padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; position: relative; overflow: hidden;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center;">
+                <span>Active Held Exceptions</span>
+                <span class="badge-min badge-amber" id="excs-kpi-held-badge">Pending Review</span>
               </div>
-              <span class="badge-min" id="excs-total-badge"
-                style="background: var(--bg-surface); color: var(--text-muted);">0 Held</span>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent-amber); font-family: var(--font-mono); line-height: 1.1;" id="excs-kpi-held">0</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary);">Items awaiting Checker authorization</div>
             </div>
 
-            <table class="data-table-min">
-              <thead>
-                <tr>
-                  <th>Exception ID</th>
-                  <th>Batch ID</th>
-                  <th>Type</th>
-                  <th>Severity</th>
-                  <th>Impact (INR)</th>
-                  <th>AI Proposal</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="exceptions-table-body">
-                <tr>
-                  <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3.5rem 1rem;">
-                    <div
-                      style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.5" style="color: var(--text-dim);">
-                        <path
-                          d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                      </svg>
-                      <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">No Exceptions Held
+            <div class="reui-card" style="padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; position: relative; overflow: hidden;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center;">
+                <span>At-Risk Exposure</span>
+                <span class="badge-min badge-blue">Net Imbalance</span>
+              </div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); line-height: 1.1;" id="excs-kpi-exposure">₹0.00</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary);">Total residual variance in held items</div>
+            </div>
+
+            <div class="reui-card" style="padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; position: relative; overflow: hidden;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center;">
+                <span>High & Critical Urgency</span>
+                <span class="badge-min badge-coral" id="excs-kpi-urgency-badge">Escalation Priority</span>
+              </div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent-coral); font-family: var(--font-mono); line-height: 1.1;" id="excs-kpi-critical">0</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary);">Breaches requiring override / escalation</div>
+            </div>
+
+            <div class="reui-card" style="padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; position: relative; overflow: hidden;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center;">
+                <span>Cryptographically Sealed</span>
+                <span class="badge-min badge-green">SHA-256 Verified</span>
+              </div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent-emerald); font-family: var(--font-mono); line-height: 1.1;" id="excs-kpi-resolved">0</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary);">Signed adjustments posted to block ledger</div>
+            </div>
+          </div>
+
+          <!-- Main Table Card -->
+          <div class="reui-card" style="padding: 0; overflow: hidden;">
+            <!-- Toolbar: Status Filter Tabs + Search + Severity + Batch Filter -->
+            <div class="excs-toolbar" style="padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; background: var(--bg-surface);">
+              <!-- Status Tabs -->
+              <div class="excs-status-tabs" style="display: flex; align-items: center; gap: 0.35rem; background: var(--bg-card); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                <button type="button" class="excs-tab-btn active" id="tab-excs-pending" onclick="setExceptionStatusFilter('PENDING')">
+                  <span>Pending Review</span>
+                  <span class="excs-tab-count" id="count-excs-pending">0</span>
+                </button>
+                <button type="button" class="excs-tab-btn" id="tab-excs-resolved" onclick="setExceptionStatusFilter('RESOLVED')">
+                  <span>Resolved & Sealed</span>
+                  <span class="excs-tab-count" id="count-excs-resolved">0</span>
+                </button>
+                <button type="button" class="excs-tab-btn" id="tab-excs-all" onclick="setExceptionStatusFilter('ALL')">
+                  <span>All Records</span>
+                  <span class="excs-tab-count" id="count-excs-all">0</span>
+                </button>
+              </div>
+
+              <!-- Search & Dropdown Filters -->
+              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                <div style="position: relative; min-width: 200px;">
+                  <input type="text" id="excs-search-input" placeholder="Search Exception ID, type, notes..." oninput="renderExceptionsQueue()" class="select-custom" style="padding-left: 2rem; width: 100%; box-sizing: border-box; font-size: 0.78rem; height: 32px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+
+                <select id="excs-severity-filter" class="select-custom" onchange="renderExceptionsQueue()" style="height: 32px; font-size: 0.78rem;">
+                  <option value="">All Severities</option>
+                  <option value="CRITICAL">Critical Only</option>
+                  <option value="HIGH">High Only</option>
+                  <option value="MEDIUM">Medium Only</option>
+                  <option value="LOW">Low Only</option>
+                </select>
+
+                <select id="excs-batch-filter" class="select-custom" onchange="renderExceptionsQueue()" style="height: 32px; font-size: 0.78rem;">
+                  <option value="">All Batches</option>
+                </select>
+
+                <span class="badge-min" id="excs-total-badge" style="background: var(--bg-card); color: var(--text-muted); font-size: 0.72rem; padding: 0.25rem 0.6rem; height: 28px; display: inline-flex; align-items: center;">0 Held</span>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x: auto;">
+              <table class="data-table-min" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Exception ID</th>
+                    <th>Batch ID</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>Impact (INR)</th>
+                    <th>Status</th>
+                    <th>AI Proposed Treatment</th>
+                    <th style="text-align: right; padding-right: 1.25rem;">Maker-Checker Action</th>
+                  </tr>
+                </thead>
+                <tbody id="exceptions-table-body">
+                  <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 3.5rem 1rem;">
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--text-dim);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">No Exceptions Held</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); max-width: 420px;">Upload and reconcile your financial feeds in the Reconciliation tab to review flagged exceptions and AI vouchers.</div>
                       </div>
-                      <div style="font-size: 0.75rem; color: var(--text-muted); max-width: 420px;">Upload and reconcile
-                        your financial feeds in the Reconciliation tab to review flagged exceptions and AI vouchers.
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -1938,7 +2009,81 @@
     <span class="floating-chatbot-dot"></span>
   </button>
 
-  <script src="/static/js/app.js?v=6"></script>
+  <!-- Dual-Control Voucher Approval Modal (Modern Replacement for window.prompt) -->
+  <div class="modal-backdrop" id="modal-voucher-approval" style="display: none;">
+    <div class="modal-dialog" style="max-width: 580px; width: 92%; background: var(--bg-card); border: 1px solid var(--border-medium); border-radius: 12px; box-shadow: 0 20px 48px rgba(0,0,0,0.5); overflow: hidden; animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); margin: auto;">
+      <div class="modal-header" style="padding: 1.1rem 1.4rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface);">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-blue);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          </div>
+          <div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);" id="modal-approval-title">Dual-Control Voucher Sign-Off</div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary);">SOX-404 Checker authorization & SHA-256 block ledger sealing</div>
+          </div>
+        </div>
+        <button class="btn-ghost btn-xs" onclick="closeApproveModal()" style="font-size: 1.1rem; color: var(--text-muted); cursor: pointer; border: none;">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Exception Info Grid -->
+        <div style="background: var(--bg-surface); padding: 1rem 1.15rem; border-radius: 8px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 0.6rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Exception Target</span>
+            <span class="mono-text" style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);" id="modal-approval-exc-id">EXC-00000000</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Discrepancy Category</span>
+            <span id="modal-approval-type-badge"><span class="badge-min badge-blue">Amount Mismatch</span></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Variance Impact</span>
+            <span class="mono-text" style="font-size: 1rem; font-weight: 800; color: var(--accent-amber);" id="modal-approval-impact">₹0.00</span>
+          </div>
+        </div>
+
+        <!-- Ledger Journal Preview -->
+        <div>
+          <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>Ledger Journal Impact Preview</span>
+          </div>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.76rem; color: var(--text-secondary); line-height: 1.5;" id="modal-approval-journal-preview">
+            This will accrue the variance to the appropriate clearing account and permanently seal the adjustment voucher.
+          </div>
+        </div>
+
+        <!-- Sign-Off Notes Input with Pre-filled Compliant Text & Tags -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary);">
+              Checker Verification Justification <span style="color: var(--accent-coral);">*</span>
+            </label>
+            <span id="modal-char-counter" style="font-size: 0.7rem; font-family: var(--font-mono); color: var(--accent-emerald); font-weight: 600;">67 / 15 min chars</span>
+          </div>
+          <textarea id="modal-approval-notes" rows="3" oninput="updateModalCharCounter()" placeholder="Enter substantive accounting rationale (min 15 characters)..." style="width: 100%; box-sizing: border-box; background: var(--bg-card); border: 1px solid var(--border-medium); border-radius: 6px; padding: 0.65rem; color: var(--text-primary); font-size: 0.78rem; font-family: var(--font-sans); resize: vertical; line-height: 1.45; outline: none;"></textarea>
+
+          <!-- Quick Template Chips -->
+          <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem;">
+            <button type="button" class="tag-chip" onclick="applyModalTemplate('sop')">✓ SOP-01 Exact Verified</button>
+            <button type="button" class="tag-chip" onclick="applyModalTemplate('mdr')">✓ MDR Fee Split</button>
+            <button type="button" class="tag-chip" onclick="applyModalTemplate('cutoff')">✓ Cutoff In-Transit</button>
+            <button type="button" class="tag-chip" onclick="applyModalTemplate('dup')">✓ Duplicate Reversal</button>
+            <button type="button" class="tag-chip" onclick="applyModalTemplate('trace')">✓ Bank Trace Confirmed</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 1rem 1.4rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; background: var(--bg-surface);">
+        <button class="btn btn-secondary btn-sm" onclick="closeApproveModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="btn-modal-confirm-approve" onclick="confirmModalApproval()" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          <span id="modal-confirm-btn-label">Sign & Seal Voucher (Checker)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=7"></script>
 </body>
 
 </html>

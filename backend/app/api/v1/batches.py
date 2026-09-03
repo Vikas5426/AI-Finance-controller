@@ -250,6 +250,9 @@ def execute_batch_reconciliation(
     STATE["matches"] = [m.model_dump() for m in orchestrator.matches]
     STATE["exceptions"] = [e.model_dump() for e in orchestrator.exceptions]
     STATE["decisions"] = {k: v.model_dump() for k, v in orchestrator.decisions.items()}
+    for p in orchestrator.proposals:
+        p.setdefault("batch_id", b_id)
+        p.setdefault("org_id", org_id)
     STATE["proposals"] = orchestrator.proposals
     STATE["audit_events"] = orchestrator.audit_events
     STATE["windows"] = summary["windows"]

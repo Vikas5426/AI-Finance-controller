@@ -13,10 +13,16 @@ from app.services.audit_chain import AuditHashChain
 class AuditExplanationAgent(BaseReasoningAgent):
     """Agent 12: Cryptographic audit narrative and compliance assurance agent."""
 
-    def __init__(self, groq_api_key: Optional[str] = None, groq_model: Optional[str] = None):
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        groq_model: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ):
         super().__init__(
             agent_name="AuditExplanationAgent",
             groq_api_key=groq_api_key,
+            groq_api_key_secondary=groq_api_key_secondary,
             groq_model=groq_model
         )
 

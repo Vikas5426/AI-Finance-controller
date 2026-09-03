@@ -13,10 +13,16 @@ from app.services.agents.base_agent import BaseReasoningAgent
 class AIIssuesReasoningAgent(BaseReasoningAgent):
     """Reasoning agent specialized in structuring and synthesizing financial issues."""
 
-    def __init__(self, groq_api_key: Optional[str] = None, groq_model: Optional[str] = None):
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        groq_model: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ):
         super().__init__(
             agent_name="AIIssuesReasoningAgent",
             groq_api_key=groq_api_key,
+            groq_api_key_secondary=groq_api_key_secondary,
             groq_model=groq_model
         )
 

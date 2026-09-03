@@ -163,10 +163,12 @@ class BaseReasoningAgent:
         self,
         agent_name: str,
         groq_api_key: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None,
         groq_model: Optional[str] = None
     ):
         self.agent_name = agent_name
         self.groq_api_key = groq_api_key or settings.GROQ_API_KEY
+        self.groq_api_key_secondary = groq_api_key_secondary or getattr(settings, "GROQ_API_KEY_SECONDARY", None)
         self.groq_model = groq_model or getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
 
         self._groq_client = None
@@ -176,6 +178,14 @@ class BaseReasoningAgent:
                 self._groq_client = Groq(api_key=self.groq_api_key, timeout=12.0)
             except Exception as e:
                 logger.warning(f"[{self.agent_name}] Failed to initialize Groq client: {e}")
+
+        self._groq_client_secondary = None
+        if self.groq_api_key_secondary:
+            try:
+                from groq import Groq
+                self._groq_client_secondary = Groq(api_key=self.groq_api_key_secondary, timeout=12.0)
+            except Exception as e:
+                logger.warning(f"[{self.agent_name}] Failed to initialize secondary Groq client: {e}")
 
         self._gemini_client = None
         if settings.GEMINI_API_KEY:
@@ -255,13 +265,22 @@ class BaseReasoningAgent:
             )
             return None, "", telemetry
 
-        # 1. Attempt Groq if available and not on 429 cooldown
-        groq_avail, groq_cooldown = AICircuitBreaker.is_provider_available("GROQ")
-        if self._groq_client and groq_avail:
+        # 1. Attempt Groq clients (Primary and Secondary failover)
+        groq_candidates = []
+        if self._groq_client:
+            groq_candidates.append(("GROQ_PRIMARY", self._groq_client))
+        if self._groq_client_secondary:
+            groq_candidates.append(("GROQ_SECONDARY", self._groq_client_secondary))
+
+        for prov_label, client in groq_candidates:
+            groq_avail, groq_cooldown = AICircuitBreaker.is_provider_available(prov_label)
+            if not groq_avail:
+                continue
+
             g_model = self.groq_model
             logger.info(
-                "[AI_CALL] agent=%s provider=GROQ model=%s request_id=%s batch_id=%s purpose=%s",
-                self.agent_name, g_model, request_id, batch_id or "N/A", purpose
+                "[AI_CALL] agent=%s provider=%s model=%s request_id=%s batch_id=%s purpose=%s",
+                self.agent_name, prov_label, g_model, request_id, batch_id or "N/A", purpose
             )
 
             try:
@@ -279,18 +298,18 @@ class BaseReasoningAgent:
                 if "openai" in g_model:
                     try:
                         kwargs["reasoning_effort"] = reasoning_effort
-                        completion = self._groq_client.chat.completions.create(**kwargs)
+                        completion = client.chat.completions.create(**kwargs)
                     except Exception:
                         kwargs.pop("reasoning_effort", None)
-                        completion = self._groq_client.chat.completions.create(**kwargs)
+                        completion = client.chat.completions.create(**kwargs)
                 else:
-                    completion = self._groq_client.chat.completions.create(**kwargs)
+                    completion = client.chat.completions.create(**kwargs)
 
                 raw_text = completion.choices[0].message.content or ""
                 if not raw_text.strip():
                     kwargs_stream = dict(kwargs)
                     kwargs_stream["stream"] = True
-                    stream_comp = self._groq_client.chat.completions.create(**kwargs_stream)
+                    stream_comp = client.chat.completions.create(**kwargs_stream)
                     stream_chunks = []
                     for chunk in stream_comp:
                         if chunk.choices and chunk.choices[0].delta:
@@ -302,16 +321,17 @@ class BaseReasoningAgent:
                 parsed_json = self.extract_json(raw_text)
 
                 if parsed_json:
+                    AICircuitBreaker.record_success(prov_label)
                     AICircuitBreaker.record_success("GROQ")
                     AICircuitBreaker.increment_call(batch_id, self.agent_name)
 
                     logger.info(
-                        "[AI_CALL_COMPLETE] request_id=%s tokens_est=%d duration_ms=%.1f status=SUCCESS provider=GROQ",
-                        request_id, tokens_est, latency_ms
+                        "[AI_CALL_COMPLETE] request_id=%s tokens_est=%d duration_ms=%.1f status=SUCCESS provider=%s",
+                        request_id, tokens_est, latency_ms, prov_label
                     )
 
                     telemetry = {
-                        "provider": "GROQ",
+                        "provider": prov_label,
                         "model": g_model,
                         "latency_ms": latency_ms,
                         "tokens_est": tokens_est,
@@ -319,7 +339,7 @@ class BaseReasoningAgent:
                     }
                     AgentTelemetryTracker.record_call(
                         agent_name=self.agent_name,
-                        provider="GROQ",
+                        provider=prov_label,
                         model=g_model,
                         latency_ms=latency_ms,
                         tokens_est=tokens_est,
@@ -331,16 +351,15 @@ class BaseReasoningAgent:
             except Exception as e:
                 err_str = str(e)
                 if "429" in err_str or "rate_limit" in err_str.lower() or "quota" in err_str.lower():
-                    # Parse retry-after if provided
                     retry_match = re.search(r"retry\s+in\s+([\d\.]+)", err_str, re.IGNORECASE)
                     retry_sec = float(retry_match.group(1)) if retry_match else 60.0
-                    AICircuitBreaker.record_429("GROQ", retry_sec)
+                    AICircuitBreaker.record_429(prov_label, retry_sec)
                     logger.warning(
-                        "[AI_PROVIDER_UNAVAILABLE] provider=groq reason=rate_limit retry_after=%.1fs",
-                        retry_sec
+                        "[AI_PROVIDER_UNAVAILABLE] provider=%s reason=rate_limit retry_after=%.1fs",
+                        prov_label, retry_sec
                     )
                 else:
-                    logger.warning(f"[{self.agent_name}] Groq execution error: {e}")
+                    logger.warning(f"[{self.agent_name}] {prov_label} execution error: {e}")
 
         # 2. Attempt Gemini Fallback if available and not on 429 cooldown
         gemini_avail, gemini_cooldown = AICircuitBreaker.is_provider_available("GEMINI")

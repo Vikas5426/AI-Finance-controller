@@ -507,9 +507,9 @@ def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any
 
     user_message_str = json.dumps(user_payload, indent=2, default=str)
 
-    # 1. Try Groq (Ultra-Fast High-Intelligence LLM)
-    groq_key = settings.GROQ_API_KEY
-    if groq_key:
+    # 1. Try Groq (Ultra-Fast High-Intelligence LLM with Secondary Key Fallback)
+    groq_keys = [k for k in (getattr(settings, "GROQ_API_KEY_SECONDARY", None), settings.GROQ_API_KEY) if k]
+    for groq_key in groq_keys:
         try:
             from groq import Groq
             groq_client = Groq(api_key=groq_key, timeout=12.0)

@@ -23,17 +23,50 @@ class FinancialAgentSuite:
     _instance: Optional["FinancialAgentSuite"] = None
     _cached_batch_analyses: Dict[str, Dict[str, Any]] = {}
 
-    def __init__(self, groq_api_key: Optional[str] = None):
-        self.investigation_agent = ExceptionInvestigationAgent(groq_api_key=groq_api_key)
-        self.rca_agent = RootCauseAnalysisAgent(groq_api_key=groq_api_key)
-        self.insights_agent = FinancialInsightAgent(groq_api_key=groq_api_key)
-        self.audit_agent = AuditExplanationAgent(groq_api_key=groq_api_key)
-        self.report_agent = ReportGenerationAgent(groq_api_key=groq_api_key)
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ):
+        from app.core.config import settings
+        primary_k = groq_api_key or settings.GROQ_API_KEY
+        secondary_k = groq_api_key_secondary or getattr(settings, "GROQ_API_KEY_SECONDARY", None)
+
+        # Distribute keys across agents to split rate limits and concurrent load:
+        # Core reconciliation investigation & RCA use Primary key (Secondary as failover)
+        self.investigation_agent = ExceptionInvestigationAgent(
+            groq_api_key=primary_k,
+            groq_api_key_secondary=secondary_k
+        )
+        self.rca_agent = RootCauseAnalysisAgent(
+            groq_api_key=primary_k,
+            groq_api_key_secondary=secondary_k
+        )
+        # Macro advisory, audit narratives, and reporting use Secondary key (Primary as failover)
+        self.insights_agent = FinancialInsightAgent(
+            groq_api_key=secondary_k or primary_k,
+            groq_api_key_secondary=primary_k if secondary_k else None
+        )
+        self.audit_agent = AuditExplanationAgent(
+            groq_api_key=secondary_k or primary_k,
+            groq_api_key_secondary=primary_k if secondary_k else None
+        )
+        self.report_agent = ReportGenerationAgent(
+            groq_api_key=secondary_k or primary_k,
+            groq_api_key_secondary=primary_k if secondary_k else None
+        )
 
     @classmethod
-    def get_suite(cls, groq_api_key: Optional[str] = None) -> "FinancialAgentSuite":
+    def get_suite(
+        cls,
+        groq_api_key: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ) -> "FinancialAgentSuite":
         if cls._instance is None:
-            cls._instance = FinancialAgentSuite(groq_api_key=groq_api_key)
+            cls._instance = FinancialAgentSuite(
+                groq_api_key=groq_api_key,
+                groq_api_key_secondary=groq_api_key_secondary
+            )
         return cls._instance
 
     def run_all_batch_agents(

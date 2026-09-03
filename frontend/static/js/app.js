@@ -739,7 +739,7 @@ function initEventListeners() {
 
   // QA Chatbot Modal Trigger Buttons
   document.getElementById('btn-header-ask-ai')?.addEventListener('click', toggleQAModal);
-  document.getElementById('qa-close-btn')?.addEventListener('click', toggleQAModal);
+  document.getElementById('qa-close-btn')?.addEventListener('click', closeQAModal);
   document.getElementById('qa-clear-btn')?.addEventListener('click', clearQAChat);
   document.getElementById('qa-submit-btn')?.addEventListener('click', sendQAMessage);
   document.getElementById('qa-user-input')?.addEventListener('keydown', (e) => {
@@ -1550,6 +1550,11 @@ async function fetchInitialData() {
     renderResultsTable();
     renderSidebarActiveFeeds();
     updateActiveExceptionLanes([]);
+    loadAIIssuesReport(null, false);
+    const agentSelect = document.getElementById('agent-9-target-select');
+    if (agentSelect) {
+      agentSelect.innerHTML = '<option value="">No exceptions in active batch</option>';
+    }
   }
 }
 
@@ -3156,26 +3161,95 @@ function renderQAStarterChipsHtml() {
   `;
 }
 
-function toggleQAModal() {
+function closeQAModal(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
   const modal = document.getElementById('qa-modal');
+  const fab = document.getElementById('floating-chatbot-btn');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.classList.remove('qa-fullscreen-mode');
+  }
+  if (fab) {
+    fab.classList.remove('chat-open');
+  }
+}
+
+function toggleQAModal(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  const modal = document.getElementById('qa-modal');
+  const fab = document.getElementById('floating-chatbot-btn');
   if (modal) {
     modal.classList.toggle('open');
-    if (modal.classList.contains('open')) {
-      if (appState.qaConversationHistory.length === 0) {
+    const isOpen = modal.classList.contains('open');
+    if (fab) fab.classList.toggle('chat-open', isOpen);
+    if (isOpen) {
+      if (!appState.qaConversationHistory || appState.qaConversationHistory.length === 0) {
         const container = document.getElementById('qa-messages-container');
         if (container) {
           container.innerHTML = `
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.45;">
-              <strong>👋 AI Financial Assistant Active.</strong> Ask any question about payments, delayed deposits, gateway fees, or unsettled invoices in plain, simple English.
+            <div class="qa-welcome-card">
+              <div class="qa-welcome-title">Financial Assistant Active</div>
+              <div class="qa-welcome-text">
+                Ask any question about payments, exceptions, gateway fees, or general ledger records.
+              </div>
             </div>
+            <div class="qa-chips-section-title">Common Questions</div>
             ${renderQAStarterChipsHtml()}
           `;
         }
       }
       bindPromptChips();
-      document.getElementById('qa-user-input')?.focus();
+      setTimeout(() => document.getElementById('qa-user-input')?.focus(), 60);
     }
   }
+}
+
+function toggleQAExpand(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  const modal = document.getElementById('qa-modal');
+  const icon = document.getElementById('qa-expand-icon');
+  if (modal) {
+    modal.classList.toggle('qa-fullscreen-mode');
+    const isFull = modal.classList.contains('qa-fullscreen-mode');
+    if (icon) {
+      if (isFull) {
+        icon.innerHTML = `
+          <polyline points="4 14 10 14 10 20"/>
+          <polyline points="20 10 14 10 14 4"/>
+          <line x1="14" y1="10" x2="21" y2="3"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        `;
+      } else {
+        icon.innerHTML = `
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        `;
+      }
+    }
+  }
+}
+
+function copyQAResponse(btn) {
+  const card = btn.closest('.qa-card-assistant');
+  if (!card) return;
+  const answerEl = card.querySelector('.qa-direct-answer');
+  const text = answerEl ? answerEl.innerText : card.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Copied to clipboard', 'info');
+  }).catch(() => {
+    showToast('Copied', 'info');
+  });
 }
 
 function bindPromptChips() {
@@ -3189,18 +3263,26 @@ function bindPromptChips() {
   });
 }
 
-function clearQAChat() {
+function clearQAChat(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
   appState.qaConversationHistory = [];
   const container = document.getElementById('qa-messages-container');
   if (container) {
     container.innerHTML = `
-      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.45;">
-        <strong>👋 AI Financial Assistant Active.</strong> Ask any question about payments, delayed deposits, gateway fees, or unsettled invoices in plain, simple English.
+      <div class="qa-welcome-card">
+        <div class="qa-welcome-title">Financial Assistant Active</div>
+        <div class="qa-welcome-text">
+          Ask any question about payments, exceptions, gateway fees, or general ledger records.
+        </div>
       </div>
+      <div class="qa-chips-section-title">Common Questions</div>
       ${renderQAStarterChipsHtml()}
     `;
     bindPromptChips();
-    showToast('AI Assistant chat cleared.', 'info');
+    showToast('Chat history cleared.', 'info');
   }
 }
 
@@ -3210,9 +3292,14 @@ async function sendQAMessage() {
   if (!query) return;
 
   const container = document.getElementById('qa-messages-container');
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   container.insertAdjacentHTML('beforeend', `
-    <div style="background: var(--text-primary); color: var(--bg-app); padding: 0.65rem 0.9rem; border-radius: 10px 10px 2px 10px; max-width: 80%; margin: 0 0 0.75rem auto; font-size: 0.8rem; font-weight: 500;">
-      ${escapeHtml(query)}
+    <div class="qa-msg-user">
+      <div class="qa-bubble-user">
+        ${escapeHtml(query)}
+      </div>
+      <span class="qa-time-stamp">${timeStr}</span>
     </div>
   `);
 
@@ -3221,8 +3308,11 @@ async function sendQAMessage() {
 
   const loadId = `load_${Date.now()}`;
   container.insertAdjacentHTML('beforeend', `
-    <div id="${loadId}" style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 10px 10px 10px 2px; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-      Analyzing live reconciliation data & SOP rules...
+    <div id="${loadId}" class="qa-msg-thinking">
+      <div class="qa-thinking-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <span>Analyzing live reconciliation & ledger rules...</span>
     </div>
   `);
   container.scrollTop = container.scrollHeight;
@@ -3246,7 +3336,7 @@ async function sendQAMessage() {
         ? 'Your login session has expired. Please sign in again using the Sign In button at top right.'
         : `Service returned status ${res.status}. Please check your connection or batch status.`);
       container.insertAdjacentHTML('beforeend', `
-        <div style="background: var(--bg-surface); border: 1px solid var(--accent-coral); color: var(--accent-coral); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.45;">
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.45;">
           <strong>⚠️ Notice:</strong> ${escapeHtml(errDetail)}
         </div>
       `);
@@ -3294,11 +3384,28 @@ async function sendQAMessage() {
     ` : '';
 
     container.insertAdjacentHTML('beforeend', `
-      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.9rem 1.1rem; border-radius: 10px 10px 10px 2px; font-size: 0.825rem; color: var(--text-primary); margin-bottom: 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-        ${cardHtml}
-        <div style="font-weight: 600; font-size: 0.85rem; line-height: 1.45; margin-bottom: 0.5rem; color: var(--text-primary);">${escapeHtml(data.direct_answer || data.answer)}</div>
-        ${findings ? `<ul style="margin: 0.4rem 0 0.5rem 1.1rem; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.45;">${findings}</ul>` : ''}
-        ${nextActionHtml}
+      <div class="qa-msg-assistant">
+        <div class="qa-card-assistant">
+          <div class="qa-assistant-header">
+            <div class="qa-assistant-badge">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              <span>AI Assistant</span>
+            </div>
+            <div class="qa-assistant-meta">
+              <span class="qa-model-pill">Groq LPU</span>
+              <span class="qa-time-stamp">${timeStr}</span>
+              <button class="qa-copy-btn" onclick="copyQAResponse(this)" title="Copy answer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+          ${cardHtml}
+          <div class="qa-direct-answer">${escapeHtml(data.direct_answer || data.answer)}</div>
+          ${findings ? `<ul style="margin: 0.4rem 0 0.5rem 1.1rem; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.45;">${findings}</ul>` : ''}
+          ${nextActionHtml}
+        </div>
       </div>
     `);
 
@@ -3306,7 +3413,7 @@ async function sendQAMessage() {
   } catch (err) {
     document.getElementById(loadId)?.remove();
     container.insertAdjacentHTML('beforeend', `
-      <div style="background: var(--bg-surface); border: 1px solid var(--accent-coral); color: var(--accent-coral); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.45;">
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.45;">
         <strong>⚠️ Connection Issue:</strong> ${escapeHtml(err.message || 'Unable to connect to AI Controller. Please verify you are logged in.')}
       </div>
     `);
@@ -3316,12 +3423,15 @@ async function sendQAMessage() {
 
 // Expose globally
 window.toggleQAModal = toggleQAModal;
+window.closeQAModal = closeQAModal;
+window.toggleQAExpand = toggleQAExpand;
+window.copyQAResponse = copyQAResponse;
 window.sendQAMessage = sendQAMessage;
 window.clearQAChat = clearQAChat;
 
 // Bind event listeners upon DOM load
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('qa-close-btn')?.addEventListener('click', toggleQAModal);
+  document.getElementById('qa-close-btn')?.addEventListener('click', closeQAModal);
   document.getElementById('qa-clear-btn')?.addEventListener('click', clearQAChat);
   document.getElementById('qa-submit-btn')?.addEventListener('click', sendQAMessage);
   document.getElementById('qa-user-input')?.addEventListener('keydown', (e) => {
@@ -3331,6 +3441,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       toggleQAModal();
+    } else if (e.key === 'Escape') {
+      closeQAModal();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    const modal = document.getElementById('qa-modal');
+    if (modal && modal.classList.contains('open') && modal.classList.contains('qa-fullscreen-mode')) {
+      if (e.target === modal) {
+        closeQAModal();
+      }
     }
   });
   bindPromptChips();

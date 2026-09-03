@@ -151,10 +151,12 @@ class AIAgentRuntime:
     def __init__(
         self,
         groq_api_key: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None,
         gemini_api_key: Optional[str] = None,
         anthropic_api_key: Optional[str] = None
     ):
         self.groq_api_key = groq_api_key or settings.GROQ_API_KEY
+        self.groq_api_key_secondary = groq_api_key_secondary or getattr(settings, "GROQ_API_KEY_SECONDARY", None)
         self.gemini_api_key = gemini_api_key or settings.GEMINI_API_KEY
         self.anthropic_api_key = anthropic_api_key or settings.ANTHROPIC_API_KEY
 
@@ -164,9 +166,15 @@ class AIAgentRuntime:
                 from groq import Groq
                 self._groq_client = Groq(api_key=self.groq_api_key, timeout=8.0)
             except Exception as e:
-                # A key is configured but the provider is unusable. Silence here
-                # makes a missing SDK look identical to a missing key.
                 logger.warning("[agent_runtime] Groq client unavailable despite configured key: %s", e)
+
+        self._groq_client_secondary = None
+        if self.groq_api_key_secondary:
+            try:
+                from groq import Groq
+                self._groq_client_secondary = Groq(api_key=self.groq_api_key_secondary, timeout=8.0)
+            except Exception as e:
+                logger.warning("[agent_runtime] Secondary Groq client unavailable: %s", e)
 
         self._gemini_client = None
         if self.gemini_api_key:
@@ -635,97 +643,116 @@ class AIAgentRuntime:
             except Exception:
                 pass
 
-            if prov == "groq" and self._groq_client:
+            if prov == "groq" and (self._groq_client or self._groq_client_secondary):
                 groq_model = getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
-                try:
-                    completion = self._groq_client.chat.completions.create(
-                        model=groq_model,
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": f"Targeted Context:\n{user_prompt}"}
-                        ],
-                        temperature=1.0,
-                        top_p=1,
-                        max_completion_tokens=1500,
-                        timeout=float(getattr(settings, "AGENT_TIMEOUT_SECONDS", 12))
-                    )
-                    raw_text = completion.choices[0].message.content or ""
-                    if not raw_text.strip():
-                        # Stream collection
-                        stream_comp = self._groq_client.chat.completions.create(
-                            model=groq_model,
-                            messages=[
+                
+                # Assemble Groq clients (Primary and Secondary)
+                groq_candidates = []
+                if self._groq_client:
+                    groq_candidates.append(("GROQ_PRIMARY", self._groq_client))
+                if self._groq_client_secondary:
+                    groq_candidates.append(("GROQ_SECONDARY", self._groq_client_secondary))
+                
+                # Load balance: alternate starting client to distribute TPM/RPM across accounts
+                if len(groq_candidates) > 1 and (self.stats["total_exceptions"] % 2 == 1):
+                    groq_candidates = [groq_candidates[1], groq_candidates[0]]
+
+                for prov_label, client in groq_candidates:
+                    try:
+                        from app.services.agents.base_agent import AICircuitBreaker
+                        g_avail, _ = AICircuitBreaker.is_provider_available(prov_label)
+                        if not g_avail:
+                            continue
+                    except Exception:
+                        pass
+
+                    try:
+                        kwargs = {
+                            "model": groq_model,
+                            "messages": [
                                 {"role": "system", "content": system_prompt},
                                 {"role": "user", "content": f"Targeted Context:\n{user_prompt}"}
                             ],
-                            temperature=1.0,
-                            top_p=1,
-                            max_completion_tokens=1500,
-                            timeout=float(getattr(settings, "AGENT_TIMEOUT_SECONDS", 12)),
-                            stream=True
-                        )
-                        stream_chunks = []
-                        for chunk in stream_comp:
-                            if chunk.choices and chunk.choices[0].delta:
-                                stream_chunks.append(chunk.choices[0].delta.content or "")
-                        raw_text = "".join(stream_chunks)
+                            "temperature": 0.1,
+                            "top_p": 1,
+                            "max_completion_tokens": 1500,
+                            "timeout": float(getattr(settings, "AGENT_TIMEOUT_SECONDS", 12))
+                        }
+                        if "openai" in groq_model:
+                            kwargs["reasoning_effort"] = "low"
 
-                    json_start = raw_text.find("{")
-                    json_end = raw_text.rfind("}") + 1
-                    if json_start != -1 and json_end != -1:
-                        data = json.loads(raw_text[json_start:json_end])
-                        data["exception_id"] = exception_id
-                        if "evidence" in data and isinstance(data["evidence"], list):
-                            fallback_id = str(primary_txn.get("id") if primary_txn else (counterpart_txn.get("id") if counterpart_txn else exception_id))
-                            for ev in data["evidence"]:
-                                if isinstance(ev, dict) and not ev.get("record_id"):
-                                    ev["record_id"] = fallback_id
-                        inv = InvestigationResult(**data)
-                        is_valid, _ = DeterministicVerifier.verify_proposal(
-                            inv,
-                            {"impact_minor": impact_minor},
-                            valid_candidate_ids
-                        )
-                        if is_valid:
-                            lat = round((time.time() - start_time) * 1000, 2)
-                            tok = max(50, len(raw_text) // 4)
-                            inv.telemetry = {
-                                "provider": "GROQ",
-                                "model": groq_model,
-                                "latency_ms": lat,
-                                "verifier_status": "PASSED",
-                                "tokens_est": tok
-                            }
-                            self.stats["ai_investigated"] += 1
-                            self._L1_CACHE[cache_key] = inv
+                        completion = client.chat.completions.create(**kwargs)
+                        raw_text = completion.choices[0].message.content or ""
+                        if not raw_text.strip():
+                            # Stream collection
+                            kwargs_stream = dict(kwargs)
+                            kwargs_stream["stream"] = True
+                            stream_comp = client.chat.completions.create(**kwargs_stream)
+                            stream_chunks = []
+                            for chunk in stream_comp:
+                                if chunk.choices and chunk.choices[0].delta:
+                                    stream_chunks.append(chunk.choices[0].delta.content or "")
+                            raw_text = "".join(stream_chunks)
 
+                        json_start = raw_text.find("{")
+                        json_end = raw_text.rfind("}") + 1
+                        if json_start != -1 and json_end != -1:
+                            data = json.loads(raw_text[json_start:json_end])
+                            data["exception_id"] = exception_id
+                            if "evidence" in data and isinstance(data["evidence"], list):
+                                fallback_id = str(primary_txn.get("id") if primary_txn else (counterpart_txn.get("id") if counterpart_txn else exception_id))
+                                for ev in data["evidence"]:
+                                    if isinstance(ev, dict) and not ev.get("record_id"):
+                                        ev["record_id"] = fallback_id
+                            inv = InvestigationResult(**data)
+                            is_valid, _ = DeterministicVerifier.verify_proposal(
+                                inv,
+                                {"impact_minor": impact_minor},
+                                valid_candidate_ids
+                            )
+                            if is_valid:
+                                lat = round((time.time() - start_time) * 1000, 2)
+                                tok = max(50, len(raw_text) // 4)
+                                inv.telemetry = {
+                                    "provider": prov_label,
+                                    "model": groq_model,
+                                    "latency_ms": lat,
+                                    "verifier_status": "PASSED",
+                                    "tokens_est": tok
+                                }
+                                self.stats["ai_investigated"] += 1
+                                self._L1_CACHE[cache_key] = inv
+
+                                try:
+                                    from app.services.agents.base_agent import AICircuitBreaker
+                                    AICircuitBreaker.record_success(prov_label)
+                                    AICircuitBreaker.record_success("GROQ")
+                                    if batch_id_val:
+                                        AICircuitBreaker.increment_call(batch_id_val, "Agent 9: Exception Investigation Agent")
+                                except Exception:
+                                    pass
+
+                                _record_agent_telemetry(
+                                    agent_name="Agent 9: Exception Investigation Agent",
+                                    provider=prov_label,
+                                    model=groq_model,
+                                    latency_ms=lat,
+                                    tokens_est=tok,
+                                    status="SUCCESS",
+                                    metadata={"exception_id": exception_id, "classification": inv.classification}
+                                )
+                                return inv
+                    except Exception as e:
+                        err_str = str(e)
+                        if "429" in err_str or "rate_limit" in err_str.lower() or "quota" in err_str.lower():
                             try:
                                 from app.services.agents.base_agent import AICircuitBreaker
-                                AICircuitBreaker.record_success("GROQ")
-                                if batch_id_val:
-                                    AICircuitBreaker.increment_call(batch_id_val, "Agent 9: Exception Investigation Agent")
+                                retry_match = re.search(r"retry\s+in\s+([\d\.]+)", err_str, re.IGNORECASE)
+                                retry_sec = float(retry_match.group(1)) if retry_match else 60.0
+                                AICircuitBreaker.record_429(prov_label, retry_sec)
                             except Exception:
                                 pass
-
-                            _record_agent_telemetry(
-                                agent_name="Agent 9: Exception Investigation Agent",
-                                provider="GROQ",
-                                model=groq_model,
-                                latency_ms=lat,
-                                tokens_est=tok,
-                                status="SUCCESS",
-                                metadata={"exception_id": exception_id, "classification": inv.classification}
-                            )
-                            return inv
-                except Exception as e:
-                    err_str = str(e)
-                    if "429" in err_str or "rate_limit" in err_str.lower() or "quota" in err_str.lower():
-                        try:
-                            from app.services.agents.base_agent import AICircuitBreaker
-                            AICircuitBreaker.record_429("GROQ", 60.0)
-                        except Exception:
-                            pass
-                    logger.warning("[agent_runtime] Groq investigation failed (model=%s): %s", groq_model, e)
+                        logger.warning("[agent_runtime] %s investigation failed (model=%s): %s", prov_label, groq_model, e)
 
             elif prov == "gemini" and self._gemini_client:
                 gemini_model = settings.AGENT_GEMINI_MODEL

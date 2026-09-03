@@ -12,10 +12,16 @@ from app.services.agents.base_agent import BaseReasoningAgent
 class FinancialInsightAgent(BaseReasoningAgent):
     """Agent 11: Strategic financial intelligence and liquidity advisory agent."""
 
-    def __init__(self, groq_api_key: Optional[str] = None, groq_model: Optional[str] = None):
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        groq_model: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ):
         super().__init__(
             agent_name="FinancialInsightAgent",
             groq_api_key=groq_api_key,
+            groq_api_key_secondary=groq_api_key_secondary,
             groq_model=groq_model
         )
 

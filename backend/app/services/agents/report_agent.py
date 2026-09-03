@@ -30,10 +30,16 @@ from app.models.schemas import (
 class ReportGenerationAgent(BaseReasoningAgent):
     """Agent 13: Executive Controller Brief and Board Reconciliation Package generator."""
 
-    def __init__(self, groq_api_key: Optional[str] = None, groq_model: Optional[str] = None):
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        groq_model: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ):
         super().__init__(
             agent_name="ReportGenerationAgent",
             groq_api_key=groq_api_key,
+            groq_api_key_secondary=groq_api_key_secondary,
             groq_model=groq_model
         )
 

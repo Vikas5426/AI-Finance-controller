@@ -18,10 +18,16 @@ from app.models.schemas import (
 class RootCauseAnalysisAgent(BaseReasoningAgent):
     """Agent 10: Macro-level batch root cause analysis and systemic diagnostic agent."""
 
-    def __init__(self, groq_api_key: Optional[str] = None, groq_model: Optional[str] = None):
+    def __init__(
+        self,
+        groq_api_key: Optional[str] = None,
+        groq_model: Optional[str] = None,
+        groq_api_key_secondary: Optional[str] = None
+    ):
         super().__init__(
             agent_name="RootCauseAnalysisAgent",
             groq_api_key=groq_api_key,
+            groq_api_key_secondary=groq_api_key_secondary,
             groq_model=groq_model
         )
 

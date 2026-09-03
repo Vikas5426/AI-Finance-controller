@@ -81,6 +81,7 @@ class Settings(BaseSettings):
     # AI API Keys — supplied via environment / .env only. Never hardcode a
     # default: a committed default is a published credential.
     GROQ_API_KEY: Optional[str] = None
+    GROQ_API_KEY_SECONDARY: Optional[str] = None
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     ANTHROPIC_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None

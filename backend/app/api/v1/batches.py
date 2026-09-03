@@ -360,36 +360,8 @@ EMPTY_ACTIVE_BATCH = {
 @router.get("/active")
 def get_active_batch(current_user: Dict[str, Any] = Depends(get_current_user)):
     active = STATE.get("active_batch")
-    # STATE holds one batch for the whole process. A caller from another
-    # organisation must see "no active batch", not this one's figures.
     if not active or active.get("org_id") != current_user["org_id"]:
-        # STATE is empty after a restart (and after any other tenant's run
-        # overwrote it), but the batch itself is persisted. Rebuild from the
-        # database instead of reporting zeroes for work that did complete.
-        ctx = DatabaseService.load_batch_context(current_user["org_id"])
-        if not ctx["batch"]:
-            return dict(EMPTY_ACTIVE_BATCH)
-        return {
-            "batch": ctx["batch"],
-            "quality_metrics": ctx["quality_metrics"],
-            "windows": ctx["windows"],
-            "provenance": None,
-            "mode": "REAL_USER_DATA",
-            "stats": ctx["stats"],
-            "operational_metrics": {
-                "is_synthetic_benchmark": False,
-                "total_records": ctx["stats"]["total_records"],
-                "matched_records": ctx["batch"]["matched_records"],
-                "unmatched_records": max(0, ctx["stats"]["total_records"] - ctx["batch"]["matched_records"]),
-                "matched_pairs": ctx["quality_metrics"]["exact_matches"] + ctx["quality_metrics"]["contextual_matches"],
-                "exceptions_count": ctx["stats"]["total_exceptions"],
-                "manual_review_required": ctx["stats"]["pending_approvals"],
-                "processing_time_seconds": ctx["batch"]["execution_time_sec"],
-                "false_positive_safeguards_triggered": ctx["stats"]["safeguards_triggered_count"],
-                "confidence_breakdown": {},
-                "ai_investigations_performed": 0,
-            },
-        }
+        return dict(EMPTY_ACTIVE_BATCH)
 
     # Calculate live stats directly from database if available
     db_stats = DatabaseService.get_batch_stats(batch_id=active["id"], org_id=current_user["org_id"])

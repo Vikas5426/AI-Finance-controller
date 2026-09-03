@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css?v=4">
+  <link rel="stylesheet" href="/static/css/styles.css?v=6">
   <link rel="icon" type="image/png" href="/static/img/favicon.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
 </head>
@@ -1828,94 +1828,117 @@
     </div>
   </div>
 
-  <!-- AI Financial Investigator Chatbot Modal (⌘K) -->
-  <div class="qa-modal-backdrop" id="qa-modal">
-    <div class="qa-dialog-min">
-      <div
-        style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem;">
-          <span style="color: var(--accent-cyan);">●</span> ReUI AI Assistant
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <button class="btn-ghost btn-sm" id="qa-clear-btn"
-            style="border: 1px solid var(--border-subtle); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 4px;"
-            title="Clear Chat History" aria-label="Clear chat history">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  <!-- ==============================================================================
+       AI FINANCIAL COPILOT (DOCKABLE WIDGET & FULLSCREEN DIALOG)
+       ============================================================================== -->
+  <!-- ==============================================================================
+       MINIMAL AI ASSISTANT (DOCKABLE WIDGET & FULLSCREEN DIALOG)
+       ============================================================================== -->
+  <div class="qa-widget-wrapper" id="qa-modal" role="dialog" aria-label="AI Financial Assistant">
+    <div class="qa-dialog-min" id="qa-dialog-panel">
+
+      <!-- Minimal Header -->
+      <div class="qa-header">
+        <div class="qa-header-left">
+          <div class="qa-avatar-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span>Clear Chat</span>
+          </div>
+          <div class="qa-title-group">
+            <div class="qa-title-row">
+              <span class="qa-header-title">AI Assistant</span>
+              <span class="qa-status-pill">
+                <span class="qa-status-dot"></span>
+                <span>Active</span>
+              </span>
+            </div>
+            <div class="qa-header-subtitle">Reconciliation & Financial Inquiries</div>
+          </div>
+        </div>
+
+        <div class="qa-header-actions">
+          <button class="qa-ctrl-btn" id="qa-expand-btn" onclick="toggleQAExpand(event)" title="Toggle size" aria-label="Expand or dock view">
+            <svg id="qa-expand-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"/>
+              <polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
           </button>
-          <button class="btn-ghost btn-sm" id="qa-close-btn"
-            style="border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 0.3rem;"
-            aria-label="Close dialog">
+          <button class="qa-ctrl-btn" id="qa-clear-btn" onclick="clearQAChat(event)" title="Clear Chat History" aria-label="Clear chat">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+          <button class="qa-ctrl-btn qa-close-btn" id="qa-close-btn" onclick="closeQAModal(event)" title="Close (Esc)" aria-label="Close dialog">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
       </div>
 
-      <div style="padding: 1.25rem; overflow-y: auto; flex: 1; max-height: 50vh;" id="qa-messages-container">
-        <div
-          style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.45;">
-          <strong>👋 AI Financial Assistant Active.</strong> Ask any question about payments, delayed deposits, gateway fees, or unsettled invoices in plain, simple English.
+      <!-- Messages Stream Container -->
+      <div class="qa-messages-scroll" id="qa-messages-container">
+        <!-- Initial Simple Welcome -->
+        <div class="qa-welcome-card">
+          <div class="qa-welcome-title">Financial Assistant Active</div>
+          <div class="qa-welcome-text">
+            Ask any question about payments, exceptions, gateway fees, or general ledger records.
+          </div>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
+        <div class="qa-chips-section-title">Common Questions</div>
+        <div class="qa-starter-chips" id="qa-starter-chips-container">
           <button class="prompt-chip" data-query="How many exceptions are there?">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
             <span>Exceptions breakdown?</span>
           </button>
           <button class="prompt-chip" data-query="Why didn't invoice INV-2026-0412 settle in this batch?">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
             <span>Why didn't INV-2026-0412 settle?</span>
           </button>
           <button class="prompt-chip" data-query="Explain the MDR fee splits">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-              <line x1="7" y1="7" x2="7.01" y2="7" />
-            </svg>
             <span>MDR fee rules</span>
           </button>
           <button class="prompt-chip" data-query="What is the cash forecast for next month?">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-              <polyline points="16 7 22 7 22 13" />
-            </svg>
             <span>Cash forecast</span>
           </button>
         </div>
       </div>
 
-      <div style="padding: 0.85rem 1.25rem; border-top: 1px solid var(--border-subtle); display: flex; gap: 0.5rem;">
-        <input type="text" id="qa-user-input" placeholder="Ask a financial controller question..."
-          style="flex: 1; background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: 6px; padding: 0.5rem 0.75rem; color: var(--text-primary); font-size: 0.8rem; outline: none;">
-        <button class="btn btn-primary btn-sm" id="qa-submit-btn">Send</button>
+      <!-- Input Bar Section -->
+      <div class="qa-input-bar">
+        <div class="qa-input-wrapper">
+          <input type="text" id="qa-user-input" class="qa-input-field" placeholder="Ask a question..." autocomplete="off">
+          <div class="qa-input-actions">
+            <kbd class="qa-kbd-pill" title="Press Enter to send">↵</kbd>
+            <button class="qa-send-btn" id="qa-submit-btn" title="Send message" aria-label="Send">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Floating AI Chatbot Action Button (FAB) -->
-  <button class="floating-chatbot-btn" id="floating-chatbot-btn" onclick="toggleQAModal()" title="Open AI Financial Chatbot (⌘K)" aria-label="Open AI Chatbot">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      <circle cx="9" cy="10" r="1.2" fill="currentColor" />
-      <circle cx="15" cy="10" r="1.2" fill="currentColor" />
-    </svg>
-    <span class="floating-chatbot-tooltip">Ask AI Chatbot (⌘K)</span>
+  <!-- Minimal Floating Trigger Button (FAB) -->
+  <button class="floating-chatbot-btn" id="floating-chatbot-btn" onclick="toggleQAModal(event)" title="AI Assistant (⌘K)" aria-label="Open AI Assistant">
+    <div class="floating-chatbot-inner">
+      <svg class="icon-chat" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span class="floating-chatbot-label">AI Assistant</span>
+      <kbd class="floating-chatbot-key">⌘K</kbd>
+    </div>
     <span class="floating-chatbot-dot"></span>
   </button>
 
-  <script src="/static/js/app.js?v=4"></script>
+  <script src="/static/js/app.js?v=6"></script>
 </body>
 
 </html>

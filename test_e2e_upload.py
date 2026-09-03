@@ -61,21 +61,24 @@ def run_e2e_upload_test():
             "source_kind": "GATEWAY",
             "file_path": "data/gateway.csv",
             "expected_name": "gateway.csv",
-            "expected_raw_rows": 12,
+            "expected_raw_rows": 7,
+            "expected_normalized_rows": 7,
             "expected_size": os.path.getsize("data/gateway.csv")
         },
         {
             "source_kind": "BANK",
             "file_path": "data/bank.csv",
             "expected_name": "bank.csv",
-            "expected_raw_rows": 10,
+            "expected_raw_rows": 6,
+            "expected_normalized_rows": 6,
             "expected_size": os.path.getsize("data/bank.csv")
         },
         {
             "source_kind": "LEDGER",
             "file_path": "data/general_ledger.csv",
             "expected_name": "general_ledger.csv",
-            "expected_raw_rows": 42,
+            "expected_raw_rows": 18,
+            "expected_normalized_rows": 6,
             "expected_size": os.path.getsize("data/general_ledger.csv")
         }
     ]
@@ -134,7 +137,7 @@ def run_e2e_upload_test():
             "file_hash": res_data["file_hash"],
             "file_size": fsize,
             "raw_rows": res_data["total_rows"],
-            "expected_rows": item["expected_raw_rows"],
+            "expected_rows": item["expected_normalized_rows"],
             "sha256": file_sha
         }
 

@@ -390,7 +390,7 @@ class ReconciliationEngine:
                     checks_performed=["Intra-Source Fingerprint & Reference Deduplication"],
                     findings=[f"Duplicate transaction '{t.external_id}' ingested from {t.source_kind.value}."],
                     resolution_confidence=0.99,
-                    detected_at=datetime.utcnow()
+                    detected_at=datetime.now(timezone.utc)
                 )
                 self.exceptions.append(exc)
             else:

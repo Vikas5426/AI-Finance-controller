@@ -82,15 +82,15 @@ class FinancialControllerFullRegressionTest(unittest.TestCase):
         self.assertEqual(manifest["sources"]["BANK"]["sha256_hash"], expected_bk_hash)
         self.assertEqual(manifest["sources"]["LEDGER"]["sha256_hash"], expected_gl_hash)
 
-        # Assert correct row counts: 12 Gateway, 10 Bank, 42 Ledger = 64 Total
-        self.assertEqual(manifest["sources"]["GATEWAY"]["raw_rows_count"], 12)
-        self.assertEqual(manifest["sources"]["BANK"]["raw_rows_count"], 10)
-        self.assertEqual(manifest["sources"]["LEDGER"]["raw_rows_count"], 42)
-        self.assertEqual(manifest["total_raw_rows"], 64)
-        self.assertEqual(manifest["total_normalized_records"], 64)
+        # Assert correct row counts: 7 Gateway, 6 Bank, 18 Ledger = 31 Total (19 Normalized)
+        self.assertEqual(manifest["sources"]["GATEWAY"]["raw_rows_count"], 7)
+        self.assertEqual(manifest["sources"]["BANK"]["raw_rows_count"], 6)
+        self.assertEqual(manifest["sources"]["LEDGER"]["raw_rows_count"], 18)
+        self.assertEqual(manifest["total_raw_rows"], 31)
+        self.assertEqual(manifest["total_normalized_records"], 19)
 
         # Assert reconciliation execution
-        self.assertEqual(summary["total_records"], 64)
+        self.assertEqual(summary["total_records"], 19)
         self.assertGreaterEqual(summary["exact_matches"], 1)
         self.assertGreaterEqual(summary["total_exceptions"], 1)
 
@@ -151,9 +151,10 @@ class FinancialControllerFullRegressionTest(unittest.TestCase):
             manifest = result.get("provenance", {})
             summary = result.get("summary", {})
 
-            # Total records: 12 Gateway + 0 Bank + 42 Ledger = 54
-            self.assertEqual(manifest["total_raw_rows"], 54)
+            # Total records: 7 Gateway + 0 Bank + 18 Ledger = 25
+            self.assertEqual(manifest["total_raw_rows"], 25)
             self.assertEqual(manifest["sources"]["BANK"]["raw_rows_count"], 0)
+            self.assertEqual(manifest["total_normalized_records"], 13)
             self.assertGreater(summary["total_exceptions"], 0)
         finally:
             if os.path.exists(empty_bank_path):

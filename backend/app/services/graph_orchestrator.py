@@ -356,7 +356,7 @@ def decision_routing_node(state: ReconciliationState) -> Dict[str, Any]:
             conf = ai_prop.confidence if ai_prop else 0.88
             expl = ai_prop.likely_cause if ai_prop else "T+2 period boundary cutoff timing difference. Propose accrual to Account 1290 (In-Transit Clearing)."
             req_mc = True
-        elif txn.match_status == "UNRESOLVED_EXCEPTION" or not txn.match_status:
+        elif txn.match_status in ("UNRESOLVED_EXCEPTION", "UNMATCHED") or not txn.match_status:
             dec_tier = DecisionTier.UNRESOLVED_EXCEPTION
             conf = ai_prop.confidence if ai_prop else 0.60
             expl = ai_prop.likely_cause if ai_prop else "Unmatched residual entry. No counterpart record found within configured tolerance gates."

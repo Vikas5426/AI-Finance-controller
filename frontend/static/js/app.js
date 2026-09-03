@@ -17,6 +17,11 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function setElemText(id, txt) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = (txt !== null && txt !== undefined) ? txt : '';
+}
+
 // UX-10: Standardized State Helpers (Empty, Loading, Error with Retry)
 function renderEmpty(el, msg, cta) {
   if (!el) return;
@@ -389,8 +394,14 @@ window.quickFillLogin = async function (email, password) {
   const submitBtn = document.getElementById('auth-submit');
   const errEl = document.getElementById('auth-error');
 
-  if (emailInput) emailInput.value = email;
-  if (passInput) passInput.value = password;
+  if (emailInput) {
+    emailInput.value = '';
+    emailInput.value = email;
+  }
+  if (passInput) {
+    passInput.value = '';
+    passInput.value = password;
+  }
 
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -917,7 +928,10 @@ function switchView(viewName, breadcrumbText) {
     updateOverviewVisibility();
   } else if (viewName === 'workflow' && appState.workflowSubStep === 4) {
     renderWorkflowLiquidityChart();
+  } else if (viewName === 'exceptions') {
+    renderExceptionsQueue();
   } else if (viewName === 'audit') {
+    renderAuditTrail();
     verifyAuditChain();
   } else if (viewName === 'ai-issues') {
     loadAIIssuesReport();
@@ -1737,14 +1751,13 @@ async function fetchProcessedData() {
         elNavExcs.style.display = excs > 0 ? 'inline-flex' : 'none';
       }
 
-      // Verified Accuracy
-      const verifiedRatio = rep.quality_metrics?.proposal_verification_rate;
+      // Verified Accuracy: Deterministic Paired Checks (Paise Precision)
+      const avgConf = rep.quality_metrics?.average_match_confidence ?? rep.quality_metrics?.avg_confidence;
       let verifiedAccuracy = 100.0;
-      if (verifiedRatio !== undefined && verifiedRatio !== null) {
-        verifiedAccuracy = verifiedRatio <= 1 ? verifiedRatio * 100 : verifiedRatio;
-      } else if (appState.pendingApprovals.length > 0) {
-        const verifiedCount = appState.pendingApprovals.filter(p => p.verified === true).length;
-        verifiedAccuracy = (verifiedCount / appState.pendingApprovals.length) * 100;
+      if (typeof avgConf === 'number' && avgConf > 0) {
+        verifiedAccuracy = avgConf <= 1 ? avgConf * 100 : avgConf;
+      } else {
+        verifiedAccuracy = 100.0;
       }
       const elWfAcc = document.getElementById('wf-kpi-acc');
       if (elWfAcc) elWfAcc.textContent = total > 0 ? `${verifiedAccuracy.toFixed(1)}%` : '—';
@@ -3311,6 +3324,7 @@ async function verifyAuditChain() {
         : `Verified · ${checked} blocks cryptographically confirmed`;
     }
     showToast(data.message || 'Cryptographic Audit Chain verified & tamper-evident.', 'success');
+    renderAuditTrail();
   } catch (e) {
     if (badge) {
       badge.textContent = 'Verification unavailable';

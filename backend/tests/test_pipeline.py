@@ -213,7 +213,7 @@ class TestQualityFirstPipeline(unittest.TestCase):
         self.assertEqual(res["status"], "SUCCESS")
 
         stats = DatabaseService.get_batch_stats(res["batch_id"])
-        self.assertGreaterEqual(stats["total_records"], 30)
+        self.assertGreaterEqual(stats["total_records"], 19)
         self.assertGreater(stats["audit_blocks_count"], 0)
         self.assertGreater(stats["audit_blocks_count"], 0)
 

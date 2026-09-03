@@ -226,5 +226,5 @@ async def delete_cached_key(key: str) -> bool:
 async def invalidate_dashboard_cache(org_id: Optional[str] = None) -> None:
     """Invalidates cached executive summary when batch state or approvals change."""
     org = org_id or settings.DEFAULT_ORG_ID
-    key = key_dashboard_summary(org)
-    await delete_cached_key(key)
+    await delete_cached_key(key_dashboard_summary(org))
+    await delete_cached_key(key_dashboard_summary(f"{org}:latest"))

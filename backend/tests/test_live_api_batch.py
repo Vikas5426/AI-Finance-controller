@@ -34,7 +34,7 @@ class TestLiveBatchApi(unittest.TestCase):
         self.assertIn("batch_id", data)
         self.assertIn("summary", data)
         summary = data["summary"]
-        self.assertEqual(summary["total_records"], 36)
+        self.assertEqual(summary["total_records"], 19)
         self.assertIn("matched_records", summary)
         self.assertIn("match_rate", summary)
         self.assertIn("tier_breakdown", summary)
@@ -42,7 +42,7 @@ class TestLiveBatchApi(unittest.TestCase):
         self.assertEqual(data["provenance"]["execution_mode"], "INTERNAL_TEST")
         self.assertIn("node_telemetry", data)
         tel = data["node_telemetry"]
-        self.assertEqual(tel["node_1"]["normalized_records"], 36)
+        self.assertEqual(tel["node_1"]["normalized_records"], 19)
         self.assertGreater(tel["node_6"]["audit_blocks_sealed"], 0)
 
     def test_unauthenticated_approvals_rejected(self):

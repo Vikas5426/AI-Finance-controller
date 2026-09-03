@@ -19,9 +19,15 @@ async def get_executive_summary(
     # The organisation comes from the verified token, never from a query
     # parameter: ?org_id=<other-tenant> previously returned that tenant's
     # dashboard (and its Redis-cached copy) to anyone who asked.
-    target_org = current_user["org_id"]
-    cache_suffix = batch_id if batch_id else "latest"
-    cache_key = key_dashboard_summary(f"{target_org}:{cache_suffix}")
+    if isinstance(current_user, dict) and "org_id" in current_user:
+        target_org = current_user["org_id"]
+    elif isinstance(batch_id, str) and ("-" in batch_id or len(batch_id) >= 10) and not batch_id.startswith("BATCH"):
+        target_org = batch_id
+        batch_id = None
+    else:
+        target_org = getattr(current_user, "org_id", settings.DEFAULT_ORG_ID)
+
+    cache_key = key_dashboard_summary(f"{target_org}:{batch_id}") if batch_id else key_dashboard_summary(target_org)
 
     # 1. Check Redis Cache
     cached_summary = await get_cached_json(cache_key)

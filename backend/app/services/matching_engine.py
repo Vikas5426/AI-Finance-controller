@@ -537,7 +537,7 @@ class ReconciliationEngine:
                             "tax_minor": decl_tax,
                             "expected_net_minor": expected_net_paise,
                             "bank_credit_minor": bk.amount_minor,
-                            "variance_minor": abs(expected_net_paise - bk.amount_minor),
+                            "variance_minor": (gross_paise - bk.amount_minor) if (gross_paise != bk.amount_minor) else abs(expected_net_paise - bk.amount_minor),
                             "days_lag": days_lag,
                             "timing_note": timing_note,
                             "arithmetic_proof": arith_proof,
@@ -1050,8 +1050,8 @@ class ReconciliationEngine:
         bank_txns = [t for t in txns if t.source_kind == SourceKind.BANK]
         gw_txns_all = [t for t in txns if t.source_kind == SourceKind.GATEWAY]
         
-        # Determine if bank data covers the gateway timeline
-        is_bank_stream_complete = False
+        # Determine if bank data was provided but fails to cover the gateway timeline
+        is_bank_incomplete_range = False
         if bank_txns and gw_txns_all:
             bank_dates = [b.value_date for b in bank_txns if b.value_date]
             gw_dates = [g.value_date for g in gw_txns_all if g.value_date]
@@ -1059,8 +1059,8 @@ class ReconciliationEngine:
                 # Check date overlap within 7-day window
                 min_gw, max_gw = min(gw_dates), max(gw_dates)
                 min_bk, max_bk = min(bank_dates), max(bank_dates)
-                if not (max_bk < min_gw or min_bk > max_gw):
-                    is_bank_stream_complete = True
+                if (max_bk < min_gw or min_bk > max_gw):
+                    is_bank_incomplete_range = True
 
         # 1. Identify gateway transactions that have NOT received bank settlement
         gw_txns = [t for t in txns if t.source_kind == SourceKind.GATEWAY and t.id not in self.bank_settled_gw_ids]
@@ -1111,14 +1111,14 @@ class ReconciliationEngine:
                 impact_minor = gross_exp
                 settle_id = (t.reference_keys.custom.get("settlement_id") or (t.reference_keys.settlement[0] if t.reference_keys.settlement else "")).strip().upper()
 
-                if settle_id in ("SETL_UNSET", "UNSET", "UNSETTLED", "NONE", ""):
+                if settle_id and settle_id in ("SETL_UNSET", "UNSET", "UNSETTLED", "NONE"):
                     exc_type = "UNRESOLVED_SETTLEMENT_ID"
                     sev = ExceptionSeverity.HIGH
                     findings = [
                         f"Gateway payment '{t.external_id}' has unresolved settlement identifier ('{settle_id or 'UNSET'}'). "
                         f"Gross Exposure: Rs. {gross_exp/100:.2f}. Settlement linkage unresolved."
                     ]
-                elif not is_bank_stream_complete:
+                elif is_bank_incomplete_range:
                     exc_type = "SETTLEMENT_STATUS_CANNOT_BE_VERIFIED"
                     sev = ExceptionSeverity.MEDIUM
                     findings = [

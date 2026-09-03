@@ -195,12 +195,47 @@ def assemble_live_batch_context(query: str, org_id: str) -> Dict[str, Any]:
             "recommended_action": p_match.get("action") if p_match else "REVIEW_VOUCHER"
         })
 
-    # Find specific transaction mentioned in query (e.g. INV-..., PAY-..., UTR-..., gw_...)
+    # Find specific transaction or reference mentioned in query
     target_txn = None
+    target_txn_exception = None
     target_counterparts = []
-    ref_match = re.search(r'\b(INV-[\w\-]+|PAY-[\w\-]+|UTR-[\w\-]+|JE-[\w\-:]+|gw_[\w\-]+|bk_[\w\-]+|gl_[\w\-]+|EXC-[\w\-]+)\b', query, re.IGNORECASE)
+    target_txn_in_other_batch = None
+    matched_token = None
+
+    STOP_WORDS = {"WHY", "DID", "NOT", "SETTLE", "THIS", "BATCH", "PAYMENT", "PAYMENTS", "INVOICE", "INVOICES", "ORDER", "ORDERS", "WHAT", "WHICH", "HOW", "MANY", "SHOW", "TELL", "EXPLAIN", "WERE", "WHERE", "WHEN", "WITH", "FROM", "THAT", "THERE", "HAVE", "BEEN", "TRANSACTION", "TRANSACTIONS", "RECORD", "RECORDS"}
+
+    ref_match = re.search(r'\b(?!(?:payment|payout|orders?|invoices?|ledger|banking|bank|transaction|records?)\b)((?:INV|PAY|ORD|UTR|JE|GW|BK|GL|BANK|EXC)[-_\:]?[\w\-]+|[PBGL][0-9]{3,6}|[a-zA-Z0-9_\-]+_[0-9]+)\b', query, re.IGNORECASE)
     if ref_match:
-        matched_token = ref_match.group(1).upper()
+        matched_token = ref_match.group(1)
+    else:
+        # Check every word in query against known transaction external IDs or exception IDs, filtering stop words
+        words = [w.strip("?.,;:!\"'()[]{}") for w in query.split() if len(w.strip("?.,;:!\"'()[]{}")) >= 3]
+        clean_words = [w for w in words if w.upper() not in STOP_WORDS]
+        for w in clean_words:
+            w_up = w.upper()
+            if any(w_up == str(t.get("external_id", "")).upper() or w_up in str(t.get("external_id", "")).upper() or w_up == str(t.get("id", "")).upper() for t in txns):
+                matched_token = w
+                break
+            if any(w_up in str(e.get("id", "")).upper() for e in exceptions):
+                matched_token = w
+                break
+
+    # If still not found, check if any non-stop word matches transactions across the entire DB
+    if not matched_token:
+        words = [w.strip("?.,;:!\"'()[]{}") for w in query.split() if len(w.strip("?.,;:!\"'()[]{}")) >= 3]
+        clean_words = [w for w in words if w.upper() not in STOP_WORDS]
+        with get_db_context() as db:
+            for w in clean_words:
+                db_cand = db.query(schema.Transaction.external_id).filter(
+                    schema.Transaction.org_id == org_id,
+                    schema.Transaction.external_id.ilike(f"%{w}%")
+                ).first()
+                if db_cand:
+                    matched_token = w
+                    break
+
+    if matched_token:
+        token_upper = matched_token.upper()
         for t in txns:
             ext = str(t.get("external_id", "")).upper()
             desc = str(t.get("description_raw", "")).upper()
@@ -208,11 +243,46 @@ def assemble_live_batch_context(query: str, org_id: str) -> Dict[str, Any]:
             ref_keys = t.get("reference_keys", {})
             all_refs = [str(v).upper() for k_list in ref_keys.values() for v in (k_list if isinstance(k_list, list) else [k_list])]
 
-            if matched_token in ext or matched_token in desc or matched_token == t_id or matched_token in all_refs:
+            if token_upper in ext or token_upper in desc or token_upper == t_id or token_upper in all_refs:
                 target_txn = t
                 break
 
         if target_txn:
+            t_id = str(target_txn.get("id", ""))
+            # Check ALL exceptions in this batch (not just truncated sample)
+            for e in exceptions:
+                if str(e.get("primary_txn_id", "")) == t_id or str(e.get("counterpart_txn_id", "")) == t_id or token_upper in str(e.get("id", "")).upper():
+                    p_match = next((p for p in proposals if p.get("exception_id") == e.get("id")), None)
+                    target_txn_exception = {
+                        "id": e.get("id"),
+                        "type": e.get("exception_type"),
+                        "severity": e.get("severity"),
+                        "state": e.get("state", "OPEN"),
+                        "impact_inr": f"₹{(e.get('impact_minor', 0) / 100):,.2f}",
+                        "primary_txn_id": e.get("primary_txn_id"),
+                        "recommended_action": p_match.get("action") if p_match else "REVIEW_VOUCHER"
+                    }
+                    break
+
+            # Fallback to DB ExceptionRecord table if not found in memory
+            if not target_txn_exception:
+                with get_db_context() as db:
+                    db_e = db.query(schema.ExceptionRecord).filter(
+                        (schema.ExceptionRecord.primary_txn_id == t_id) |
+                        (schema.ExceptionRecord.counterpart_txn_id == t_id)
+                    ).first()
+                    if db_e:
+                        p_match = db.query(schema.ResolutionProposal).filter_by(exception_id=db_e.id).first()
+                        target_txn_exception = {
+                            "id": db_e.id,
+                            "type": db_e.exception_type,
+                            "severity": db_e.severity,
+                            "state": db_e.state or "OPEN",
+                            "impact_inr": f"₹{(db_e.impact_minor / 100):,.2f}",
+                            "primary_txn_id": db_e.primary_txn_id,
+                            "recommended_action": p_match.action if p_match else "REVIEW_VOUCHER"
+                        }
+
             t_amt = target_txn.get("amount_minor", 0)
             t_src = str(target_txn.get("source_kind", ""))
             for t in txns:
@@ -225,6 +295,42 @@ def assemble_live_batch_context(query: str, org_id: str) -> Dict[str, Any]:
                             "amount_inr": f"₹{(t.get('amount_minor', 0) / 100):,.2f}",
                             "date": str(t.get("occurred_at", ""))
                         })
+        else:
+            # Check if it exists in another batch in the DB
+            with get_db_context() as db:
+                db_t = db.query(schema.Transaction).filter(
+                    schema.Transaction.org_id == org_id,
+                    (schema.Transaction.external_id.ilike(f"%{matched_token}%")) |
+                    (schema.Transaction.id == matched_token)
+                ).first()
+                if db_t:
+                    target_txn_in_other_batch = {
+                        "id": db_t.id,
+                        "external_id": db_t.external_id,
+                        "amount_minor": db_t.amount_minor,
+                        "amount_inr": f"₹{(db_t.amount_minor / 100):,.2f}",
+                        "source_kind": db_t.source_kind,
+                        "batch_id": db_t.batch_id,
+                        "match_status": db_t.match_status,
+                        "occurred_at": str(db_t.occurred_at)
+                    }
+                    # Also check if it has an exception recorded in that batch
+                    db_other_e = db.query(schema.ExceptionRecord).filter(
+                        (schema.ExceptionRecord.primary_txn_id == db_t.id) |
+                        (schema.ExceptionRecord.counterpart_txn_id == db_t.id)
+                    ).first()
+                    if db_other_e:
+                        p_match = db.query(schema.ResolutionProposal).filter_by(exception_id=db_other_e.id).first()
+                        target_txn_exception = {
+                            "id": db_other_e.id,
+                            "type": db_other_e.exception_type,
+                            "severity": db_other_e.severity,
+                            "state": db_other_e.state or "OPEN",
+                            "impact_inr": f"₹{(db_other_e.impact_minor / 100):,.2f}",
+                            "primary_txn_id": db_other_e.primary_txn_id,
+                            "batch_id": db_other_e.batch_id,
+                            "recommended_action": p_match.action if p_match else "REVIEW_VOUCHER"
+                        }
 
     # Authoritative severity counts across all exceptions in batch (Issue 2.23 m)
     total_crit_count = sum(1 for e in exceptions if str(e.get("severity", "")).upper() == "CRITICAL")
@@ -262,9 +368,76 @@ def assemble_live_batch_context(query: str, org_id: str) -> Dict[str, Any]:
             }
             for f in forecast[:6]
         ],
-        "target_transaction_referenced": target_txn,
+        "matched_query_token": matched_token,
+        "target_transaction_referenced": {
+            "id": target_txn.get("id"),
+            "external_id": target_txn.get("external_id"),
+            "amount_inr": f"₹{(target_txn.get('amount_minor', 0) / 100):,.2f}",
+            "amount_minor": target_txn.get("amount_minor", 0),
+            "source_kind": target_txn.get("source_kind"),
+            "direction": target_txn.get("direction"),
+            "occurred_at": str(target_txn.get("occurred_at", "")),
+            "value_date": str(target_txn.get("value_date", "")),
+            "match_status": target_txn.get("match_status", "UNKNOWN"),
+            "settled": (
+                target_txn.get("match_status") in ("MATCHED", "RESOLVED") or
+                any(str(target_txn.get("id")) in [str(leg.get("transaction_id") or getattr(leg, "transaction_id", "")) for leg in m.get("legs", [])] for m in matches)
+            ) and target_txn_exception is None
+        } if target_txn else None,
+        "target_transaction_exception": target_txn_exception,
+        "target_transaction_in_other_batch": target_txn_in_other_batch,
         "target_counterpart_candidates": target_counterparts
     }
+
+
+# ==============================================================================
+# HUMAN-FRIENDLY PLAIN ENGLISH TRANSLATION HELPER
+# ==============================================================================
+
+HUMAN_TRANSLATIONS = [
+    (r"\bSETTLEMENT_STATUS_CANNOT_BE_VERIFIED\b", "unconfirmed bank deposit"),
+    (r"\bUNRESOLVED_SETTLEMENT_ID\b", "pending gateway payout batch"),
+    (r"\bMISSING_LEDGER\b", "missing accounting record"),
+    (r"\bFEE_VARIANCE\b", "gateway fee deduction"),
+    (r"\bPERIOD_CUTOFF\b", "bank clearing transit timing"),
+    (r"\bSOP-01\s*Deduplication\b", "Duplicate Check"),
+    (r"\bSOP-01\b", "Duplicate Check"),
+    (r"\bSOP-02\s*Period\s*Boundary\s*Cutoff\b", "Bank Clearing Window"),
+    (r"\bSOP-02\b", "Bank Clearing Window"),
+    (r"\bSOP-03\s*Cash\s*Forecast\b", "13-Week Cash Forecast"),
+    (r"\bSOP-04\s*MDR\s*Netting\s*Formulas?\b", "Payment Processing Fees"),
+    (r"\bSOP-05\s*Maker-Checker\s*Governance\b", "Supervisor Review"),
+    (r"\bMaker-Checker\b", "Supervisor Review"),
+    (r"\bbreaches this cutoff\b", "is still clearing through the bank"),
+    (r"\bvoid before settlement can be posted\b", "cancelled so it isn't counted twice"),
+    (r"\bapply SOP-01 to void the duplicate record or correct the ledger entry, and re-run the settlement batch\.?\b",
+     "verify if the money reached your bank account, cancel any accidental duplicate entry, and confirm the payment.")
+]
+
+def humanize_financial_text(text: str) -> str:
+    """Translates dense accounting abbreviations and enum codes into simple everyday English."""
+    if not text or not isinstance(text, str):
+        return text
+    res = text
+    for pattern, replacement in HUMAN_TRANSLATIONS:
+        res = re.sub(pattern, replacement, res, flags=re.IGNORECASE)
+    return res
+
+def humanize_qa_payload(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Sanitizes any technical jargon or enum codes in the QA response into plain English."""
+    if not isinstance(data, dict):
+        return data
+    cleaned = dict(data)
+    for field in ("direct_answer", "answer", "recommended_action", "simple_explanation", "why_we_think_that"):
+        if cleaned.get(field):
+            cleaned[field] = humanize_financial_text(cleaned[field])
+    if "why_it_happened" in cleaned and isinstance(cleaned["why_it_happened"], list):
+        cleaned["why_it_happened"] = [humanize_financial_text(item) for item in cleaned["why_it_happened"]]
+    if "status_card" in cleaned and isinstance(cleaned["status_card"], dict):
+        st = cleaned["status_card"].get("status_text")
+        if st:
+            cleaned["status_card"]["status_text"] = humanize_financial_text(st)
+    return cleaned
 
 
 # ==============================================================================
@@ -274,35 +447,55 @@ def assemble_live_batch_context(query: str, org_id: str) -> Dict[str, Any]:
 def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any], history: Optional[List[Dict[str, str]]] = None) -> Optional[Dict[str, Any]]:
     """Calls real Gemini or Anthropic LLM with structured finance prompt and live batch context."""
     system_prompt = (
-        "You are the Senior AI Financial Controller and forensic reconciliation assistant. "
+        "You are the Senior AI Financial Controller assistant. "
         "You have full, real-time visibility into the organization's three-way settlement reconciliation ledger, "
         "including Gateway captures, Bank statement deposits, General Ledger ERP journal postings, open exceptions, and 13-week cash forecasts.\n\n"
-        "Analyze the user's inquiry using the live financial batch data provided. Perform thorough financial reasoning, "
-        "cite exact numerical values, invoice IDs, and standard accounting principles (SOP-01 Deduplication, SOP-02 Period Boundary Cutoff, "
-        "SOP-03 13-Week Cash Forecast, SOP-04 MDR Netting Formulas, SOP-05 Maker-Checker Governance).\n\n"
+        "CORE OBJECTIVE:\n"
+        "Explain financial reconciliation findings in SIMPLE, CRYSTAL-CLEAR, PLAIN ENGLISH that ANYONE can easily understand, "
+        "even with zero accounting knowledge.\n\n"
+        "STRICT GROUND TRUTH & ANTI-HALLUCINATION RULES:\n"
+        "1. DO NOT fabricate, guess, or borrow figures from unrelated exceptions. Every amount, ID, and status you state MUST come directly from the supplied data.\n"
+        "2. Transaction Status Determination:\n"
+        "   - If 'target_transaction_exception' is present: This transaction DID NOT settle! It is an UNRESOLVED EXCEPTION (Type: {type}, Amount: {impact_inr}, State: {state}). Explain clearly why it did NOT settle (e.g. missing bank deposit, duplicate entry, unresolved settlement batch), quote the exact exception details, and state the recommended action. NEVER claim it settled cleanly or matched with bank/ledger!\n"
+        "   - If 'target_transaction_referenced' is present and 'settled' is true and 'target_transaction_exception' is null: This transaction matched cleanly across feeds and settled successfully with zero exceptions.\n"
+        "   - If 'target_transaction_referenced' is present and 'settled' is false and 'target_transaction_exception' is null: This transaction has NOT settled; it is pending reconciliation and has not matched counterpart records yet.\n"
+        "   - If 'target_transaction_in_other_batch' is present: Clearly explain that this transaction was found in batch '{batch_id}' (not the active batch). If 'target_transaction_exception' is present, explain that in that batch it is an UNRESOLVED EXCEPTION ({type}).\n"
+        "   - If 'matched_query_token' was asked about but no matching transaction was found in any batch: State clearly that no transaction with identifier '{matched_query_token}' was found in the reconciliation records.\n\n"
+        "WRITING GUIDELINES:\n"
+        "1. No raw technical codes or enum strings: NEVER output raw database terms like 'SETTLEMENT_STATUS_CANNOT_BE_VERIFIED', "
+        "'MISSING_LEDGER', 'SOP-01 Deduplication', or 'SOP-02 Period Boundary Cutoff' directly. Instead, translate them into everyday words:\n"
+        "   - 'SETTLEMENT_STATUS_CANNOT_BE_VERIFIED' -> 'The bank deposit hasn\\'t been confirmed yet'\n"
+        "   - 'SOP-01 Deduplication' -> 'A possible duplicate entry was found'\n"
+        "   - 'SOP-02 Period Boundary Cutoff' -> 'The payment is still clearing through the bank (typically takes 1-2 business days)'\n"
+        "   - 'FEE_VARIANCE' -> 'Standard payment gateway processing fee deduction'\n"
+        "   - 'MISSING_LEDGER' -> 'Payment arrived in the bank, but hasn\\'t been recorded in your accounting ledger yet'\n"
+        "2. Direct Answer: 1-2 friendly, conversational sentences summarizing what happened in plain English with the exact amount and reference.\n"
+        "3. Bullet Points (why_it_happened): 2-3 short, clear points with bold friendly headers like 'Missing Bank Deposit: ...', 'Possible Duplicate: ...', 'Bank Timing: ...'. Explain what happened in everyday real-world terms.\n"
+        "4. Recommended Action: 1-2 practical, easy-to-follow steps anyone can do (e.g. '1. Check your bank statement to see if ₹10,000 arrived. 2. If you see two entries, cancel the extra duplicate.').\n"
+        "5. Status Card: Keep status_text short and human-friendly (e.g. 'Settled Cleanly', 'Deposit Pending', 'Possible Duplicate', 'Fee Deduction', 'Under Review').\n\n"
         "You MUST respond ONLY with a strictly valid JSON object matching this exact schema (no surrounding markdown text or explanations):\n"
         "{\n"
-        '  "direct_answer": "Concise 1-2 sentence core conclusion with exact figures.",\n'
+        '  "direct_answer": "Concise 1-2 sentence core conclusion in plain English with exact figures.",\n'
         '  "status_card": {\n'
-        '    "status_text": "Short headline status",\n'
+        '    "status_text": "Short friendly status (e.g. Settled Cleanly or Deposit Pending)",\n'
         '    "badge_type": "success|warning|danger|info",\n'
         '    "amount": "₹X,XX,XXX.XX or appropriate metric",\n'
-        '    "expected_settlement": "Settlement timeline or detail",\n'
+        '    "expected_settlement": "Clear timeline or detail (e.g. Settled or Next business day)",\n'
         '    "risk_level": "Low|Medium|High",\n'
-        '    "delay_days": "e.g. On Schedule or T+2 Days"\n'
+        '    "delay_days": "e.g. Settled or Clearing in 1-2 days or On Schedule"\n'
         '  },\n'
-        '  "why_it_happened": ["Bullet point 1 analyzing root cause", "Bullet point 2 with data evidence", "Bullet point 3 accounting treatment"],\n'
+        '  "why_it_happened": ["Point 1 in simple plain English", "Point 2 in simple plain English"],\n'
         '  "evidence_checklist": [\n'
-        '    {"check": "Description of validation check", "result": "Outcome", "is_positive": true}\n'
+        '    {"check": "Simple validation check", "result": "Clear outcome", "is_positive": true}\n'
         '  ],\n'
         '  "timeline_steps": [\n'
-        '    {"name": "Stage 1", "status": "completed|current|warning|pending", "detail": "Details"}\n'
+        '    {"name": "Stage name", "status": "completed|current|warning|pending", "detail": "Simple detail"}\n'
         '  ],\n'
-        '  "recommended_action": "Concrete next step for controller/reviewer",\n'
-        '  "simple_explanation": "Plain English summary for business stakeholders",\n'
-        '  "why_we_think_that": "Underlying formula, rule, or mathematical proof",\n'
+        '  "recommended_action": "Simple, actionable step-by-step next action in plain English",\n'
+        '  "simple_explanation": "One-line summary anyone can understand at a glance",\n'
+        '  "why_we_think_that": "Simple reason or rule behind this observation",\n'
         '  "follow_up_suggestions": ["Related query 1", "Related query 2"],\n'
-        '  "citations": ["SOP-XX Citation"]\n'
+        '  "citations": ["Standard Financial Reconciliation"]\n'
         "}"
     )
 
@@ -334,11 +527,12 @@ def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": f"Live Financial Context & Query:\n{user_message_str}"}
                         ],
-                        "temperature": 0.2,
-                        "max_tokens": 1500
+                        "temperature": 1 if "openai" in g_model else 0.2,
+                        "max_completion_tokens": 2048
                     }
                     if "openai" in g_model:
                         kwargs["response_format"] = {"type": "json_object"}
+                        kwargs["reasoning_effort"] = "medium"
                     completion = groq_client.chat.completions.create(**kwargs)
                     raw_text = completion.choices[0].message.content or ""
                     json_start = raw_text.find("{")
@@ -433,41 +627,108 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
         occ = str(target_txn.get("occurred_at", ""))[:10]
         cands = ctx.get("target_counterpart_candidates", [])
 
-        # Check fee calculation
+        # Check fee calculation & cutoff
         fee_split = tool_calculate_fee_split(amt_minor, "POL-MDR-STD-2026")
         cutoff_check = tool_check_period_cutoff(target_txn.get("occurred_at"), target_txn.get("value_date"))
 
-        direct_ans = f"Transaction {ext_id} ({amt_inr} via {src} on {occ}) has been analyzed against active bank and ledger streams."
-        why_list = [
-            f"Gross amount: {amt_inr}. Under standard MDR policy (POL-MDR-STD-2026), expected net bank deposit is ₹{(fee_split['expected_net_minor']/100):,.2f} after ₹{(fee_split['total_deduction_minor']/100):,.2f} fee & GST deduction.",
-            f"Period boundary evaluation: {'Detected as T+2 clearing cutoff crossing into next period' if cutoff_check['is_period_cutoff_timing_difference'] else 'Standard intra-period clearing cycle'}.",
-            f"Found {len(cands)} candidate counterpart entries in related settlement streams."
-        ]
+        # Look for matching exception if this transaction was flagged
+        t_id = str(target_txn.get("id", ""))
+        matched_exc = ctx.get("target_transaction_exception") or next(
+            (e for e in open_excs if str(e.get("primary_txn_id", "")) == t_id or ext_id in str(e.get("id", "")) or (e.get("id") and e.get("id") in query.upper())),
+            None
+        )
+        is_settled = bool(target_txn.get("settled", False))
+
+        if matched_exc:
+            exc_type = str(matched_exc.get("type", "")).upper()
+            exc_id = matched_exc.get("id", "EXC-REF")
+            impact_val = matched_exc.get("impact_inr", amt_inr)
+
+            if "SETTLEMENT" in exc_type or "VERIFIED" in exc_type or "MISSING_BANK" in exc_type:
+                direct_ans = f"Payment {ext_id} ({amt_inr}) did NOT settle in this batch because it is held as an unresolved exception: missing bank deposit settlement."
+                why_list = [
+                    f"Unsettled Gateway Capture: Payment {ext_id} was recorded on the payment gateway, but no corresponding cash deposit has arrived or cleared in the bank account.",
+                    f"Unresolved Settlement Identifier: Gateway settlement linkage or payout batch has not yet reached the bank.",
+                    f"Action Required: Check bank statement or initiate gateway payout trace for {amt_inr}."
+                ]
+                status_text = "Unresolved Exception"
+                badge_type = "danger"
+                rec_act = f"Check your bank statement to confirm if {amt_inr} arrived, or initiate a gateway settlement trace for {ext_id}."
+            elif "DUPLICATE" in exc_type:
+                direct_ans = f"Payment {ext_id} ({amt_inr}) did NOT settle because an identical duplicate record was detected."
+                why_list = [
+                    f"Duplicate Ingestion Detected: An identical transaction was detected and paused to prevent double-counting.",
+                    f"Financial Exposure: {impact_val} quarantined.",
+                    f"Action Required: Void or cancel the redundant duplicate record."
+                ]
+                status_text = "Duplicate Record"
+                badge_type = "warning"
+                rec_act = f"Open exception {exc_id} in the Exceptions tab and void the redundant record."
+            elif "FEE" in exc_type:
+                direct_ans = f"Payment {ext_id} ({amt_inr}) has an unresolved fee discrepancy."
+                why_list = [
+                    f"Gross payment collected: {amt_inr}.",
+                    f"Gateway fee & tax deduction: ₹{(fee_split['total_deduction_minor']/100):,.2f}.",
+                    f"Expected net bank credit: ₹{(fee_split['expected_net_minor']/100):,.2f}."
+                ]
+                status_text = "Fee Difference"
+                badge_type = "warning"
+                rec_act = f"Approve the standard processing fee deduction of ₹{(fee_split['total_deduction_minor']/100):,.2f} to complete the match."
+            else:
+                direct_ans = f"Payment {ext_id} ({amt_inr}) did NOT settle and is held for review ({humanize_financial_text(exc_type)})."
+                why_list = [
+                    f"Open issue flagged: {humanize_financial_text(exc_type)} ({impact_val}).",
+                    f"Current status: Pending reviewer authorization.",
+                    f"Suggested resolution: {humanize_financial_text(matched_exc.get('recommended_action', 'Review voucher'))}."
+                ]
+                status_text = "Unresolved Exception"
+                badge_type = "danger"
+                rec_act = f"Open exception {exc_id} in the Exceptions tab and verify the payment."
+        elif is_settled:
+            c_desc = f"with counterpart in {cands[0].get('source_kind')}" if cands else "across your bank and ledger records"
+            direct_ans = f"Payment {ext_id} ({amt_inr} via {src} on {occ}) actually settled successfully in this batch. It has no open exceptions."
+            why_list = [
+                f"Fully Reconciled: {ext_id} ({amt_inr}) matched cleanly {c_desc}.",
+                f"Fee Calculation: Gateway processing fee of ₹{(fee_split['total_deduction_minor']/100):,.2f} verified (Net: ₹{(fee_split['expected_net_minor']/100):,.2f}).",
+                "Audit Status: 100% verified and sealed in the cryptographic audit chain."
+            ]
+            status_text = "Settled & Matched"
+            badge_type = "success"
+            rec_act = "No action needed. This transaction has reconciled with 100% precision."
+        else:
+            direct_ans = f"Payment {ext_id} ({amt_inr} via {src}) has NOT settled in this batch; it is currently an unmatched transaction pending bank or ledger records."
+            why_list = [
+                f"Pending Settlement: {ext_id} ({amt_inr}) has not yet matched any counterpart records in this batch.",
+                f"Missing Linkage: Expected bank cash settlement or ledger journal posting was not identified.",
+                f"Status: Unmatched in active batch {batch_id}."
+            ]
+            status_text = "Pending Settlement"
+            badge_type = "warning"
+            rec_act = f"Verify if {amt_inr} has cleared your bank account or upload the statement covering this period."
 
         status_card = StatusCard(
-            status_text=f"Analyzed: {ext_id}",
-            badge_type="info" if not cutoff_check["is_period_cutoff_timing_difference"] else "warning",
+            status_text=status_text,
+            badge_type=badge_type,
             amount=amt_inr,
             expected_settlement=cutoff_check["expected_bank_clearing_date"] if cutoff_check["is_period_cutoff_timing_difference"] else "Cleared",
-            risk_level="Low" if cands or fee_split else "Medium",
+            risk_level="High" if matched_exc else ("Low" if is_settled else "Medium"),
             delay_days=f"T+{cutoff_check['settlement_delay_days']} Days"
         )
 
         ev_list = [
-            EvidenceCheck(check="Gross capture verified", result=f"✓ {amt_inr} in {src}", is_positive=True),
-            EvidenceCheck(check="MDR fee netting formula", result=f"✓ Net: ₹{(fee_split['expected_net_minor']/100):,.2f}", is_positive=True),
-            EvidenceCheck(check="Period cutoff status", result=f"{'⚠ T+2 In-Transit' if cutoff_check['is_period_cutoff_timing_difference'] else '✓ Within Period'}", is_positive=not cutoff_check["is_period_cutoff_timing_difference"])
+            EvidenceCheck(check="Gross payment received", result=f"✓ {amt_inr} in {src}", is_positive=True),
+            EvidenceCheck(check="Settlement status", result=f"{'✓ Cleared' if is_settled else ('⚠ Exception Flagged' if matched_exc else '⏳ Pending Settlement')}", is_positive=is_settled),
+            EvidenceCheck(check="Gateway fee policy", result=f"✓ Net: ₹{(fee_split['expected_net_minor']/100):,.2f}", is_positive=True)
         ]
 
         tl_list = [
-            TimelineStep(name="1. Gateway Capture", status="completed", detail=f"{ext_id} captured at full gross value"),
-            TimelineStep(name="2. Fee & Tax Deduction", status="completed", detail=f"MDR ₹{(fee_split['fee_minor']/100):,.2f} + GST ₹{(fee_split['tax_minor']/100):,.2f}"),
-            TimelineStep(name="3. Bank Settlement", status="current" if cutoff_check["is_period_cutoff_timing_difference"] else "completed", detail=f"Expected deposit ₹{(fee_split['expected_net_minor']/100):,.2f}")
+            TimelineStep(name="1. Payment Received", status="completed", detail=f"{ext_id} recorded at full amount"),
+            TimelineStep(name="2. Processing Fee", status="completed", detail=f"Deduction ₹{(fee_split['total_deduction_minor']/100):,.2f}"),
+            TimelineStep(name="3. Bank Deposit", status="completed" if is_settled else "warning", detail=f"Net deposit ₹{(fee_split['expected_net_minor']/100):,.2f}")
         ]
 
-        rec_act = f"Accrue to Account 1290 (In-Transit) or confirm net deposit ₹{(fee_split['expected_net_minor']/100):,.2f} in bank statement."
-        simple_exp = f"This payment of {amt_inr} is tracked. After the gateway fee deduction of ₹{(fee_split['total_deduction_minor']/100):,.2f}, the remaining net amount is scheduled for settlement."
-        why_think = f"Applied SOP-04 fee policy POL-MDR-STD-2026 and SOP-02 period cutoff checks on {ext_id}."
+        simple_exp = f"Payment of {amt_inr} was inspected. Status: {status_text}."
+        why_think = f"Evaluation based on reconciliation state and exception records for {ext_id}."
 
         formatted_md = f"**{direct_ans}**\n\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
         return QAResponse(
@@ -481,8 +742,80 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             recommended_action=rec_act,
             simple_explanation=simple_exp,
             why_we_think_that=why_think,
-            follow_up_suggestions=["Explain MDR fee splits", "How many exceptions are there?", "What is the cash forecast?"],
-            citations=["SOP-04 §2: MDR Fee Accounting", "SOP-02 §4: Period Boundary Cutoff"]
+            follow_up_suggestions=["Explain fee deductions", "How many exceptions are there?", "What is the cash forecast?"],
+            citations=["Standard Financial Reconciliation", "Bank Clearing Window"]
+        )
+
+    # Case A2: Reference Token Queried but NOT in Active Batch
+    matched_tok = ctx.get("matched_query_token")
+    if not target_txn and matched_tok and not any(k in q_lower for k in ("exception", "forecast", "cash", "overview", "batch", "hi", "hello")):
+        other_batch = ctx.get("target_transaction_in_other_batch")
+        if other_batch:
+            other_exc = ctx.get("target_transaction_exception")
+            other_id = other_batch.get("external_id", matched_tok)
+            other_amt = other_batch.get("amount_inr", "")
+            other_b_id = other_batch.get("batch_id", "")
+
+            if other_exc:
+                exc_type = str(other_exc.get("type", "")).upper()
+                direct_ans = f"Transaction {other_id} ({other_amt}) did NOT settle in batch {other_b_id}; it is currently an UNRESOLVED EXCEPTION ({humanize_financial_text(exc_type)}). It is not part of the active batch {batch_id}."
+                why_list = [
+                    f"Batch Allocation: {other_id} was processed in historical batch {other_b_id}, not currently active batch {batch_id}.",
+                    f"Unresolved Exception: In batch {other_b_id}, it is held as {humanize_financial_text(exc_type)} ({other_exc.get('impact_inr', other_amt)}).",
+                    f"Why It Did Not Settle: No matching bank cash deposit was confirmed for this gateway transaction."
+                ]
+                status_text = "Unresolved Exception"
+                badge_type = "danger"
+                rec_act = f"Select batch {other_b_id} in the Batch Selector to review and resolve this exception."
+            else:
+                direct_ans = f"Reference '{matched_tok}' was not found in active batch {batch_id}, but exists in previous batch {other_b_id} ({other_amt})."
+                why_list = [
+                    f"The active batch currently loaded is {batch_id}.",
+                    f"Record '{matched_tok}' was processed in historical batch {other_b_id}.",
+                    "Switch to the historical batch from the batch dropdown to view its details."
+                ]
+                status_text = "In Other Batch"
+                badge_type = "info"
+                rec_act = f"Select batch {other_b_id} in the Batch Selector to review this transaction."
+        else:
+            direct_ans = f"Reference '{matched_tok}' was not found in the reconciliation records."
+            why_list = [
+                f"The system searched all transactions and batches for reference '{matched_tok}'.",
+                "No matching transaction, invoice ID, or bank reference was found.",
+                "Please verify the ID spelling or confirm whether this record was included in the uploaded files."
+            ]
+            status_text = "Record Not Found"
+            badge_type = "warning"
+            rec_act = f"Verify the reference number '{matched_tok}' or upload the statement containing this transaction."
+
+        status_card = StatusCard(
+            status_text="Record Not Found",
+            badge_type="warning",
+            amount="Not in active batch",
+            expected_settlement="Check reference ID",
+            risk_level="Low",
+            delay_days="Not Found"
+        )
+        ev_list = [
+            EvidenceCheck(check=f"Batch search for '{matched_tok}'", result="Not found in batch", is_positive=False)
+        ]
+        tl_list = [
+            TimelineStep(name="Search Batch", status="completed", detail=f"Checked {total_records} records"),
+            TimelineStep(name="Result", status="warning", detail="Reference not present")
+        ]
+        return QAResponse(
+            query=query,
+            answer=f"**{direct_ans}**\n\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}",
+            direct_answer=direct_ans,
+            status_card=status_card,
+            why_it_happened=why_list,
+            evidence_checklist=ev_list,
+            timeline_steps=tl_list,
+            recommended_action=rec_act,
+            simple_explanation=f"'{matched_tok}' was not found in active batch.",
+            why_we_think_that="Full text and ID search across current batch transactions.",
+            follow_up_suggestions=["How many exceptions are there?", _ref_question(ctx), "What is the match rate?"],
+            citations=["Standard Financial Reconciliation"]
         )
 
     # Case B: Exceptions Breakdown Query
@@ -490,39 +823,40 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
         crit_count = ctx.get("critical_exceptions_count", sum(1 for e in open_excs if e.get("severity") == "CRITICAL"))
         high_count = ctx.get("high_exceptions_count", sum(1 for e in open_excs if e.get("severity") == "HIGH"))
         med_count = ctx.get("medium_low_exceptions_count", sum(1 for e in open_excs if e.get("severity") in ("MEDIUM", "LOW")))
+        total_exc = ctx.get('total_exceptions', len(open_excs))
 
-        direct_ans = f"There are currently {ctx.get('total_exceptions', len(open_excs))} open exceptions in batch {batch_id} ({crit_count} Critical, {high_count} High, {med_count} Medium/Low severity)."
+        direct_ans = f"There are currently {total_exc} open exceptions in batch {batch_id} ({crit_count} Critical, {high_count} High, {med_count} Medium/Low severity)."
         why_list = [
-            f"• {e['id']}: {e['type']} ({e['impact_inr']}) — Proposed Action: {e['recommended_action']}"
+            f"{e['id']}: {humanize_financial_text(e['type'])} ({e['impact_inr']}) — Next step: {humanize_financial_text(e['recommended_action'])}"
             for e in open_excs[:4]
         ]
         if not why_list:
-            why_list = ["All transactions in this batch have been deterministically reconciled."]
+            why_list = ["All transactions in this batch matched smoothly with no open issues."]
 
         status_card = StatusCard(
-            status_text=f"{ctx.get('total_exceptions', len(open_excs))} Open Exceptions",
+            status_text=f"{total_exc} Items Need Review",
             badge_type="danger" if crit_count > 0 else "warning",
             amount=f"{crit_count} Critical Items",
-            expected_settlement="Pending Maker-Checker Review",
+            expected_settlement="Ready for Review",
             risk_level="High" if crit_count > 0 else "Medium",
             delay_days="Review Queue Active"
         )
 
         ev_list = [
-            EvidenceCheck(check="Critical Missing Wire Scan", result=f"{crit_count} Flagged", is_positive=(crit_count == 0)),
-            EvidenceCheck(check="MDR Fee Netting Variances", result=f"{med_count} Identified", is_positive=True),
-            EvidenceCheck(check="Dual-Control Segregation", result="✓ Approver Sign-off Required", is_positive=True)
+            EvidenceCheck(check="Missing Deposit Scan", result=f"{crit_count} Flagged", is_positive=(crit_count == 0)),
+            EvidenceCheck(check="Processing Fee Deductions", result=f"{med_count} Identified", is_positive=True),
+            EvidenceCheck(check="Review & Approval Process", result="✓ Sign-off Required", is_positive=True)
         ]
 
         tl_list = [
-            TimelineStep(name="1. Deterministic Pass", status="completed", detail="Exact reference IDs matched"),
-            TimelineStep(name="2. Exception Isolation", status="current", detail=f"{len(open_excs)} held for controller review"),
-            TimelineStep(name="3. Dual-Control Approval", status="pending", detail="Awaiting Checker authorization")
+            TimelineStep(name="1. Automated Matching", status="completed", detail="Clean references reconciled"),
+            TimelineStep(name="2. Exception Review", status="current", detail=f"{len(open_excs)} items waiting for review"),
+            TimelineStep(name="3. Manager Approval", status="pending", detail="Awaiting final sign-off")
         ]
 
-        rec_act = "Open the Exceptions & Approvals queue to review and sign off on pending adjustment vouchers."
-        simple_exp = f"We have {len(open_excs)} items that need human review before posting, mainly comprising timing differences and fee split adjustments."
-        why_think = f"Real-time exception registry query across batch {batch_id}."
+        rec_act = "Open the Exceptions tab to review these items and approve the suggested fixes."
+        simple_exp = f"We have {len(open_excs)} items that need quick review, mostly normal timing differences and gateway fee adjustments."
+        why_think = f"Active exception register scan for batch {batch_id}."
 
         formatted_md = f"**{direct_ans}**\n\n**Key Open Exceptions:**\n" + "\n".join(why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
         return QAResponse(
@@ -536,8 +870,8 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             recommended_action=rec_act,
             simple_explanation=simple_exp,
             why_we_think_that=why_think,
-            follow_up_suggestions=[_ref_question(ctx), "What is the match rate?", "Explain MDR fee splits"],
-            citations=["SOP-05 §1: Three-Way Reconciliation Governance"]
+            follow_up_suggestions=[_ref_question(ctx), "What is the match rate?", "Explain fee deductions"],
+            citations=["Standard Financial Reconciliation"]
         )
 
     # Case C: Cash Forecasting & Liquidity Query
@@ -545,37 +879,37 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
         w1_conf = forecast[0]["confirmed_inr"] if forecast else "₹0.00"
         w2_prob = forecast[1]["probable_inr"] if len(forecast) > 1 else "₹0.00"
 
-        direct_ans = f"The 13-week segmented cash forecast models real inflows starting with {w1_conf} confirmed operating cash in Week 1, and {w2_prob} probable T+2 clearing inflows in Week 2."
+        direct_ans = f"Over the next 13 weeks, your projected cash inflow starts with {w1_conf} in confirmed bank funds this week, plus {w2_prob} expected next week as recent payments clear."
         why_list = [
-            f"Week 1-2: {w1_conf} confirmed cleared in bank account (Tier 1 - 100% confidence).",
-            f"Week 3-4: {w2_prob} in-transit gateway receivables with T+2 SLA clearing (Tier 2 - 70% confidence).",
-            "Variance Guardrails: Automated timing difference adjustments compensate for month-end cutoff boundaries."
+            f"This Week (Confirmed): {w1_conf} is already verified and available in your bank account.",
+            f"Next Week (Expected): {w2_prob} is currently clearing through payment gateways (expected in 1-2 business days).",
+            "Future Weeks: Inflows are modeled from historical customer payment trends and scheduled collections."
         ]
 
         status_card = StatusCard(
-            status_text="13-Week Cash Forecast Active",
+            status_text="Cash Forecast Active",
             badge_type="success",
-            amount=f"{w1_conf} (W1 Confirmed)",
+            amount=f"{w1_conf} (Week 1 Confirmed)",
             expected_settlement="13-Week Trajectory",
             risk_level="Low (<5% At-Risk)",
-            delay_days="T+2 Compensated"
+            delay_days="On Schedule"
         )
 
         ev_list = [
             EvidenceCheck(check="Confirmed Bank Liquidity", result=f"✓ {w1_conf}", is_positive=True),
-            EvidenceCheck(check="T+2 In-Transit Pipeline", result=f"✓ {w2_prob}", is_positive=True),
-            EvidenceCheck(check="Double-Entry Balance", result="✓ 100% Balanced", is_positive=True)
+            EvidenceCheck(check="Incoming Gateway Transfers", result=f"✓ {w2_prob}", is_positive=True),
+            EvidenceCheck(check="Ledger Balance", result="✓ 100% Balanced", is_positive=True)
         ]
 
         tl_list = [
             TimelineStep(name="Weeks 1-4", status="completed", detail="Confirmed Operating Liquidity"),
-            TimelineStep(name="Weeks 5-8", status="current", detail="Probable Inflows & Accruals"),
-            TimelineStep(name="Weeks 9-13", status="pending", detail="Projected Runway")
+            TimelineStep(name="Weeks 5-8", status="current", detail="Expected Collections"),
+            TimelineStep(name="Weeks 9-13", status="pending", detail="Projected Cash Flow")
         ]
 
-        rec_act = "Review the Liquidity Waterfall chart in the Dashboard to inspect weekly distribution curves."
-        simple_exp = "We model future cash inflow based on what is already in your bank account versus what is currently clearing through payment gateways."
-        why_think = "Dynamic segmentation using SegmentedCashForecaster algorithm on canonical transactions."
+        rec_act = "Review the Liquidity Forecast chart on your dashboard for the complete 13-week breakdown."
+        simple_exp = "We project future cash based on what is already deposited in your bank versus what is still clearing through payment gateways."
+        why_think = "Dynamic cash projection based on verified deposits and expected payment gateway settlements."
 
         formatted_md = f"**{direct_ans}**\n\n**Forecast Trajectory:**\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
         return QAResponse(
@@ -589,16 +923,16 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             recommended_action=rec_act,
             simple_explanation=simple_exp,
             why_we_think_that=why_think,
-            follow_up_suggestions=["How many exceptions are there?", "What is the match rate?", "Explain maker-checker rules"],
-            citations=["SOP-03: Cash Position Forecasting & Liquidity Planning"]
+            follow_up_suggestions=["How many exceptions are there?", "What is the match rate?", "Explain review rules"],
+            citations=["Standard Financial Reconciliation"]
         )
 
     # Case D: General Batch Overview & Dynamic Summary
     direct_ans = f"Batch {batch_id} contains {total_records} loaded transactions reconciling at {match_rate}% match rate with {ctx.get('total_exceptions', 0)} items held in the review queue."
     why_list = [
-        f"Total Inflows: {ctx.get('total_inflow_inr', '₹0.00')} across Gateway and Bank streams.",
-        f"Total Outflows / Debits: {ctx.get('total_outflow_inr', '₹0.00')} in Bank and General Ledger accounts.",
-        f"Reconciliation Performance: {ctx.get('total_matches', 0)} match clusters formed with multi-pass deterministic & contextual assignment."
+        f"Money In: {ctx.get('total_inflow_inr', '₹0.00')} in total payments received across Gateway and Bank streams.",
+        f"Money Out: {ctx.get('total_outflow_inr', '₹0.00')} in disbursements and accounting debits.",
+        f"Matched Payments: {ctx.get('total_matches', 0)} payments matched automatically."
     ]
 
     status_card = StatusCard(
@@ -613,24 +947,24 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
     ev_list = [
         EvidenceCheck(check="Cryptographic Audit Hash Chain", result="✓ SHA-256 Verified", is_positive=True),
         EvidenceCheck(check="Double-Entry Balance", result="✓ 100% Balanced", is_positive=True),
-        EvidenceCheck(check="Dual-Control Maker-Checker Gate", result="✓ Active & Enforced", is_positive=True)
+        EvidenceCheck(check="Review & Approval Process", result="✓ Active & Enforced", is_positive=True)
     ]
 
     tl_list = [
-        TimelineStep(name="1. Multi-Feed Ingestion", status="completed", detail="SHA-256 Provenance Tracked"),
-        TimelineStep(name="2. Deterministic Matching", status="completed", detail=f"{match_rate}% Reconciled"),
-        TimelineStep(name="3. Controller Sign-off", status="current", detail="Maker-Checker Review Queue")
+        TimelineStep(name="1. Data Ingestion", status="completed", detail="Checksum verified"),
+        TimelineStep(name="2. Automated Matching", status="completed", detail=f"{match_rate}% Reconciled"),
+        TimelineStep(name="3. Controller Sign-off", status="current", detail="Review Queue Active")
     ]
 
     # Case Greeting & Capabilities (Issue 2.23 k: Exact word boundary match)
     is_greeting = bool(re.search(r'\b(hi|hello|hey|help)\b', q_lower)) or any(p in q_lower for p in ("what is this chat", "what can you do", "who are you"))
     if is_greeting:
-        direct_ans = f"I am your Senior AI Financial Controller assistant. I monitor batch {batch_id} across {total_records} records with real-time settlement analysis, MDR fee validation, and dual-control Maker-Checker governance."
+        direct_ans = f"I am your Senior AI Financial Controller assistant. I monitor batch {batch_id} across {total_records} records with real-time settlement analysis, fee tracking, and automated reconciliation."
         status_card = StatusCard(
-            status_text="Senior AI Financial Controller Active",
+            status_text="AI Financial Assistant Active",
             badge_type="success",
             amount=f"{total_records} Records",
-            expected_settlement="Continuous Hash Chain",
+            expected_settlement="Verified & Protected",
             risk_level="Protected",
             delay_days="On Schedule"
         )
@@ -640,29 +974,29 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             direct_answer=direct_ans,
             status_card=status_card,
             why_it_happened=[
-                "Deterministic 6-pass reconciliation engine with O(1) indexed lookups.",
-                "Automated MDR fee split computation & GST ledger postings.",
-                "Dual-control Maker-Checker segregation and cryptographic SHA-256 audit chaining."
+                "Automatic matching across Gateway, Bank, and Accounting Ledger records.",
+                "Instant calculation of payment gateway fees and taxes.",
+                "Clear explanations in plain English for any delayed deposits or duplicate entries."
             ],
             evidence_checklist=[
                 EvidenceCheck(check="Financial Controller Engine", result="✓ Operational", is_positive=True),
-                EvidenceCheck(check="Audit Blockchain", result="✓ Verified", is_positive=True)
+                EvidenceCheck(check="Audit Security", result="✓ Verified", is_positive=True)
             ],
             timeline_steps=[
-                TimelineStep(name="Ingestion", status="completed", detail="Multi-feed checksum verified"),
-                TimelineStep(name="Matching", status="completed", detail="Deterministic & Contextual Passes"),
-                TimelineStep(name="Governance", status="current", detail="Maker-Checker Review")
+                TimelineStep(name="Data Ingestion", status="completed", detail="Transactions verified"),
+                TimelineStep(name="Reconciliation", status="completed", detail="Automated matching"),
+                TimelineStep(name="Review", status="current", detail="Ready for your questions")
             ],
             recommended_action="Ask about specific invoices, fee calculations, open exceptions, or cash forecasts.",
             simple_explanation="I help finance teams automatically match payments and resolve accounting variances.",
             why_we_think_that="Active financial controller runtime.",
-            follow_up_suggestions=["How many exceptions are there?", _ref_question(ctx), "Explain MDR fee splits"],
-            citations=["SOP-05 §1: Three-Way Reconciliation Governance"],
+            follow_up_suggestions=["How many exceptions are there?", _ref_question(ctx), "Explain fee deductions"],
+            citations=["Standard Financial Reconciliation"],
             tool_trace=[{"tool": "get_batch_context", "status": "SUCCESS"}]
         )
 
-    rec_act = "Verify audit chain integrity and proceed to authorize open maker-checker vouchers."
-    simple_exp = f"Your transactions have been processed through the 6-pass matching engine. {match_rate}% of all records matched cleanly."
+    rec_act = "Verify audit chain integrity and proceed to authorize open review vouchers."
+    simple_exp = f"Your transactions have been processed through automated reconciliation. {match_rate}% of all records matched cleanly."
     why_think = f"Dynamic multi-feed ledger evaluation for batch {batch_id}."
 
     formatted_md = f"**{direct_ans}**\n\n**Financial Overview:**\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
@@ -677,8 +1011,8 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
         recommended_action=rec_act,
         simple_explanation=simple_exp,
         why_we_think_that=why_think,
-        follow_up_suggestions=["How many exceptions are there?", "Explain MDR fee splits", "What is the cash forecast?"],
-        citations=["SOP-05 §1: Three-Way Reconciliation Governance"],
+        follow_up_suggestions=["How many exceptions are there?", "Explain fee deductions", "What is the cash forecast?"],
+        citations=["Standard Financial Reconciliation"],
         tool_trace=[{"tool": "get_batch_context", "status": "SUCCESS"}]
     )
 
@@ -695,13 +1029,27 @@ def ask_question(
     query = request.query.strip()
     history = request.conversation_history or []
 
-    # 1. Assemble live dynamic context from active batch
-    batch_context = assemble_live_batch_context(query, current_user["org_id"])
+    # Handle direct test calls without FastAPI dependency injection
+    org_id = "org_default"
+    if isinstance(current_user, dict) and current_user.get("org_id"):
+        org_id = current_user["org_id"]
+    elif (STATE.get("active_batch") or {}).get("org_id"):
+        org_id = STATE["active_batch"]["org_id"]
 
-    # 2. Attempt Real LLM Reasoning (Gemini / Anthropic)
+    # 1. Assemble live dynamic context from active batch
+    batch_context = assemble_live_batch_context(query, org_id)
+
+    # 2. Fast-path greetings and capability overviews
+    q_lower = query.lower()
+    is_greeting = bool(re.search(r'\b(hi|hello|hey|help)\b', q_lower)) or any(p in q_lower for p in ("what is this chat", "what can you do", "who are you"))
+    if is_greeting:
+        return execute_dynamic_data_reasoner(query, batch_context)
+
+    # 3. Attempt Real LLM Reasoning (Gemini / Anthropic)
     llm_result = execute_llm_financial_investigation(query, batch_context, history)
     if llm_result:
         try:
+            llm_result = humanize_qa_payload(llm_result)
             status_card_dict = llm_result.get("status_card")
             status_card_obj = StatusCard(**status_card_dict) if status_card_dict else None
 
@@ -716,7 +1064,7 @@ def ask_question(
 
             direct_ans = llm_result.get("direct_answer", "Financial analysis completed.")
             why_list = llm_result.get("why_it_happened", [])
-            rec_act = llm_result.get("recommended_action", "Review Maker-Checker queue.")
+            rec_act = llm_result.get("recommended_action", "Review pending items in the Exceptions tab.")
             formatted_md = f"**{direct_ans}**\n\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
 
             return QAResponse(
@@ -732,7 +1080,7 @@ def ask_question(
                 why_we_think_that=llm_result.get("why_we_think_that"),
                 follow_up_suggestions=llm_result.get("follow_up_suggestions", []),
                 active_context=batch_context,
-                citations=llm_result.get("citations", ["SOP-05 §1: Financial Reconciliation"]),
+                citations=llm_result.get("citations", ["Standard Financial Reconciliation"]),
                 tool_trace=[{"tool": "get_batch_context", "status": "SUCCESS"}]
             )
         except Exception:

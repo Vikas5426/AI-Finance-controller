@@ -917,7 +917,7 @@ class AIAgentRuntime:
             
             return InvestigationResult(
                 exception_id=exception_id,
-                classification=exception_type,
+                classification="FEE_AND_TAX_BOOKED_NET" if exception_type in ("AMOUNT_MISMATCH", "FEE_AND_TAX_BOOKED_NET") else exception_type,
                 likely_cause=f"Discrepancy of {amt_inr} is attributable to MDR fee (₹{expected_fee / 100:.2f}) and GST (₹{expected_tax / 100:.2f}) under policy {policy.policy_id} booked net in ledger.",
                 facts=[
                     f"Transaction ID: {p_id} (External: {p_ext})",
@@ -942,7 +942,7 @@ class AIAgentRuntime:
             period = derive_period([primary_txn] if primary_txn else [])
             return InvestigationResult(
                 exception_id=exception_id,
-                classification=exception_type,
+                classification="PERIOD_CUTOFF_IN_TRANSIT" if exception_type in ("PERIOD_CUTOFF", "PERIOD_CUTOFF_IN_TRANSIT") else exception_type,
                 likely_cause=f"Payment was captured near reporting period boundary ({period.end.isoformat()}) and settled in bank on subsequent value date (T+2 cycle).",
                 facts=[
                     f"Transaction ID: {p_id} (External: {p_ext})",
@@ -965,7 +965,7 @@ class AIAgentRuntime:
         elif exception_type in ("DUPLICATE_RECORD", "DUPLICATE_GATEWAY_WEBHOOK", "DUPLICATE_LEDGER_POSTING"):
             return InvestigationResult(
                 exception_id=exception_id,
-                classification=exception_type,
+                classification="DUPLICATE_INGESTION_ROW" if exception_type in ("DUPLICATE_RECORD", "DUPLICATE_INGESTION_ROW") else exception_type,
                 likely_cause="Identical payment ID / fingerprint detected within the source stream (duplicate webhook replay or double file export).",
                 facts=[
                     f"Transaction ID: {p_id} (External: {p_ext})",
@@ -988,7 +988,7 @@ class AIAgentRuntime:
         elif exception_type in ("UNALLOCATED_BANK_CREDIT", "ANONYMOUS_BANK_LINE", "UNKNOWN_BANK_CREDIT"):
             return InvestigationResult(
                 exception_id=exception_id,
-                classification=exception_type,
+                classification="ANONYMOUS_BANK_DEPOSIT" if exception_type in ("UNALLOCATED_BANK_CREDIT", "ANONYMOUS_BANK_DEPOSIT") else exception_type,
                 likely_cause=f"Direct bank credit of {amt_inr} received without matching gateway capture or customer receivable posting.",
                 facts=[
                     f"Bank Record ID: {p_id} (Ref: {p_ext})",

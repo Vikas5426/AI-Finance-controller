@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/styles.css?v=4">
   <link rel="icon" type="image/png" href="/static/img/favicon.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
 </head>
@@ -331,13 +331,14 @@
             <span>Reset Data</span>
           </button>
 
-          <!-- Discoverable Header Search Pill -->
-          <button class="header-search-pill" id="header-search-btn" title="Search or ask AI about this batch">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <!-- Header AI Chatbot Icon Button -->
+          <button class="header-chatbot-btn" id="header-chatbot-btn" onclick="toggleQAModal()" title="Open AI Chatbot (⌘K)" aria-label="Open AI Chatbot">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <circle cx="9" cy="10" r="1.2" fill="currentColor" />
+              <circle cx="15" cy="10" r="1.2" fill="currentColor" />
             </svg>
-            <span>Ask about this batch</span>
+            <span class="header-chatbot-dot"></span>
           </button>
 
           <!-- Notification Bell Icon Button -->
@@ -575,104 +576,106 @@
                     </div>
                   </div>
 
-                  <div class="lane-item">
-                    <div class="lane-top">
-                      <div>
-                        <span style="color: var(--accent-coral);">● [00] Cutoff Timing Lag</span>
-                        <div class="lane-sub">Month-End Clearance · T+2 Accrual</div>
+                  <div class="lanes-grid">
+                    <div class="lane-item" style="margin-bottom: 0;">
+                      <div class="lane-top">
+                        <div>
+                          <span style="color: var(--accent-coral);">● [00] Cutoff Timing Lag</span>
+                          <div class="lane-sub">Month-End Clearance · T+2 Accrual</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div id="lane-count-cutoff">0</div>
+                          <div class="lane-sub" id="lane-pct-cutoff">0%</div>
+                        </div>
                       </div>
-                      <div style="text-align: right;">
-                        <div id="lane-count-cutoff">0</div>
-                        <div class="lane-sub" id="lane-pct-cutoff">0%</div>
+                      <div class="lane-track">
+                        <div class="lane-fill" id="lane-bar-cutoff" style="width: 0%; background: var(--accent-coral);">
+                        </div>
                       </div>
                     </div>
-                    <div class="lane-track">
-                      <div class="lane-fill" id="lane-bar-cutoff" style="width: 0%; background: var(--accent-coral);">
-                      </div>
-                    </div>
-                  </div>
 
-                  <div class="lane-item">
-                    <div class="lane-top">
-                      <div>
-                        <span style="color: var(--accent-amber);">● [01] Gateway MDR Fees</span>
-                        <div class="lane-sub">MDR 2.0% + GST · Split to Acc 5010</div>
+                    <div class="lane-item" style="margin-bottom: 0;">
+                      <div class="lane-top">
+                        <div>
+                          <span style="color: var(--accent-amber);">● [01] Gateway MDR Fees</span>
+                          <div class="lane-sub">MDR 2.0% + GST · Split to Acc 5010</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div id="lane-count-fee">0</div>
+                          <div class="lane-sub" id="lane-pct-fee">0%</div>
+                        </div>
                       </div>
-                      <div style="text-align: right;">
-                        <div id="lane-count-fee">0</div>
-                        <div class="lane-sub" id="lane-pct-fee">0%</div>
+                      <div class="lane-track">
+                        <div class="lane-fill" id="lane-bar-fee" style="width: 0%; background: var(--accent-amber);">
+                        </div>
                       </div>
                     </div>
-                    <div class="lane-track">
-                      <div class="lane-fill" id="lane-bar-fee" style="width: 0%; background: var(--accent-amber);">
-                      </div>
-                    </div>
-                  </div>
 
-                  <div class="lane-item">
-                    <div class="lane-top">
-                      <div>
-                        <span style="color: var(--accent-blue);">● [02] Missing Bank Wires</span>
-                        <div class="lane-sub">Overdue Settlements · UTR Trace</div>
+                    <div class="lane-item" style="margin-bottom: 0;">
+                      <div class="lane-top">
+                        <div>
+                          <span style="color: var(--accent-blue);">● [02] Missing Bank Wires</span>
+                          <div class="lane-sub">Overdue Settlements · UTR Trace</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div id="lane-count-missing">0</div>
+                          <div class="lane-sub" id="lane-pct-missing">0%</div>
+                        </div>
                       </div>
-                      <div style="text-align: right;">
-                        <div id="lane-count-missing">0</div>
-                        <div class="lane-sub" id="lane-pct-missing">0%</div>
+                      <div class="lane-track">
+                        <div class="lane-fill" id="lane-bar-missing" style="width: 0%; background: var(--accent-blue);">
+                        </div>
                       </div>
                     </div>
-                    <div class="lane-track">
-                      <div class="lane-fill" id="lane-bar-missing" style="width: 0%; background: var(--accent-blue);">
-                      </div>
-                    </div>
-                  </div>
 
-                  <div class="lane-item">
-                    <div class="lane-top">
-                      <div>
-                        <span style="color: var(--accent-emerald);">● [03] Duplicate Webhooks</span>
-                        <div class="lane-sub">Idempotent Guards · Deduped</div>
+                    <div class="lane-item" style="margin-bottom: 0;">
+                      <div class="lane-top">
+                        <div>
+                          <span style="color: var(--accent-emerald);">● [03] Duplicate Webhooks</span>
+                          <div class="lane-sub">Idempotent Guards · Deduped</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div id="lane-count-dup">0</div>
+                          <div class="lane-sub" id="lane-pct-dup">0%</div>
+                        </div>
                       </div>
-                      <div style="text-align: right;">
-                        <div id="lane-count-dup">0</div>
-                        <div class="lane-sub" id="lane-pct-dup">0%</div>
+                      <div class="lane-track">
+                        <div class="lane-fill" id="lane-bar-dup" style="width: 0%; background: var(--accent-emerald);">
+                        </div>
                       </div>
                     </div>
-                    <div class="lane-track">
-                      <div class="lane-fill" id="lane-bar-dup" style="width: 0%; background: var(--accent-emerald);">
-                      </div>
-                    </div>
-                  </div>
 
-                  <div class="lane-item">
-                    <div class="lane-top">
-                      <div>
-                        <span style="color: #a855f7;">● [04] Unidentified Credits</span>
-                        <div class="lane-sub">Anonymous Bank Lines · Direct Wire Triage</div>
+                    <div class="lane-item" style="margin-bottom: 0;">
+                      <div class="lane-top">
+                        <div>
+                          <span style="color: #a855f7;">● [04] Unidentified Credits</span>
+                          <div class="lane-sub">Anonymous Bank Lines · Direct Wire Triage</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div id="lane-count-unidentified">0</div>
+                          <div class="lane-sub" id="lane-pct-unidentified">0%</div>
+                        </div>
                       </div>
-                      <div style="text-align: right;">
-                        <div id="lane-count-unidentified">0</div>
-                        <div class="lane-sub" id="lane-pct-unidentified">0%</div>
+                      <div class="lane-track">
+                        <div class="lane-fill" id="lane-bar-unidentified" style="width: 0%; background: #a855f7;">
+                        </div>
                       </div>
                     </div>
-                    <div class="lane-track">
-                      <div class="lane-fill" id="lane-bar-unidentified" style="width: 0%; background: #a855f7;">
-                      </div>
-                    </div>
-                  </div>
 
-                  <div class="lane-item" style="margin-bottom: 0;">
-                    <div class="lane-top">
-                      <div>
-                        <span style="color: var(--text-secondary);">● [05] Other Discrepancies</span>
-                        <div class="lane-sub">Unclassified Exceptions · Manual Queue</div>
+                    <div class="lane-item" style="margin-bottom: 0;">
+                      <div class="lane-top">
+                        <div>
+                          <span style="color: var(--text-secondary);">● [05] Other Discrepancies</span>
+                          <div class="lane-sub">Unclassified Exceptions · Manual Queue</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div id="lane-count-other">0</div>
+                          <div class="lane-sub" id="lane-pct-other">0%</div>
+                        </div>
                       </div>
-                      <div style="text-align: right;">
-                        <div id="lane-count-other">0</div>
-                        <div class="lane-sub" id="lane-pct-other">0%</div>
-                      </div>
-                    </div>
-                    <div class="lane-track">
-                      <div class="lane-fill" id="lane-bar-other" style="width: 0%; background: var(--text-secondary);">
+                      <div class="lane-track">
+                        <div class="lane-fill" id="lane-bar-other" style="width: 0%; background: var(--text-secondary);">
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1312,7 +1315,7 @@
                 <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent-cyan); font-weight: 700;">AGENT 09</span>
                 <span class="badge-min badge-blue" style="font-size: 0.65rem;">Investigation</span>
               </div>
-              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Explain an exception <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">(Agent 9)</span></div>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Exception Root Cause</div>
               <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">Micro-level root-cause reasoning, fee splits & candidate linking.</div>
               <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 0.3rem;" id="btn-run-agent-9">Run Agent 9 →</button>
             </div>
@@ -1323,7 +1326,7 @@
                 <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent-amber); font-weight: 700;">AGENT 10</span>
                 <span class="badge-min badge-amber" style="font-size: 0.65rem;">RCA Macro</span>
               </div>
-              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Find batch patterns <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">(Agent 10)</span></div>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Batch Systemic Patterns</div>
               <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">Discovers batch-wide anomaly patterns, feed shifts & remediation.</div>
               <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 0.3rem;" id="btn-run-agent-10">Run Agent 10 →</button>
             </div>
@@ -1334,7 +1337,7 @@
                 <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent-emerald); font-weight: 700;">AGENT 11</span>
                 <span class="badge-min badge-green" style="font-size: 0.65rem;">Liquidity</span>
               </div>
-              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Cash & liquidity insights <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">(Agent 11)</span></div>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Cash & Liquidity Runway</div>
               <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">13-week cash waterfall insights, treasury runway & working capital.</div>
               <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 0.3rem;" id="btn-run-agent-11">Run Agent 11 →</button>
             </div>
@@ -1345,7 +1348,7 @@
                 <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent-purple); font-weight: 700;">AGENT 12</span>
                 <span class="badge-min badge-gray" style="font-size: 0.65rem;">SOX-404</span>
               </div>
-              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Audit & SOX-404 proof <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">(Agent 12)</span></div>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Audit & SOX-404 Proof</div>
               <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">SHA-256 chain immutability, Maker-Checker segregation proofs.</div>
               <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 0.3rem;" id="btn-run-agent-12">Run Agent 12 →</button>
             </div>
@@ -1356,7 +1359,7 @@
                 <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-primary); font-weight: 700;">AGENT 13</span>
                 <span class="badge-min badge-green" style="font-size: 0.65rem;">Executive</span>
               </div>
-              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Board reconciliation report <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">(Agent 13)</span></div>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Executive Board Package</div>
               <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">Controller Briefs, Board Packages & Closing Memorandums.</div>
               <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 0.3rem;" id="btn-run-agent-13">Run Agent 13 →</button>
             </div>
@@ -1457,42 +1460,34 @@
             </div>
           </div>
 
-          <!-- Top Compact Summary: 7 Cards Grid -->
+          <!-- Top Sleek 3-Card Summary -->
           <div class="ai-issues-summary-grid">
-            <div class="ai-issues-summary-card">
-              <div class="summary-label">Total Issues</div>
-              <div class="summary-value" id="ai-issues-kpi-total">0</div>
-              <div class="summary-sub" id="ai-issues-kpi-total-sub">Ranked by risk</div>
-            </div>
-            <div class="ai-issues-summary-card card-critical">
-              <div class="summary-label">Critical</div>
-              <div class="summary-value" id="ai-issues-kpi-critical" style="color: var(--accent-coral);">0</div>
-              <div class="summary-sub">Immediate action</div>
-            </div>
-            <div class="ai-issues-summary-card card-high">
-              <div class="summary-label">High</div>
-              <div class="summary-value" id="ai-issues-kpi-high" style="color: var(--accent-amber);">0</div>
-              <div class="summary-sub">Urgent review</div>
-            </div>
-            <div class="ai-issues-summary-card card-medium">
-              <div class="summary-label">Medium</div>
-              <div class="summary-value" id="ai-issues-kpi-medium" style="color: var(--accent-blue);">0</div>
-              <div class="summary-sub">Standard triage</div>
-            </div>
-            <div class="ai-issues-summary-card card-low">
-              <div class="summary-label">Low</div>
-              <div class="summary-value" id="ai-issues-kpi-low" style="color: var(--accent-cyan);">0</div>
-              <div class="summary-sub">Minor adjustments</div>
-            </div>
+            <!-- Card 1: Total Financial Exposure -->
             <div class="ai-issues-summary-card card-impact">
               <div class="summary-label">Total Financial Impact</div>
               <div class="summary-value" id="ai-issues-kpi-impact" style="color: var(--text-primary); font-family: var(--font-mono);">₹0.00</div>
-              <div class="summary-sub">Batch total exposure</div>
+              <div class="summary-sub" id="ai-issues-kpi-impact-sub">Cumulative discrepancy exposure across active feeds</div>
             </div>
+
+            <!-- Card 2: Active Issues & Priority Breakdown -->
+            <div class="ai-issues-summary-card card-high">
+              <div class="summary-label">Active Issues</div>
+              <div class="summary-value" id="ai-issues-kpi-total">0</div>
+              <div class="summary-sub">
+                <span id="ai-issues-kpi-breakdown-sub">Ranked by risk and audit materiality</span>
+                <!-- Hidden helper elements for JS updates -->
+                <span id="ai-issues-kpi-critical" style="display: none;">0</span>
+                <span id="ai-issues-kpi-high" style="display: none;">0</span>
+                <span id="ai-issues-kpi-medium" style="display: none;">0</span>
+                <span id="ai-issues-kpi-low" style="display: none;">0</span>
+              </div>
+            </div>
+
+            <!-- Card 3: Human Review Sign-Off -->
             <div class="ai-issues-summary-card card-review">
               <div class="summary-label">Human Review Required</div>
               <div class="summary-value" id="ai-issues-kpi-review" style="color: var(--accent-amber);">0</div>
-              <div class="summary-sub">Awaiting sign-off</div>
+              <div class="summary-sub" id="ai-issues-kpi-total-sub">Items awaiting maker-checker sign-off</div>
             </div>
           </div>
 
@@ -1583,80 +1578,94 @@
 
           <!-- Section: Issues Priority List -->
           <div id="ai-issues-list-section">
-            <div class="ai-issues-section-header">
-              <div class="ai-issues-section-title">Priority Issues</div>
-              <div class="ai-issues-section-sub">Ranked strictly by Severity (Critical &rarr; High &rarr; Medium &rarr; Low) and Financial Impact</div>
+            <div class="ai-issues-section-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.85rem;">
+              <div>
+                <div class="ai-issues-section-title">Priority Issues</div>
+                <div class="ai-issues-section-sub">Ranked by Severity and Financial Impact · Click any issue to view details & audit proof</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-toggle-all-cards" onclick="toggleAllIssueCards()" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;">
+                <span id="btn-toggle-all-cards-text">Expand All</span>
+              </button>
             </div>
             <div class="ai-issues-cards-container" id="ai-issues-cards-container">
               <!-- Dynamically populated -->
             </div>
           </div>
 
-          <!-- Section: Systemic Problems -->
-          <div class="ai-issues-section" id="ai-issues-systemic-section" style="margin-top: 2rem;">
-            <div class="ai-issues-section-header">
-              <div class="ai-issues-section-title">Systemic Problems</div>
-              <div class="ai-issues-section-sub">Identified repeated operational patterns and root causes across batch feeds</div>
-            </div>
-            <div class="ai-issues-systemic-grid" id="ai-issues-systemic-container">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
+          <!-- Optional Advanced Breakdown Strip (Hidden by default to keep UI minimal and compact) -->
+          <div class="ai-issues-advanced-wrapper" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+            <button class="btn btn-secondary btn-sm" id="btn-toggle-advanced-sections" onclick="toggleAdvancedAIIssuesSections()" style="display: inline-flex; align-items: center; gap: 0.45rem; width: 100%; justify-content: center; padding: 0.65rem 1rem; border-style: dashed; background: var(--bg-card); cursor: pointer;">
+              <span id="adv-sections-toggle-icon">▸</span>
+              <span id="adv-sections-toggle-text">Show Systemic Patterns & Detailed Accounting Breakdown</span>
+            </button>
+            <div id="ai-issues-advanced-sections" style="display: none; margin-top: 1.5rem;">
+              <!-- Section: Systemic Problems -->
+              <div class="ai-issues-section" id="ai-issues-systemic-section">
+                <div class="ai-issues-section-header">
+                  <div class="ai-issues-section-title">Systemic Problems</div>
+                  <div class="ai-issues-section-sub">Identified repeated operational patterns and root causes across batch feeds</div>
+                </div>
+                <div class="ai-issues-systemic-grid" id="ai-issues-systemic-container">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
 
-          <!-- Section: Financial Impact Breakdown -->
-          <div class="ai-issues-section" id="ai-issues-financial-impact-section" style="margin-top: 2rem;">
-            <div class="ai-issues-section-header">
-              <div class="ai-issues-section-title">Financial Impact</div>
-              <div class="ai-issues-section-sub">Deterministic exposure totals calculated directly from the reconciliation engine</div>
-            </div>
-            <div class="ai-issues-impact-grid">
-              <div class="impact-metric-box">
-                <div class="impact-lbl">Total Exception Exposure</div>
-                <div class="impact-val" id="impact-val-total" style="color: var(--text-primary);">₹0.00</div>
-                <div class="impact-sub">Cumulative variance</div>
+              <!-- Section: Financial Impact Breakdown -->
+              <div class="ai-issues-section" id="ai-issues-financial-impact-section" style="margin-top: 1.5rem;">
+                <div class="ai-issues-section-header">
+                  <div class="ai-issues-section-title">Financial Impact</div>
+                  <div class="ai-issues-section-sub">Deterministic exposure totals calculated directly from the reconciliation engine</div>
+                </div>
+                <div class="ai-issues-impact-grid">
+                  <div class="impact-metric-box">
+                    <div class="impact-lbl">Total Exception Exposure</div>
+                    <div class="impact-val" id="impact-val-total" style="color: var(--text-primary);">₹0.00</div>
+                    <div class="impact-sub">Cumulative variance</div>
+                  </div>
+                  <div class="impact-metric-box">
+                    <div class="impact-lbl">Critical Exposure</div>
+                    <div class="impact-val" id="impact-val-critical" style="color: var(--accent-coral);">₹0.00</div>
+                    <div class="impact-sub">Highest risk tier</div>
+                  </div>
+                  <div class="impact-metric-box">
+                    <div class="impact-lbl">High Exposure</div>
+                    <div class="impact-val" id="impact-val-high" style="color: var(--accent-amber);">₹0.00</div>
+                    <div class="impact-sub">Material items</div>
+                  </div>
+                  <div class="impact-metric-box">
+                    <div class="impact-lbl">Medium Exposure</div>
+                    <div class="impact-val" id="impact-val-medium" style="color: var(--accent-blue);">₹0.00</div>
+                    <div class="impact-sub">Operational items</div>
+                  </div>
+                  <div class="impact-metric-box">
+                    <div class="impact-lbl">Low Exposure</div>
+                    <div class="impact-val" id="impact-val-low" style="color: var(--accent-cyan);">₹0.00</div>
+                    <div class="impact-sub">Minor adjustments</div>
+                  </div>
+                  <div class="impact-metric-box">
+                    <div class="impact-lbl">Unresolved Exposure</div>
+                    <div class="impact-val" id="impact-val-unresolved" style="color: var(--accent-amber);">₹0.00</div>
+                    <div class="impact-sub">Requires sign-off</div>
+                  </div>
+                </div>
               </div>
-              <div class="impact-metric-box">
-                <div class="impact-lbl">Critical Exposure</div>
-                <div class="impact-val" id="impact-val-critical" style="color: var(--accent-coral);">₹0.00</div>
-                <div class="impact-sub">Highest risk tier</div>
-              </div>
-              <div class="impact-metric-box">
-                <div class="impact-lbl">High Exposure</div>
-                <div class="impact-val" id="impact-val-high" style="color: var(--accent-amber);">₹0.00</div>
-                <div class="impact-sub">Material items</div>
-              </div>
-              <div class="impact-metric-box">
-                <div class="impact-lbl">Medium Exposure</div>
-                <div class="impact-val" id="impact-val-medium" style="color: var(--accent-blue);">₹0.00</div>
-                <div class="impact-sub">Operational items</div>
-              </div>
-              <div class="impact-metric-box">
-                <div class="impact-lbl">Low Exposure</div>
-                <div class="impact-val" id="impact-val-low" style="color: var(--accent-cyan);">₹0.00</div>
-                <div class="impact-sub">Minor adjustments</div>
-              </div>
-              <div class="impact-metric-box">
-                <div class="impact-lbl">Unresolved Exposure</div>
-                <div class="impact-val" id="impact-val-unresolved" style="color: var(--accent-amber);">₹0.00</div>
-                <div class="impact-sub">Requires sign-off</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Section: Controller's Takeaway -->
-          <div class="ai-issues-section" id="ai-issues-takeaway-section" style="margin-top: 2rem; margin-bottom: 3rem;">
-            <div class="ai-issues-section-header">
-              <div class="ai-issues-section-title">Controller's Takeaway</div>
-              <div class="ai-issues-section-sub">Executive financial conclusion for the CFO and Audit Committee</div>
-            </div>
-            <div class="ai-issues-takeaway-box" id="ai-issues-takeaway-box">
-              <div class="takeaway-badge-row">
-                <span class="badge-min badge-cyan">Executive Conclusion</span>
-                <span class="badge-min badge-gray" id="takeaway-generated-time">Latest Batch</span>
+              <!-- Section: Controller's Takeaway -->
+              <div class="ai-issues-section" id="ai-issues-takeaway-section" style="margin-top: 1.5rem;">
+                <div class="ai-issues-section-header">
+                  <div class="ai-issues-section-title">Controller's Takeaway</div>
+                  <div class="ai-issues-section-sub">Executive financial conclusion for the CFO and Audit Committee</div>
+                </div>
+                <div class="ai-issues-takeaway-box" id="ai-issues-takeaway-box">
+                  <div class="takeaway-badge-row">
+                    <span class="badge-min badge-cyan">Executive Conclusion</span>
+                    <span class="badge-min badge-gray" id="takeaway-generated-time">Latest Batch</span>
+                  </div>
+                  <p class="takeaway-paragraph" id="ai-issues-takeaway-text">
+                    Analyzing reconciliation batch data...
+                  </p>
+                </div>
               </div>
-              <p class="takeaway-paragraph" id="ai-issues-takeaway-text">
-                Analyzing reconciliation batch data...
-              </p>
             </div>
           </div>
         </section>
@@ -1850,9 +1859,8 @@
 
       <div style="padding: 1.25rem; overflow-y: auto; flex: 1; max-height: 50vh;" id="qa-messages-container">
         <div
-          style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem;">
-          <strong>Senior AI Financial Controller Active.</strong> Ask any question regarding batch results, cutoff
-          timing variances, MDR fee calculations, or missing bank wires.
+          style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.45;">
+          <strong>👋 AI Financial Assistant Active.</strong> Ask any question about payments, delayed deposits, gateway fees, or unsettled invoices in plain, simple English.
         </div>
 
         <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
@@ -1896,7 +1904,18 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js"></script>
+  <!-- Floating AI Chatbot Action Button (FAB) -->
+  <button class="floating-chatbot-btn" id="floating-chatbot-btn" onclick="toggleQAModal()" title="Open AI Financial Chatbot (⌘K)" aria-label="Open AI Chatbot">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <circle cx="9" cy="10" r="1.2" fill="currentColor" />
+      <circle cx="15" cy="10" r="1.2" fill="currentColor" />
+    </svg>
+    <span class="floating-chatbot-tooltip">Ask AI Chatbot (⌘K)</span>
+    <span class="floating-chatbot-dot"></span>
+  </button>
+
+  <script src="/static/js/app.js?v=4"></script>
 </body>
 
 </html>

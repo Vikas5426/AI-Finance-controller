@@ -148,7 +148,7 @@ class CanonicalTransaction(BaseModel):
 class ToolEvidence(BaseModel):
     tool: str
     rule_id: Optional[str] = None
-    record_id: str
+    record_id: Optional[str] = "SYSTEM"
     field: Optional[str] = None
     value: Optional[Any] = None
 

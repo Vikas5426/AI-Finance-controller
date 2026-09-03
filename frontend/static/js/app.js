@@ -633,22 +633,28 @@ function initEventListeners() {
   // Bottom Menu Items: SOP Rules & Accounting Manual Drawers
   document.getElementById('nav-settings')?.addEventListener('click', () => {
     document.getElementById('drawer-sop-rules')?.classList.add('open');
+    document.body.classList.add('drawer-open');
   });
   document.getElementById('btn-sop-close')?.addEventListener('click', () => {
     document.getElementById('drawer-sop-rules')?.classList.remove('open');
+    document.body.classList.remove('drawer-open');
   });
   document.getElementById('btn-sop-close-footer')?.addEventListener('click', () => {
     document.getElementById('drawer-sop-rules')?.classList.remove('open');
+    document.body.classList.remove('drawer-open');
   });
 
   document.getElementById('nav-docs')?.addEventListener('click', () => {
     document.getElementById('drawer-accounting-manual')?.classList.add('open');
+    document.body.classList.add('drawer-open');
   });
   document.getElementById('btn-manual-close')?.addEventListener('click', () => {
     document.getElementById('drawer-accounting-manual')?.classList.remove('open');
+    document.body.classList.remove('drawer-open');
   });
   document.getElementById('btn-manual-close-footer')?.addEventListener('click', () => {
     document.getElementById('drawer-accounting-manual')?.classList.remove('open');
+    document.body.classList.remove('drawer-open');
   });
 
   // Backdrop click handling for drawers and modals (F-16)
@@ -656,6 +662,7 @@ function initEventListeners() {
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) {
         backdrop.classList.remove('open');
+        document.body.classList.remove('drawer-open');
       }
     });
   });
@@ -912,6 +919,8 @@ function switchView(viewName, breadcrumbText) {
     verifyAuditChain();
   } else if (viewName === 'ai-issues') {
     loadAIIssuesReport();
+  } else if (viewName === 'agents') {
+    updateAgent9TargetSelectDropdown();
   }
 }
 
@@ -1192,7 +1201,7 @@ function initOverviewCharts() {
         maintainAspectRatio: false,
         devicePixelRatio: dpr,
         layout: {
-          padding: { top: 8, bottom: 4, left: 4, right: 8 }
+          padding: { top: 8, bottom: 14, left: 4, right: 8 }
         },
         plugins: {
           legend: { display: false },
@@ -1327,7 +1336,10 @@ function initOverviewCharts() {
             ticks: {
               color: textMuted,
               font: { family: FONT_MONO, size: 10, weight: '600' },
-              callback: function (val) { return `₹${val}L`; }
+              callback: function (val) {
+                if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
+                return `₹${val}`;
+              }
             }
           }
         }
@@ -1519,7 +1531,8 @@ async function checkAndRehydrateLatestBatch() {
       renderAuditTrail();
       renderResultsTable();
       renderSidebarActiveFeeds();
-      return true;
+    updateAgent9TargetSelectDropdown();
+    return true;
     }
   } catch (e) {
     console.debug('Dashboard rehydration fallback:', e);
@@ -2071,10 +2084,10 @@ function renderUploadedFilesList() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan);">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
           </svg>
-          <div>
-            <div style="font-size: 0.825rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem;">
-              <span>${escapeHtml(f.name)}</span>
-              <span class="badge-detected" title="Pre-classified automatically based on filename heuristics">detected</span>
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-size: 0.825rem; font-weight: 600; display: flex; align-items: center; gap: 0.45rem; min-width: 0;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; display: inline-block; vertical-align: middle;" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+              <span class="badge-detected" style="flex-shrink: 0;" title="Pre-classified automatically based on filename heuristics">detected</span>
             </div>
             <div style="font-size: 0.7rem; color: var(--text-muted);">${f.size} · ${f.rowCount ? `${f.rowCount} rows · ` : ''}${f.note ? `<span style="color: var(--accent-cyan); font-weight: 500;">${escapeHtml(f.note)}</span>` : 'Valid Canonical Feed'}</div>
           </div>
@@ -2546,6 +2559,7 @@ function renderResultsTable() {
     const status = t.match_status || 'MATCHED_EXACT';
     const isM = isTxnMatched(t);
     const badgeCls = isM ? 'badge-green' : (status === 'NEEDS_REVIEW' ? 'badge-amber' : (status === 'UNRESOLVED_EXCEPTION' ? 'badge-coral' : 'badge-gray'));
+    const humanStatus = status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
     const dirSvg = t.direction === 'INFLOW'
       ? `<span style="color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Credit</span>`
@@ -2553,14 +2567,14 @@ function renderResultsTable() {
 
     return `
       <tr>
-        <td class="mono-text" style="font-weight: 600; color: var(--text-primary);">${escapeHtml(t.external_id || t.id.substring(0, 12))}</td>
+        <td class="mono-text" style="font-weight: 600; color: var(--text-primary); white-space: nowrap;">${escapeHtml(t.external_id || t.id.substring(0, 12))}</td>
         <td><span class="badge-min badge-blue">${escapeHtml(getTxnSourceKind(t))}</span></td>
         <td>${dirSvg}</td>
-        <td class="mono-text" style="font-weight: 700;">${amt}</td>
-        <td style="color: var(--text-muted);">${dt}</td>
-        <td><span class="badge-min ${badgeCls}">${escapeHtml(status)}</span></td>
+        <td class="mono-text" style="font-weight: 700; white-space: nowrap;">${amt}</td>
+        <td style="color: var(--text-muted); white-space: nowrap;">${dt}</td>
+        <td><span class="badge-min ${badgeCls}" style="white-space: nowrap;">${escapeHtml(humanStatus)}</span></td>
         <td>
-          <button class="btn btn-ghost btn-sm" onclick="askAboutTxn('${escapeHtml(t.external_id || t.id)}')" style="display: inline-flex; align-items: center; gap: 3px;">
+          <button class="btn btn-ghost btn-sm" onclick="askAboutTxn('${escapeHtml(t.external_id || t.id)}')" style="display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
             Inspect
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -2747,7 +2761,11 @@ function renderWorkflowLiquidityChart() {
             color: tickColor,
             font: { family: FONT_MONO, size: 11 },
             padding: 10,
-            callback: function (val) { return `₹${val}L`; }
+            callback: function (val) {
+              if (isLakhs) return `₹${val}L`;
+              if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
+              return `₹${val}`;
+            }
           }
         }
       }
@@ -2831,6 +2849,8 @@ function renderExceptionsQueue() {
   if (tbody) {
     tbody.innerHTML = filteredExcs.map((e, idx) => {
       const type = e.exception_type || 'MANUAL_REVIEW';
+      const humanType = type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
       let proposal = 'Review transaction voucher';
       if (type.includes('CUTOFF')) proposal = 'Accrue to Acc 1290 (In-Transit)';
       else if (type.includes('FEE') || type.includes('MDR')) proposal = 'Auto-post fee split to Acc 5010';
@@ -2847,11 +2867,11 @@ function renderExceptionsQueue() {
 
       return `
         <tr id="row-${excId}">
-          <td class="mono-text" style="font-weight: 600;">${escapeHtml(excId)}</td>
-          <td class="mono-text" style="color: var(--text-muted); font-size: 0.72rem;">${escapeHtml(rowBatch)}</td>
-          <td>${escapeHtml(type)}</td>
-          <td><span class="badge-min ${badgeCls}">${escapeHtml(sev)}</span></td>
-          <td class="mono-text" style="font-weight: 700;">${amt}</td>
+          <td class="mono-text" style="font-weight: 600; white-space: nowrap; font-size: 0.78rem;">${escapeHtml(excId)}</td>
+          <td class="mono-text" style="color: var(--text-muted); font-size: 0.72rem; white-space: nowrap;">${escapeHtml(rowBatch)}</td>
+          <td style="white-space: nowrap; font-weight: 500;">${escapeHtml(humanType)}</td>
+          <td><span class="badge-min ${badgeCls}" style="white-space: nowrap;">${escapeHtml(sev)}</span></td>
+          <td class="mono-text" style="font-weight: 700; white-space: nowrap;">${amt}</td>
           <td style="color: var(--text-secondary);">${escapeHtml(proposal)}</td>
           <td>
             <div style="display: flex; align-items: center; gap: 0.45rem; white-space: nowrap;">
@@ -2867,6 +2887,9 @@ function renderExceptionsQueue() {
         </tr>
       `;
     }).join('');
+  }
+  if (typeof updateAgent9TargetSelectDropdown === 'function') {
+    updateAgent9TargetSelectDropdown();
   }
 }
 
@@ -2983,9 +3006,11 @@ function renderAuditTrail() {
   const headHash = events[events.length - 1].event_hash;
   const lastVerify = appState.lastChainVerification;
   if (rootDisp) {
-    rootDisp.textContent = headHash
-      ? `Head Hash: ${String(headHash).substring(0, 24)}...`
-      : 'Head hash unavailable';
+    if (headHash) {
+      rootDisp.innerHTML = `Head Hash: <code style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">${String(headHash).substring(0, 24)}...</code> <button class="btn btn-secondary btn-xs" onclick="navigator.clipboard.writeText('${headHash}'); showToast('Head Hash copied to clipboard ✓', 'success');" style="margin-left: 0.6rem; padding: 0.15rem 0.5rem; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.3rem;">📋 Copy Full Hash</button>`;
+    } else {
+      rootDisp.textContent = 'Head hash unavailable';
+    }
   }
   if (badge) {
     if (lastVerify && lastVerify.isValid) {
@@ -3014,14 +3039,15 @@ function renderAuditTrail() {
       const linked = isGenesis(prev) || (!!prev && hashSet.has(prev));
       const label = isGenesis(prev) ? 'CHAIN START' : (linked ? 'LINKED' : 'BROKEN LINK');
       const cls = linked ? 'badge-green' : 'badge-coral';
+      const fullHash = e.event_hash || '';
       return `
       <tr>
-        <td class="mono-text" style="font-weight: 700;">#${String(e.event_seq || idx + 1).padStart(2, '0')}</td>
-        <td>${escapeHtml((e.event_type || 'INGESTION').toUpperCase())}</td>
-        <td class="mono-text" style="color: var(--accent-cyan);">${escapeHtml((e.event_hash || '').substring(0, 16))}...</td>
-        <td class="mono-text" style="color: var(--text-muted);">${escapeHtml((e.prev_hash || '').substring(0, 16))}...</td>
-        <td style="color: var(--text-muted);">${(e.created_at || '').substring(0, 19).replace('T', ' ')}</td>
-        <td><span class="badge-min ${cls}">${label}</span></td>
+        <td class="mono-text" style="font-weight: 700; white-space: nowrap;">#${String(e.event_seq || idx + 1).padStart(2, '0')}</td>
+        <td style="white-space: nowrap;">${escapeHtml((e.event_type || 'INGESTION').toUpperCase())}</td>
+        <td class="mono-text" style="color: var(--accent-cyan); white-space: nowrap; cursor: pointer;" title="Click to copy full SHA-256 hash" onclick="navigator.clipboard.writeText('${fullHash}'); showToast('Block Hash #${e.event_seq || idx + 1} copied ✓', 'success');">${escapeHtml(fullHash.substring(0, 16))}... <span style="font-size: 0.7rem; opacity: 0.6;">📋</span></td>
+        <td class="mono-text" style="color: var(--text-muted); white-space: nowrap;">${escapeHtml((e.prev_hash || '').substring(0, 16))}...</td>
+        <td style="color: var(--text-muted); white-space: nowrap;">${(e.created_at || '').substring(0, 19).replace('T', ' ')}</td>
+        <td style="white-space: nowrap;"><span class="badge-min ${cls}">${label}</span></td>
       </tr>
     `;
     }).join('');
@@ -3139,9 +3165,8 @@ function toggleQAModal() {
         const container = document.getElementById('qa-messages-container');
         if (container) {
           container.innerHTML = `
-            <div style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem;">
-              <strong>Senior AI Financial Controller Active.</strong> Ask any question regarding batch results, cutoff
-              timing variances, MDR fee calculations, or missing bank wires.
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.45;">
+              <strong>👋 AI Financial Assistant Active.</strong> Ask any question about payments, delayed deposits, gateway fees, or unsettled invoices in plain, simple English.
             </div>
             ${renderQAStarterChipsHtml()}
           `;
@@ -3169,9 +3194,8 @@ function clearQAChat() {
   const container = document.getElementById('qa-messages-container');
   if (container) {
     container.innerHTML = `
-      <div style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem;">
-        <strong>Senior AI Financial Controller Active.</strong> Ask any question regarding batch results, cutoff
-        timing variances, MDR fee calculations, or missing bank wires.
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.45;">
+        <strong>👋 AI Financial Assistant Active.</strong> Ask any question about payments, delayed deposits, gateway fees, or unsettled invoices in plain, simple English.
       </div>
       ${renderQAStarterChipsHtml()}
     `;
@@ -3214,8 +3238,21 @@ async function sendQAMessage() {
       })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     document.getElementById(loadId)?.remove();
+
+    if (!res.ok) {
+      const errDetail = data?.detail || (res.status === 401
+        ? 'Your login session has expired. Please sign in again using the Sign In button at top right.'
+        : `Service returned status ${res.status}. Please check your connection or batch status.`);
+      container.insertAdjacentHTML('beforeend', `
+        <div style="background: var(--bg-surface); border: 1px solid var(--accent-coral); color: var(--accent-coral); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.45;">
+          <strong>⚠️ Notice:</strong> ${escapeHtml(errDetail)}
+        </div>
+      `);
+      container.scrollTop = container.scrollHeight;
+      return;
+    }
 
     // Track multi-turn history
     appState.qaConversationHistory = appState.qaConversationHistory || [];
@@ -3227,27 +3264,41 @@ async function sendQAMessage() {
       appState.qaConversationHistory = appState.qaConversationHistory.slice(-8);
     }
 
-    const findings = (data.why_it_happened || []).map(f => `<li>${escapeHtml(f)}</li>`).join('');
+    const findings = (data.why_it_happened || []).map(f => {
+      let clean = String(f || '').replace(/^[\s•\-\*]+/, '').trim();
+      const colonIdx = clean.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 35) {
+        const prefix = clean.substring(0, colonIdx);
+        const rest = clean.substring(colonIdx + 1);
+        return `<li style="margin-bottom: 0.35rem;"><strong style="color: var(--text-primary);">${escapeHtml(prefix)}:</strong>${escapeHtml(rest)}</li>`;
+      }
+      return `<li style="margin-bottom: 0.35rem;">${escapeHtml(clean)}</li>`;
+    }).join('');
 
     let cardHtml = '';
     if (data.status_card) {
       const badgeCls = data.status_card.badge_type === 'success' ? 'badge-green' : (data.status_card.badge_type === 'danger' ? 'badge-coral' : 'badge-amber');
       cardHtml = `
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-subtle);">
-          <span class="badge-min ${badgeCls}">${escapeHtml(data.status_card.status_text)}</span>
-          <span style="font-weight: 700; font-family: var(--font-mono); font-size: 0.8rem;">${escapeHtml(data.status_card.amount || '')}</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--border-subtle);">
+          <span class="badge-min ${badgeCls}" style="font-weight: 600; text-transform: none; letter-spacing: 0;">${escapeHtml(data.status_card.status_text)}</span>
+          <span style="font-weight: 700; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-primary);">${escapeHtml(data.status_card.amount || '')}</span>
         </div>
       `;
     }
 
+    const actionText = data.recommended_action ? String(data.recommended_action).replace(/^(Next Action:?\s*)/i, '').trim() : '';
+    const nextActionHtml = actionText ? `
+      <div style="margin-top: 0.65rem; padding: 0.55rem 0.75rem; background: rgba(56, 189, 248, 0.08); border-left: 3px solid var(--accent-cyan); border-radius: 4px; font-size: 0.78rem; color: var(--text-primary); line-height: 1.45;">
+        <strong style="color: var(--accent-cyan); display: inline-block; margin-right: 0.3rem;">💡 Next Step:</strong>${escapeHtml(actionText)}
+      </div>
+    ` : '';
+
     container.insertAdjacentHTML('beforeend', `
-      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 10px 10px 10px 2px; font-size: 0.8rem; color: var(--text-primary); margin-bottom: 0.75rem;">
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 0.9rem 1.1rem; border-radius: 10px 10px 10px 2px; font-size: 0.825rem; color: var(--text-primary); margin-bottom: 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
         ${cardHtml}
-        <div style="font-weight: 600; margin-bottom: 0.4rem;">${escapeHtml(data.direct_answer || data.answer)}</div>
-        ${findings ? `<ul style="margin: 0.4rem 0 0.4rem 1.1rem; color: var(--text-secondary); font-size: 0.75rem;">${findings}</ul>` : ''}
-        <div style="font-size: 0.75rem; color: var(--accent-cyan); margin-top: 0.4rem;">
-          <strong>Next Action:</strong> ${escapeHtml(data.recommended_action || 'not reported')}
-        </div>
+        <div style="font-weight: 600; font-size: 0.85rem; line-height: 1.45; margin-bottom: 0.5rem; color: var(--text-primary);">${escapeHtml(data.direct_answer || data.answer)}</div>
+        ${findings ? `<ul style="margin: 0.4rem 0 0.5rem 1.1rem; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.45;">${findings}</ul>` : ''}
+        ${nextActionHtml}
       </div>
     `);
 
@@ -3255,10 +3306,11 @@ async function sendQAMessage() {
   } catch (err) {
     document.getElementById(loadId)?.remove();
     container.insertAdjacentHTML('beforeend', `
-      <div style="background: var(--bg-surface); color: var(--accent-coral); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.75rem;">
-        Failed to connect to AI Controller.
+      <div style="background: var(--bg-surface); border: 1px solid var(--accent-coral); color: var(--accent-coral); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.45;">
+        <strong>⚠️ Connection Issue:</strong> ${escapeHtml(err.message || 'Unable to connect to AI Controller. Please verify you are logged in.')}
       </div>
     `);
+    container.scrollTop = container.scrollHeight;
   }
 }
 
@@ -4094,6 +4146,7 @@ window.openExceptionInvestigationDrawer = async function(excId) {
   if (!drawer || !content) return;
 
   drawer.classList.add('open');
+  document.body.classList.add('drawer-open');
   if (sub) sub.textContent = `Micro Root-Cause Reasoning for ${excId}...`;
 
   if (approveBtn) {
@@ -4302,6 +4355,7 @@ window.openExceptionInvestigationDrawer = async function(excId) {
 
 window.closeExceptionInvestigationDrawer = function() {
   document.getElementById('drawer-exception-investigate')?.classList.remove('open');
+  document.body.classList.remove('drawer-open');
 };
 
 async function explainAuditChainWithAgent12() {
@@ -4531,6 +4585,13 @@ function renderAIIssuesReport(report) {
   setElemText('ai-issues-kpi-impact', impactFormatted);
   setElemText('ai-issues-kpi-review', review.toLocaleString());
 
+  const breakdownParts = [];
+  if (critical > 0) breakdownParts.push(`${critical} Critical`);
+  if (high > 0) breakdownParts.push(`${high} High`);
+  if (medium > 0) breakdownParts.push(`${medium} Medium`);
+  if (low > 0) breakdownParts.push(`${low} Low`);
+  setElemText('ai-issues-kpi-breakdown-sub', breakdownParts.length > 0 ? breakdownParts.join(' · ') : 'Zero active exceptions');
+
   // Update Sidebar Badge
   const navBadge = document.getElementById('nav-badge-ai-issues-count');
   if (navBadge) {
@@ -4685,10 +4746,10 @@ function renderAIIssuesList() {
 
   // Group issues into distinct Criticality Sections: CRITICAL -> HIGH -> MEDIUM -> LOW
   const SEVERITY_SECTIONS = [
-    { key: 'CRITICAL', label: 'Critical Priority Issues', emoji: '🔴', color: 'var(--accent-coral)', badgeCls: 'sev-critical', sub: 'Immediate Controller Action & Journal Voucher Approval Required' },
-    { key: 'HIGH', label: 'High Priority Issues', emoji: '🟠', color: 'var(--accent-amber)', badgeCls: 'sev-high', sub: 'Material Exposure & Acquiring Bank Settlement Latency' },
-    { key: 'MEDIUM', label: 'Medium Priority Issues', emoji: '🔵', color: 'var(--accent-blue)', badgeCls: 'sev-medium', sub: 'Operational Period Cutoff & Gateway Fee Adjustments' },
-    { key: 'LOW', label: 'Low Priority Issues', emoji: '🟢', color: 'var(--accent-cyan)', badgeCls: 'sev-low', sub: 'Minor Rounding & Informational Adjustments' }
+    { key: 'CRITICAL', label: 'Critical Priority Issues', emoji: '🔴', color: 'var(--accent-coral)', badgeCls: 'sev-critical', sub: 'Immediate Controller Action Required' },
+    { key: 'HIGH', label: 'High Priority Issues', emoji: '🟠', color: 'var(--accent-amber)', badgeCls: 'sev-high', sub: 'Material Exposure & Unsettled Inflows' },
+    { key: 'MEDIUM', label: 'Medium Priority Issues', emoji: '🔵', color: 'var(--accent-blue)', badgeCls: 'sev-medium', sub: 'Operational Period Cutoff & Fee Adjustments' },
+    { key: 'LOW', label: 'Low Priority Issues', emoji: '🟢', color: 'var(--accent-cyan)', badgeCls: 'sev-low', sub: 'Minor Rounding & Informational Items' }
   ];
 
   let fullHtml = '';
@@ -4701,137 +4762,101 @@ function renderAIIssuesList() {
     const secImpactFormatted = `₹${secImpact.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     fullHtml += `
-      <div class="ai-criticality-section" style="margin-bottom: 2rem;">
-        <div class="ai-criticality-section-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-left: 4px solid ${sec.color}; border-radius: 8px; margin-bottom: 0.85rem;">
-          <div style="display: flex; align-items: center; gap: 0.6rem;">
-            <span style="font-size: 1.1rem;">${sec.emoji}</span>
+      <div class="ai-criticality-section" style="margin-bottom: 1.25rem;">
+        <div class="ai-criticality-section-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.9rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-left: 3px solid ${sec.color}; border-radius: 6px; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1rem;">${sec.emoji}</span>
             <div>
-              <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">${sec.label}</span>
-              <span class="filter-badge" style="background: rgba(255,255,255,0.08); padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; margin-left: 0.4rem; color: ${sec.color};">${secIssues.length} ${secIssues.length === 1 ? 'Issue' : 'Issues'}</span>
-              <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem;">${sec.sub}</div>
+              <span style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${sec.label}</span>
+              <span class="filter-badge" style="background: rgba(255,255,255,0.08); padding: 0.12rem 0.4rem; border-radius: 4px; font-size: 0.7rem; margin-left: 0.35rem; color: ${sec.color};">${secIssues.length}</span>
             </div>
           </div>
-          <div style="text-align: right;">
-            <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Section Exposure</div>
-            <div style="font-size: 1rem; font-weight: 800; font-family: var(--font-mono); color: ${sec.color};">${secImpactFormatted}</div>
+          <div style="text-align: right; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Exposure:</span>
+            <span style="font-size: 0.92rem; font-weight: 800; font-family: var(--font-mono); color: ${sec.color};">${secImpactFormatted}</span>
           </div>
         </div>
 
-        <div class="ai-issues-cards-stack" style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <div class="ai-issues-cards-stack" style="display: flex; flex-direction: column; gap: 0.65rem;">
           ${secIssues.map((issue, idx) => {
             const cardId = `ai-issue-card-${sec.key}-${idx}`;
             const proof = issue.arithmetic_proof;
+            const oneLineSummary = issue.what_happened || 'Reconciliation discrepancy identified across multi-stream feeds.';
 
             let proofHtml = '';
-            if (proof) {
+            if (proof && (proof.lines || proof.title)) {
               proofHtml = `
-                <div class="issue-block">
-                  <div class="issue-block-label-row">
-                    <span class="issue-block-label">Deterministic Arithmetic Proof</span>
-                    <span class="badge-honest badge-calculated">Calculated</span>
+                <div class="issue-proof-compact">
+                  <div class="proof-header-compact">
+                    <span>${escapeHtml(proof.title || 'Deterministic Calculation')}</span>
                   </div>
-                  <div class="issue-proof-box">
-                    <div class="proof-header">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                      <span>${escapeHtml(proof.title || 'Deterministic Calculation')}</span>
-                    </div>
-                    ${proof.lines ? `
-                      <div class="proof-lines">
-                        ${proof.lines.map(line => `<div>${escapeHtml(line)}</div>`).join('')}
-                      </div>
-                    ` : ''}
-                    ${proof.explanation ? `
-                      <div class="proof-explanation">${escapeHtml(proof.explanation)}</div>
-                    ` : ''}
-                  </div>
+                  ${proof.lines ? `
+                    <div class="proof-formula">${proof.lines.map(l => escapeHtml(l)).join(' · ')}</div>
+                  ` : ''}
                 </div>
               `;
             }
 
-            const statusBadgeCls = issue.confidence_evidence_status === 'VERIFIED_DETERMINISTIC' ? 'badge-emerald' : (issue.confidence_evidence_status === 'CANNOT_DETERMINE' ? 'badge-amber' : 'badge-blue');
-            const statusLabel = issue.confidence_evidence_status ? issue.confidence_evidence_status.replace('_', ' ') : 'VERIFIED';
-
             return `
-              <div class="ai-issue-card expanded" id="${cardId}" style="border-left: 3px solid ${sec.color};">
-                <div class="ai-issue-card-header" style="cursor: default;">
+              <div class="ai-issue-card" id="${cardId}" style="border-left: 3px solid ${sec.color};">
+                <div class="ai-issue-card-header" onclick="toggleAIIssueCard('${cardId}')" title="Click to view details & audit proof">
                   <div class="issue-header-left">
                     <span class="severity-pill ${sec.badgeCls}">
                       <span>●</span> ${escapeHtml(issue.severity)}
                     </span>
-                    <span class="issue-title-text">${escapeHtml(issue.title)}</span>
-                    <span class="issue-records-tag">${issue.affected_records} ${issue.affected_records === 1 ? 'Record' : 'Records'}</span>
-                    <span class="badge-min ${statusBadgeCls}" style="font-size: 0.65rem; text-transform: uppercase;">${escapeHtml(statusLabel)}</span>
+                    <div class="issue-title-group">
+                      <div class="issue-title-row">
+                        <span class="issue-title-text">${escapeHtml(issue.title)}</span>
+                        <span class="issue-records-tag">${issue.affected_records} ${issue.affected_records === 1 ? 'Record' : 'Records'}</span>
+                      </div>
+                      <div class="issue-summary-snippet">${escapeHtml(oneLineSummary)}</div>
+                    </div>
                   </div>
                   <div class="issue-header-right">
                     <span class="issue-impact-val">${escapeHtml(issue.financial_impact_formatted)}</span>
-                    <span class="issue-conf-badge">${Math.round(issue.confidence * 100)}% Conf</span>
+                    <span class="issue-toggle-btn">
+                      <span class="issue-toggle-text">Details</span>
+                      <span class="issue-toggle-icon">▾</span>
+                    </span>
                   </div>
                 </div>
 
-                <div class="ai-issue-card-body" style="display: block;">
-                  <div class="ai-card-content-grid">
-                    <!-- Left Column: Story & Root Cause -->
-                    <div class="ai-card-col-main">
-                      <div class="ai-story-box">
-                        <div class="ai-story-header">
-                          <span class="badge-honest badge-calculated">Verified Fact</span>
-                          <span class="ai-story-title">What Happened & Why It Matters</span>
-                        </div>
-                        <p class="ai-story-desc">${escapeHtml(issue.what_happened || 'Not available from supplied data.')}</p>
-                        <div class="ai-story-sub">${escapeHtml(issue.why_it_matters || '')}</div>
+                <div class="ai-issue-card-body" style="display: none;">
+                  <div class="ai-card-content-compact">
+                    <!-- Left Column: Story & Evidence -->
+                    <div class="ai-compact-col-left">
+                      <div class="compact-narrative">
+                        <div class="compact-label">What Happened & Cause</div>
+                        <p class="compact-text">
+                          ${escapeHtml(issue.what_happened || '')}
+                          ${issue.likely_cause ? `<span class="cause-highlight"> ${escapeHtml(issue.likely_cause)}</span>` : ''}
+                        </p>
                       </div>
 
-                      <div class="ai-cause-box">
-                        <div class="ai-story-header">
-                          <span class="badge-honest badge-inference">Likely Cause</span>
-                          <span class="ai-story-title">Root Cause Analysis</span>
-                        </div>
-                        <p class="ai-cause-desc">${escapeHtml(issue.likely_cause || 'Not available from supplied data.')}</p>
-                      </div>
-
-                      <div class="ai-evidence-box">
-                        <div class="ai-mini-lbl" style="display: flex; justify-content: space-between; align-items: center;">
-                          <span>Traceable Evidence & Proof:</span>
-                          ${issue.source_dataset ? `<span style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 600;">${escapeHtml(issue.source_dataset)}</span>` : ''}
-                        </div>
-                        <ul class="issue-evidence-list">
-                          ${(issue.evidence || []).map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
-                        </ul>
-                        ${issue.calculation_proof ? `
-                          <div style="margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: var(--bg-surface); border-radius: 4px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-emerald);">
-                            <strong>Calculation:</strong> ${escapeHtml(issue.calculation_proof)}
+                      ${(issue.evidence && issue.evidence.length) ? `
+                        <div class="compact-evidence">
+                          <div class="compact-label">Evidence & Source</div>
+                          <div class="evidence-tags">
+                            ${issue.source_dataset ? `<span class="badge-min badge-gray">${escapeHtml(issue.source_dataset)}</span>` : ''}
+                            ${issue.evidence.map(ev => `<span class="evidence-pill">${escapeHtml(ev)}</span>`).join('')}
                           </div>
-                        ` : ''}
-                      </div>
+                        </div>
+                      ` : ''}
                     </div>
 
-                    <!-- Right Column: Proof & Action Plan -->
-                    <div class="ai-card-col-side">
+                    <!-- Right Column: Proof & Recommendation -->
+                    <div class="ai-compact-col-right">
                       ${proofHtml}
 
-                      <div class="ai-action-plan-box">
-                        <div class="ai-action-plan-header">
-                          <span class="badge-honest badge-recommendation">Recommendation</span>
-                          <span class="ai-action-plan-title">Action Plan</span>
+                      <div class="compact-action-box">
+                        <div class="compact-label">Recommended Action</div>
+                        <div class="action-text">${escapeHtml(issue.recommended_action || 'Review and reconcile records.')}</div>
+                        <div class="action-footer">
+                          <span>Owner: <strong>${escapeHtml(issue.owner || 'Treasury Operations')}</strong></span>
+                          ${issue.citations && issue.citations.length ? `
+                            <span class="sop-tag">${escapeHtml(issue.citations[0])}</span>
+                          ` : ''}
                         </div>
-                        <div class="ai-action-plan-text">${escapeHtml(issue.recommended_action || 'Not available from supplied data.')}</div>
-                        
-                        <div class="ai-action-meta-row">
-                          <div class="ai-meta-item">
-                            <span class="ai-meta-lbl">Owner:</span>
-                            <span class="ai-meta-val">${escapeHtml(issue.owner || 'Treasury Operations')}</span>
-                          </div>
-                          <div class="ai-meta-item">
-                            <span class="ai-meta-lbl">Immediate Next Step:</span>
-                            <span class="ai-meta-val ai-next-step-val">${escapeHtml(issue.next_step || 'Review records')}</span>
-                          </div>
-                        </div>
-
-                        ${issue.citations && issue.citations.length ? `
-                          <div class="ai-citations-row">
-                            ${issue.citations.map(c => `<span class="badge-min badge-blue">${escapeHtml(c)}</span>`).join('')}
-                          </div>
-                        ` : ''}
                       </div>
                     </div>
                   </div>
@@ -4849,10 +4874,74 @@ function renderAIIssuesList() {
 
 function toggleAIIssueCard(cardId) {
   const card = document.getElementById(cardId);
-  if (card) {
-    card.classList.toggle('expanded');
+  if (!card) return;
+  const isExpanded = card.classList.contains('expanded');
+  const body = card.querySelector('.ai-issue-card-body');
+  const icon = card.querySelector('.issue-toggle-icon');
+  const text = card.querySelector('.issue-toggle-text');
+
+  if (isExpanded) {
+    card.classList.remove('expanded');
+    if (body) body.style.display = 'none';
+    if (icon) icon.textContent = '▾';
+    if (text) text.textContent = 'Details';
+  } else {
+    card.classList.add('expanded');
+    if (body) body.style.display = 'block';
+    if (icon) icon.textContent = '▴';
+    if (text) text.textContent = 'Hide';
   }
 }
+
+function toggleAllIssueCards() {
+  const cards = document.querySelectorAll('.ai-issue-card');
+  const btnText = document.getElementById('btn-toggle-all-cards-text');
+  const anyCollapsed = Array.from(cards).some(c => !c.classList.contains('expanded'));
+
+  cards.forEach(card => {
+    const body = card.querySelector('.ai-issue-card-body');
+    const icon = card.querySelector('.issue-toggle-icon');
+    const text = card.querySelector('.issue-toggle-text');
+
+    if (anyCollapsed) {
+      card.classList.add('expanded');
+      if (body) body.style.display = 'block';
+      if (icon) icon.textContent = '▴';
+      if (text) text.textContent = 'Hide';
+    } else {
+      card.classList.remove('expanded');
+      if (body) body.style.display = 'none';
+      if (icon) icon.textContent = '▾';
+      if (text) text.textContent = 'Details';
+    }
+  });
+
+  if (btnText) {
+    btnText.textContent = anyCollapsed ? 'Collapse All' : 'Expand All';
+  }
+}
+
+function toggleAdvancedAIIssuesSections() {
+  const sec = document.getElementById('ai-issues-advanced-sections');
+  const icon = document.getElementById('adv-sections-toggle-icon');
+  const text = document.getElementById('adv-sections-toggle-text');
+  if (!sec) return;
+
+  const isHidden = sec.style.display === 'none';
+  if (isHidden) {
+    sec.style.display = 'block';
+    if (icon) icon.textContent = '▾';
+    if (text) text.textContent = 'Hide Systemic Patterns & Detailed Accounting Breakdown';
+  } else {
+    sec.style.display = 'none';
+    if (icon) icon.textContent = '▸';
+    if (text) text.textContent = 'Show Systemic Patterns & Detailed Accounting Breakdown';
+  }
+}
+
+window.toggleAIIssueCard = toggleAIIssueCard;
+window.toggleAllIssueCards = toggleAllIssueCards;
+window.toggleAdvancedAIIssuesSections = toggleAdvancedAIIssuesSections;
 
 function setAIIssuesFilter(filterKey) {
   appState.aiIssuesFilter = filterKey;

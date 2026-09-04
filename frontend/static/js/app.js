@@ -1330,13 +1330,14 @@ function initOverviewCharts() {
           y: {
             grid: { color: gridColor, borderDash: [4, 4] },
             ticks: {
-              color: tickColor,
+              color: textMuted,
               font: { family: FONT_MONO, size: 9.5 },
               callback: v => `₹${v}L`
             }
           }
         }
       }
+    });
   }
 }
 

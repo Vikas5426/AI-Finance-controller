@@ -232,7 +232,7 @@ class ExceptionInvestigationAgent(BaseReasoningAgent):
             context_envelope["deterministic_fee_breakdown"] = fee_breakdown
 
         system_prompt = (
-            "You are the Senior Exception Investigation Agent (Agent 9) in the AI Financial Controller runtime. "
+            "You are the Senior Exception Investigation Agent (Agent 9) in the Recon runtime. "
             "Analyze the provided transaction discrepancy context and output a strictly valid JSON object matching the schema:\n"
             "{\n"
             '  "exception_id": str,\n'

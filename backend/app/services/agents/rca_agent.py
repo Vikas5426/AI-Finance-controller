@@ -104,7 +104,7 @@ class RootCauseAnalysisAgent(BaseReasoningAgent):
         }
 
         system_prompt = (
-            "You are the Senior Root Cause Analysis Agent (Agent 10) in the AI Financial Controller system. "
+            "You are the Senior Root Cause Analysis Agent (Agent 10) in the Recon system. "
             "Analyze the batch-wide exception dataset and provide systemic diagnostic findings in valid JSON matching:\n"
             "{\n"
             '  "batch_id": str,\n'

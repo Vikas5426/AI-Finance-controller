@@ -1,5 +1,5 @@
 """
-Deterministic Agent Tools for AI Financial Controller
+Deterministic Agent Tools for Recon
 Deterministic calculations, indexed lookups, fee arithmetic, and SOP compliance.
 These tools are invoked by the Reasoning Agent during exception investigation.
 The LLM is NEVER permitted to calculate arithmetic or invent IDs on its own.

@@ -1,5 +1,5 @@
 /**
- * AI Financial Controller — Beautiful Monochromatic Dashboard & Dynamic Data Binding
+ * Recon — Beautiful Monochromatic Dashboard & Dynamic Data Binding
  * Preserving the Pristine 4-Card Horizontal Grid, 52-Bar Cluster Histogram, and Dual Graph Suite
  */
 
@@ -5262,7 +5262,7 @@ function exportAIIssuesMarkdown() {
     return;
   }
 
-  let md = `# Financial Controller — AI Issues & Discrepancies Report\n\n`;
+  let md = `# Recon — AI Issues & Discrepancies Report\n\n`;
   md += `**Date**: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}\n`;
   md += `**Reconciliation Health**: ${report.overall_health || 'HEALTHY'}\n`;
   md += `**Total Financial Impact**: ${report.total_financial_impact_formatted || '₹0.00'}\n`;

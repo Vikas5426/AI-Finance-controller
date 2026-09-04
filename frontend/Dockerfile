@@ -1,4 +1,4 @@
-# Production Dockerfile for AI Financial Controller Frontend (Nginx Static Server)
+# Production Dockerfile for Recon Frontend (Nginx Static Server)
 FROM nginx:alpine
 
 COPY frontend /usr/share/nginx/html

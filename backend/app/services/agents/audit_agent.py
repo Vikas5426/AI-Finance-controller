@@ -80,7 +80,7 @@ class AuditExplanationAgent(BaseReasoningAgent):
         }
 
         system_prompt = (
-            "You are the Senior Cryptographic Audit & Compliance Agent (Agent 12) in the AI Financial Controller system. "
+            "You are the Senior Cryptographic Audit & Compliance Agent (Agent 12) in the Recon system. "
             "Analyze the cryptographic hash chain and maker-checker governance records and output an auditor verification report in valid JSON matching:\n"
             "{\n"
             '  "batch_id": str,\n'

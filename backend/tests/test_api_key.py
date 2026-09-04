@@ -43,7 +43,7 @@ try:
             print(f"Attempting generate_content with model '{model_name}'...")
             res = client.models.generate_content(
                 model=model_name,
-                contents="Hello AI Financial Controller! Reply with 'CONFIRMED: Gemini API is fully operational and generating responses.'"
+                contents="Hello Recon! Reply with 'CONFIRMED: Gemini API is fully operational and generating responses.'"
             )
             print(f"[SUCCESS] Response received from {model_name}:")
             print(f">>> {res.text.strip()}")

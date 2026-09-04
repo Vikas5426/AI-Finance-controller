@@ -261,7 +261,7 @@ def generate_dataset_2000(output_path: str = "data/benchmark_2000.json") -> Dict
 
     dataset_payload = {
         "metadata": {
-            "name": "Financial Controller Empirical Ground Truth Benchmark (2,000+)",
+            "name": "Recon Empirical Ground Truth Benchmark (2,000+)",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "total_transactions": len(transactions),
             "gateway_count": gw_count,

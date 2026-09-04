@@ -1,5 +1,5 @@
 """
-Bounded AI Financial Controller Investigation Runtime & Verifier Gate
+Bounded Recon Investigation Runtime & Verifier Gate
 Strict Policy:
 - AI is strictly reserved for ambiguity, root-cause investigation, and contextual recommendations.
 - AI is FORBIDDEN for arithmetic, exact ID matching, fee calculations, date comparisons,
@@ -562,7 +562,7 @@ class AIAgentRuntime:
             valid_candidate_ids.add(counterpart_txn["id"])
 
         system_prompt = (
-            "You are the Senior AI Financial Controller. "
+            "You are the Senior Recon Financial Controller. "
             "Analyze the given targeted financial context and output a strictly valid JSON object matching the schema:\n"
             "{\n"
             '  "exception_id": str,\n'
@@ -831,7 +831,7 @@ class AIAgentRuntime:
                         resp = client.messages.create(
                             model=anthropic_model,
                             max_tokens=1000,
-                            system="You are the AI Financial Controller. Return a valid JSON InvestigationResult from targeted context.",
+                            system="You are the Recon Financial Controller. Return a valid JSON InvestigationResult from targeted context.",
                             messages=[{"role": "user", "content": user_prompt}]
                         )
                         raw_text = resp.content[0].text

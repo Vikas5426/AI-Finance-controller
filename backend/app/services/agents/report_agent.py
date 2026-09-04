@@ -72,7 +72,7 @@ class ReportGenerationAgent(BaseReasoningAgent):
 
         # 3. LLM Synthesis with Anti-Hallucination Guardrails
         system_prompt = (
-            "You are the Executive Report Generation Agent (Agent 13) in the AI Financial Controller system. "
+            "You are the Executive Report Generation Agent (Agent 13) in the Recon system. "
             "Synthesize the structured multi-source reconciliation contract into an executive report in valid JSON matching:\n"
             "{\n"
             '  "batch_id": str,\n'
@@ -109,7 +109,7 @@ class ReportGenerationAgent(BaseReasoningAgent):
 
         return {
             "batch_id": contract.batch_id,
-            "report_title": f"Executive Financial Controller Reconciliation Brief — {contract.batch_id}",
+            "report_title": f"Recon Executive Reconciliation Brief — {contract.batch_id}",
             "executive_summary": (
                 f"Autonomous 3-way financial reconciliation completed with {rate:.1f}% match rate "
                 f"across {total} ingested records. {excs} exceptions held for maker-checker review "
@@ -318,7 +318,7 @@ class ReportGenerationAgent(BaseReasoningAgent):
         else:
             aud_md = "> [!WARNING]\n> **Status:** `NOT_AVAILABLE` — Audit and compliance controls were not evaluated."
 
-        return f"""# Autonomous Financial Controller Executive Brief
+        return f"""# Recon Executive Reconciliation Brief
 **Batch Reference:** `{c.batch_id}` | **Reconciliation Verdict:** `{verdict_status}` | **Match Rate:** `{r.match_rate:.1f}%`
 
 ---

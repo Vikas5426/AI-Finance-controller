@@ -1,5 +1,5 @@
 """
-LangGraph-Orchestrated Financial Controller Runtime
+LangGraph-Orchestrated Recon Runtime
 Coordinates autonomous three-way financial reconciliation across 7 stages:
 1. Validation & Normalization Node
 2. Deterministic 6-Pass Reconciliation Node (Exact, Hungarian, Subset-Sum DP)
@@ -648,7 +648,7 @@ def route_after_verification(state: ReconciliationState) -> str:
 # ==============================================================================
 
 def build_reconciliation_graph():
-    """Builds and compiles the complete LangGraph financial controller workflow."""
+    """Builds and compiles the complete LangGraph Recon workflow."""
     builder = StateGraph(ReconciliationState)
 
     builder.add_node("validate_and_normalize", validate_and_normalize_node)

@@ -54,7 +54,7 @@ def anchor_sqlite_url(url: str) -> str:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=_ENV_PATHS, env_file_encoding="utf-8", extra="ignore")
 
-    APP_NAME: str = "AI Financial Controller"
+    APP_NAME: str = "Recon"
     APP_ENV: str = "development"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"

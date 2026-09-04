@@ -1,4 +1,4 @@
--- PostgreSQL Initialization Script for AI Financial Controller
+-- PostgreSQL Initialization Script for Recon
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Ensure database user has full schema permissions

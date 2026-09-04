@@ -9,7 +9,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 from app.services.agent_runtime import AIAgentRuntime
 
 print("=" * 60)
-print("  TESTING AI FINANCIAL AGENT RUNTIME INVESTIGATION")
+print("  TESTING RECON AGENT RUNTIME INVESTIGATION")
 print("=" * 60)
 
 runtime = AIAgentRuntime()

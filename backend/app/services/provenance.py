@@ -1,5 +1,5 @@
 """
-Diagnostic Input Provenance Tracker for AI Financial Controller
+Diagnostic Input Provenance Tracker for Recon
 Tracks, verifies, and logs the complete audit trail of data entering the pipeline:
 - Exact file paths, SHA-256 hashes, byte sizes
 - Raw line/row counts, parsed row counts, normalized transaction counts

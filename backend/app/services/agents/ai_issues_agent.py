@@ -55,7 +55,7 @@ class AIIssuesReasoningAgent(BaseReasoningAgent):
             })
 
         system_prompt = (
-            "You are an expert AI Financial Controller.\n"
+            "You are an expert Recon Financial Controller.\n"
             "Your task is to analyze verified deterministic reconciliation discrepancies and structure them into a simple, clear, and easy-to-understand executive summary.\n"
             "STRICT FINANCIAL SAFETY RULES:\n"
             "1. NEVER invent, fabricate, or hallucinate transaction IDs, amounts, invoice numbers, bank deposits, or references (e.g. never invent B001, B002, B003, ₹31,250, ₹45,000).\n"

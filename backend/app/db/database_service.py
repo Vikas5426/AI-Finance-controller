@@ -1,5 +1,5 @@
 """
-Database Persistence & Repository Service for AI Financial Controller.
+Database Persistence & Repository Service for Recon.
 Handles atomic transaction writes, batch management, maker-checker audit chains,
 and default organization/user seeding with Argon2 password hashing.
 """

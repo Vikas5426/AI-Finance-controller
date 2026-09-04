@@ -1,5 +1,5 @@
 """
-Adversarial 40-Scenario Test Suite for AI Financial Controller.
+Adversarial 40-Scenario Test Suite for Recon.
 Tests edge cases, malicious/malformed inputs, boundary conditions, and ensures:
 1. Deterministic classification fails safely.
 2. The AI NEVER turns bad/missing evidence into a confident financial fact.

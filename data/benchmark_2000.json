@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "name": "Financial Controller Empirical Ground Truth Benchmark (2,000+)",
+    "name": "Recon Empirical Ground Truth Benchmark (2,000+)",
     "generated_at": "2026-08-28T19:04:55.793740+00:00",
     "total_transactions": 2000,
     "gateway_count": 850,

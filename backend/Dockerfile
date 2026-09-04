@@ -1,4 +1,4 @@
-# Production Multi-Stage Dockerfile for Autonomous Financial Controller Backend
+# Production Multi-Stage Dockerfile for Recon Backend
 FROM python:3.11-slim as builder
 
 WORKDIR /build

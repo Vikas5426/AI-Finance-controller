@@ -1,6 +1,6 @@
 """
-Autonomous AI Financial Controller - Scoped Batch Q&A & Settlement Investigator
-Conversational AI Finance Analyst with Real LLM Multi-Turn Reasoning,
+Recon - Scoped Batch Q&A & Settlement Investigator
+Conversational Recon Finance Analyst with Real LLM Multi-Turn Reasoning,
 Live Dynamic Batch Data Analysis, and Verifiable Accounting SOP Citations.
 """
 
@@ -604,7 +604,7 @@ def humanize_qa_payload(data: Dict[str, Any]) -> Dict[str, Any]:
 def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any], history: Optional[List[Dict[str, str]]] = None) -> Optional[Dict[str, Any]]:
     """Calls real Gemini or Anthropic LLM with structured finance prompt and live batch context."""
     system_prompt = (
-        "You are the Senior AI Financial Controller assistant. "
+        "You are the Senior Recon Financial Controller assistant. "
         "You have full, real-time visibility into the organization's three-way settlement reconciliation ledger, "
         "including Gateway captures, Bank statement deposits, General Ledger ERP journal postings, and open exceptions.\n\n"
         "CORE OBJECTIVE:\n"
@@ -1136,9 +1136,9 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
     # Case Greeting & Capabilities (Issue 2.23 k: Exact word boundary match)
     is_greeting = bool(re.search(r'\b(hi|hello|hey|help)\b', q_lower)) or any(p in q_lower for p in ("what is this chat", "what can you do", "who are you"))
     if is_greeting:
-        direct_ans = f"I am your Senior AI Financial Controller assistant. I monitor batch {batch_id} across {total_records} records with real-time settlement analysis, fee tracking, and automated reconciliation."
+        direct_ans = f"I am your Senior Recon Financial Controller assistant. I monitor batch {batch_id} across {total_records} records with real-time settlement analysis, fee tracking, and automated reconciliation."
         status_card = StatusCard(
-            status_text="AI Financial Assistant Active",
+            status_text="Recon Assistant Active",
             badge_type="success",
             amount=f"{total_records} Records",
             expected_settlement="Verified & Protected",
@@ -1156,7 +1156,7 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
                 "Clear explanations in plain English for any delayed deposits or duplicate entries."
             ],
             evidence_checklist=[
-                EvidenceCheck(check="Financial Controller Engine", result="✓ Operational", is_positive=True),
+                EvidenceCheck(check="Recon Financial Controller Engine", result="✓ Operational", is_positive=True),
                 EvidenceCheck(check="Audit Security", result="✓ Verified", is_positive=True)
             ],
             timeline_steps=[
@@ -1166,7 +1166,7 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             ],
             recommended_action="Ask about specific invoices, fee calculations, open exceptions, or cash forecasts.",
             simple_explanation="I help finance teams automatically match payments and resolve accounting variances.",
-            why_we_think_that="Active financial controller runtime.",
+            why_we_think_that="Active Recon financial controller runtime.",
             follow_up_suggestions=["How many exceptions are there?", _ref_question(ctx), "Explain fee deductions"],
             citations=["Standard Financial Reconciliation"],
             tool_trace=[{"tool": "get_batch_context", "status": "SUCCESS"}]

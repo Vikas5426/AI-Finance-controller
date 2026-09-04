@@ -1,6 +1,6 @@
-# 🚀 AI Financial Controller: How to Start & Run the Application
+# 🚀 Recon: How to Start & Run the Application
 
-Welcome to the **Autonomous Three-Way Financial Reconciliation & AI Financial Controller** platform. This guide provides step-by-step instructions to set up, start, and use the complete application (Backend API, Database, Redis caching, and Frontend UI).
+Welcome to **Recon** — the Autonomous Three-Way Financial Reconciliation & AI Controller platform. This guide provides step-by-step instructions to set up, start, and use the complete application (Backend API, Database, Redis caching, and Frontend UI).
 
 ---
 
@@ -34,7 +34,7 @@ The project contains a `.env` configuration file in the root directory.
 ### Key Environment Variables
 
 ```env
-# Google Gemini API Key for AI Financial Investigator & RAG
+# Google Gemini API Key for Recon Financial Investigator & RAG
 GEMINI_API_KEY=your_gemini_api_key_here
 
 # Database Configuration (SQLite by default; supports PostgreSQL)
@@ -138,7 +138,7 @@ Once loaded on `http://127.0.0.1:8000/`, you can explore all modules via the top
    - Approvers review AI-proposed journal vouchers and click **Approve** or **Reject**.
 6. **⛓️ Cryptographic Audit Trail**:
    - Sequential SHA-256 block hash chain with real-time verification (`GET /api/v1/audit/verify-chain`).
-7. **🤖 AI Financial Investigator (Chatbot)**:
+7. **🤖 Recon Financial Investigator (Chatbot)**:
    - Click **"Ask AI Investigator"** in the navigation bar (or press `Ctrl + K` / `Cmd + K`).
    - Ask any question, click prompt chips, or inquire about specific transactions:
      - *"Why didn't invoice INV-2026-0412 settle in this batch?"*
@@ -207,4 +207,4 @@ This is **normal behavior**. The app is designed to **fail open** gracefully and
 
 ---
 
-🎉 **You are now ready to run and experience the Autonomous AI Financial Controller!**
+🎉 **You are now ready to run and experience Recon!**

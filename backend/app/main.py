@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
     await redis_manager.disconnect()
 
 app = FastAPI(
-    title="AI Financial Controller API",
+    title="Recon API",
     description="Three-Way Settlement Reconciliation Engine with Bounded AI Investigator & Cryptographic Audit",
     version="1.0.0",
     lifespan=lifespan

@@ -1,12 +1,14 @@
-# 🏦 AI Financial Controller
+# 🏦 Recon
 
 > **Autonomous Three-Way Financial Reconciliation & AI-Powered Audit Platform**
 > Automatically matches transactions across Payment Gateways, Bank Statements, and ERP General Ledgers with deterministic precision, AI exception analysis, and cryptographic audit trails.
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
 [![SQLite / PostgreSQL](https://img.shields.io/badge/Database-SQLite%20%7C%20Postgres-blue)](https://www.sqlite.org/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+[![Redis](https://img.shields.io/badge/Cache-Redis%207-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Deploy-Docker%20Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
 ---
 
@@ -92,10 +94,30 @@ flowchart LR
 
 ---
 
+## 🛠️ Technology Stack
+
+| Layer | Technologies | Purpose |
+|---|---|---|
+| **Backend Framework** | **FastAPI**, **Uvicorn**, **Python 3.10+ / 3.14** | High-performance asynchronous REST API, OpenAPI docs, and dependency injection |
+| **Data Contracts** | **Pydantic v2**, **Pydantic-Settings** | Strict data validation schemas, financial data types, and typed environment settings |
+| **Relational Database** | **SQLAlchemy 2.0**, **PostgreSQL 16**, **SQLite** | Dual DB support: embedded zero-config SQLite locally, enterprise PostgreSQL in Docker |
+| **Cache & Distributed Locks** | **Redis 7**, **Fakeredis** | Redlock distributed concurrency control, dynamic query caching, and fail-open resilience |
+| **Algorithmic Engine** | **Polars**, **NumPy**, **SciPy**, **RapidFuzz** | Vectorized CSV processing, N:1 subset-sum solver, and fuzzy payment reference matching |
+| **AI & Multi-Agent** | **Google Gemini 1.5 Pro / Flash**, **LangGraph** | Multi-turn conversational investigation, agent workflow graphs, and RAG knowledge lookup |
+| **Model Redundancy** | **Anthropic Claude 3.5**, **Groq (Llama 3)** | Pluggable secondary model providers for high availability and benchmark parity |
+| **Security & Auth** | **Argon2id (`argon2-cffi`)**, **PyJWT** | OWASP-recommended password hashing and stateless Role-Based Access Control (RBAC) |
+| **Audit & Cryptography** | **Python `hashlib` (SHA-256)** | Cryptographically linked tamper-evident audit ledger blocks for SOX compliance |
+| **Frontend Architecture** | **Vanilla HTML5**, **CSS3**, **ES6+ JavaScript** | Modern monochromatic design system, zero build step overhead, dark/light themes |
+| **Data Visualizations** | **Chart.js** | Interactive charts for settlement velocity, match rates, and fee tier distributions |
+| **DevOps & Containers** | **Docker**, **Docker Compose**, **Nginx (Alpine)** | Multi-container production deployment with health checks and static file serving |
+| **Testing Harness** | **Pytest**, **AsyncIO** | 25 test suites containing 198 automated unit, adversarial, and benchmark tests |
+
+---
+
 ## 📂 Project Structure
 
 ```text
-ai-finance-controller/
+recon/
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/          # REST endpoints (auth, batches, exceptions, audit, qa)
@@ -145,9 +167,3 @@ docker-compose up --build
 ```
 
 Access the application at `http://localhost:8000`.
-
----
-
-## 📄 License
-
-This project is licensed under the [Apache License 2.0](LICENSE).

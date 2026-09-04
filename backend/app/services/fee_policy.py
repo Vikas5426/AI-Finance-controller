@@ -1,5 +1,5 @@
 """
-Versioned Fee Policy Engine for AI Financial Controller.
+Versioned Fee Policy Engine for Recon.
 
 Replaces hardcoded MDR percentages with explicit, auditable, and versioned
 processor fee schedules, tax jurisdictions, rounding modes, caps, and refunds.

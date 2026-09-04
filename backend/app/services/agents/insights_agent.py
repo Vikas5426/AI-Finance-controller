@@ -65,7 +65,7 @@ class FinancialInsightAgent(BaseReasoningAgent):
         }
 
         system_prompt = (
-            "You are the Senior Financial Insight & Treasury Advisory Agent (Agent 11) in the AI Financial Controller system. "
+            "You are the Senior Financial Insight & Treasury Advisory Agent (Agent 11) in the Recon system. "
             "Analyze the 13-week cash liquidity forecast and output strategic commentary in valid JSON matching:\n"
             "{\n"
             '  "batch_id": str,\n'

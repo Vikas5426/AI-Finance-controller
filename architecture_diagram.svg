@@ -1,0 +1,1098 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2600 1820" width="2600" height="1820" style="background-color: #F8FAFC; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Modern drop shadows -->
+    <filter id="card-shadow" x="-4%" y="-6%" width="108%" height="116%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.05" />
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.04" />
+    </filter>
+    <filter id="subcard-shadow" x="-4%" y="-6%" width="108%" height="116%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.04" />
+    </filter>
+
+    <!-- Gradients -->
+    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="50%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+
+    <!-- Arrow Markers -->
+    <marker id="arrow-indigo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4F46E5" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#8B5CF6" />
+    </marker>
+    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0891B2" />
+    </marker>
+    <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#059669" />
+    </marker>
+    <marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284C7" />
+    </marker>
+    <marker id="arrow-crimson" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#DC2626" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10B981" />
+    </marker>
+
+    <!-- Subtle Dot Grid Background -->
+    <pattern id="dot-grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#E2E8F0" />
+    </pattern>
+  </defs>
+
+  <!-- Background with subtle dot grid -->
+  <rect width="2600" height="1820" fill="#F8FAFC" />
+  <rect width="2600" height="1820" fill="url(#dot-grid)" />
+
+  <!-- ==================== HEADER BANNER ==================== -->
+  <g id="header-group">
+    <rect x="35" y="25" width="2530" height="85" rx="16" fill="url(#header-grad)" filter="url(#card-shadow)" />
+    
+    <text x="65" y="58" fill="#FFFFFF" font-size="24" font-weight="800" letter-spacing="-0.5">AI FINANCE CONTROLLER — COMPLETE SYSTEM ARCHITECTURE</text>
+    <text x="65" y="85" fill="#94A3B8" font-size="13" font-weight="500">Autonomous Three-Way Financial Reconciliation Engine • Bounded Multi-Agent Reasoning • Zero-Arithmetic-Trust Verifier Gate • SHA-256 Audit Chain</text>
+    
+    <g transform="translate(1420, 42)">
+      <rect x="0" y="0" width="125" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="62" y="18" fill="#38BDF8" font-size="11" font-weight="700" text-anchor="middle">FastAPI 0.110+</text>
+      
+      <rect x="135" y="0" width="135" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="202" y="18" fill="#A78BFA" font-size="11" font-weight="700" text-anchor="middle">LangGraph State</text>
+
+      <rect x="280" y="0" width="130" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="345" y="18" fill="#34D399" font-size="11" font-weight="700" text-anchor="middle">PostgreSQL 16</text>
+
+      <rect x="420" y="0" width="135" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="487" y="18" fill="#F472B6" font-size="11" font-weight="700" text-anchor="middle">Vector RAG Store</text>
+
+      <rect x="565" y="0" width="150" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="640" y="18" fill="#FBBF24" font-size="11" font-weight="700" text-anchor="middle">SciPy Hungarian</text>
+
+      <rect x="725" y="0" width="160" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="805" y="18" fill="#F87171" font-size="11" font-weight="700" text-anchor="middle">Zero-Trust Verifier</text>
+
+      <rect x="895" y="0" width="170" height="28" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+      <text x="980" y="18" fill="#C084FC" font-size="11" font-weight="700" text-anchor="middle">SHA-256 Audit Chain</text>
+    </g>
+  </g>
+
+  <!-- ==================== 1. USER & FRONTEND LAYER ==================== -->
+  <g id="layer-frontend">
+    <rect x="35" y="125" width="2530" height="155" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="35" y="125" width="2530" height="34" rx="16" fill="#EEF2FF" />
+    <rect x="35" y="143" width="2530" height="16" fill="#EEF2FF" />
+    <path d="M 50 142 L 50 134 Q 50 130 54 130 L 220 130 Q 224 130 224 134 L 224 142 Z" fill="#4F46E5" />
+    <text x="137" y="140" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">1. USER &amp; FRONTEND LAYER</text>
+    <text x="240" y="147" fill="#4338CA" font-size="12" font-weight="600">Enterprise Web Console • Interactive Reconciliation Workbench • Dual-Control Maker-Checker UI • AI Assistant</text>
+
+    <!-- Card 1: Users / Roles -->
+    <g transform="translate(55, 168)">
+      <rect x="0" y="0" width="370" height="98" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="12" width="34" height="34" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+      <path d="M 29 22 A 4 4 0 1 0 29 30 A 4 4 0 1 0 29 22 Z M 21 39 C 21 35 25 33 29 33 C 33 33 37 35 37 39 Z" fill="#4F46E5"/>
+      <text x="56" y="26" fill="#0F172A" font-size="14" font-weight="700">Finance Controller &amp; Operators</text>
+      <text x="56" y="42" fill="#475569" font-size="11.5" font-weight="600">Controller (Admin) • Approver (Checker) • Analyst (Maker)</text>
+      <line x1="12" y1="54" x2="358" y2="54" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="70" fill="#64748B" font-size="11">• Dual-control segregation of duties (Maker-Checker)</text>
+      <text x="12" y="85" fill="#64748B" font-size="11">• Trigger matching, inspect breaks, sign-off adjustments</text>
+    </g>
+
+    <!-- Card 2: Web Frontend SPA -->
+    <g transform="translate(445, 168)">
+      <rect x="0" y="0" width="370" height="98" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="12" width="34" height="34" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+      <rect x="18" y="20" width="22" height="18" rx="3" fill="none" stroke="#4F46E5" stroke-width="2"/>
+      <line x1="18" y1="26" x2="40" y2="26" stroke="#4F46E5" stroke-width="1.5"/>
+      <circle cx="22" cy="23" r="1" fill="#4F46E5"/>
+      <circle cx="26" cy="23" r="1" fill="#4F46E5"/>
+      <text x="56" y="26" fill="#0F172A" font-size="14" font-weight="700">Web Frontend (Vanilla SPA)</text>
+      <text x="56" y="42" fill="#475569" font-size="11.5" font-weight="600">HTML5 • Custom CSS3 Design Tokens • Vanilla ES6+</text>
+      <line x1="12" y1="54" x2="358" y2="54" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="70" fill="#64748B" font-size="11">• Zero-bundle latency, lightweight responsive DOM</text>
+      <text x="12" y="85" fill="#64748B" font-size="11">• Real-time polling for pipeline progress &amp; live alerts</text>
+    </g>
+
+    <!-- Card 3: Interactive Dashboard -->
+    <g transform="translate(835, 168)">
+      <rect x="0" y="0" width="410" height="98" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="12" width="34" height="34" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+      <rect x="18" y="19" width="10" height="9" rx="1.5" fill="#4F46E5"/>
+      <rect x="30" y="19" width="10" height="9" rx="1.5" fill="#818CF8"/>
+      <rect x="18" y="30" width="22" height="8" rx="1.5" fill="#C7D2FE"/>
+      <text x="56" y="26" fill="#0F172A" font-size="14" font-weight="700">Reconciliation Dashboard</text>
+      <text x="56" y="42" fill="#475569" font-size="11.5" font-weight="600">3-Way Match Matrix • Exception Workbench • Aging</text>
+      <line x1="12" y1="54" x2="398" y2="54" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="70" fill="#64748B" font-size="11">• Real-time match rate (1:1 Exact, N:1 Settled, Exceptions)</text>
+      <text x="12" y="85" fill="#64748B" font-size="11">• Severity cards (High, Medium, Low) &amp; fee breaks</text>
+    </g>
+
+    <!-- Card 4: Chat Interface (⌘K) -->
+    <g transform="translate(1265, 168)">
+      <rect x="0" y="0" width="390" height="98" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="12" width="34" height="34" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <path d="M 21 21 Q 29 21 29 27 Q 29 33 21 33 L 18 36 L 18 33 L 15 33 Q 13 33 13 30 L 13 24 Q 13 21 21 21 Z" fill="#9333EA"/>
+      <path d="M 33 19 L 34 22 L 37 23 L 34 24 L 33 27 L 32 24 L 29 23 L 32 22 Z" fill="#F59E0B"/>
+      <text x="56" y="26" fill="#0F172A" font-size="14" font-weight="700">AI Assistant Copilot (⌘K Chat)</text>
+      <text x="56" y="42" fill="#475569" font-size="11.5" font-weight="600">Conversational Financial Copilot Drawer</text>
+      <line x1="12" y1="54" x2="378" y2="54" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="70" fill="#64748B" font-size="11">• Natural language queries on transactions, fees &amp; batches</text>
+      <text x="12" y="85" fill="#64748B" font-size="11">• Context-aware: reads active batch state &amp; SOX explanations</text>
+    </g>
+
+    <!-- Card 5: File & Document Upload -->
+    <g transform="translate(1675, 168)">
+      <rect x="0" y="0" width="410" height="98" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="12" width="34" height="34" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1"/>
+      <path d="M 22 28 L 29 21 L 36 28 M 29 21 L 29 35" stroke="#0284C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 18 32 C 15 32 14 30 14 27 C 14 24 16 22 19 22 C 20 18 24 16 29 16 C 34 16 38 19 39 23 C 42 24 44 26 44 29 C 44 32 42 34 39 34" fill="none" stroke="#0284C7" stroke-width="1.8"/>
+      <text x="56" y="26" fill="#0F172A" font-size="14" font-weight="700">Multi-Feed Ingestion Hub</text>
+      <text x="56" y="42" fill="#475569" font-size="11.5" font-weight="600">Drag &amp; Drop Ingestion for Gateway, Bank, Ledger &amp; Invoices</text>
+      <line x1="12" y1="54" x2="398" y2="54" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="70" fill="#64748B" font-size="11">• Razorpay/Stripe CSVs • HDFC/ICICI Bank MT940</text>
+      <text x="12" y="85" fill="#64748B" font-size="11">• NetSuite/SAP ERP Feeds • PDF Invoices &amp; Receipts</text>
+    </g>
+
+    <!-- Card 6: Reports & Visualizations -->
+    <g transform="translate(2105, 168)">
+      <rect x="0" y="0" width="440" height="98" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="12" width="34" height="34" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <line x1="18" y1="36" x2="40" y2="36" stroke="#059669" stroke-width="2"/>
+      <rect x="20" y="26" width="4" height="10" fill="#059669"/>
+      <rect x="27" y="20" width="4" height="16" fill="#10B981"/>
+      <rect x="34" y="23" width="4" height="13" fill="#34D399"/>
+      <text x="56" y="26" fill="#0F172A" font-size="14" font-weight="700">Financial Reports &amp; Analytics</text>
+      <text x="56" y="42" fill="#475569" font-size="11.5" font-weight="600">Chart.js Analytics • DOCX Executive Reports • PDF</text>
+      <line x1="12" y1="54" x2="428" y2="54" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="70" fill="#64748B" font-size="11">• 13-week forward liquidity runway &amp; burn rate trends</text>
+      <text x="12" y="85" fill="#64748B" font-size="11">• Downloadable executive audit packs &amp; adjustment vouchers</text>
+    </g>
+  </g>
+
+  <!-- ==================== 2. BACKEND & API GATEWAY LAYER ==================== -->
+  <path d="M 240 280 L 240 320" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrow-indigo)"/>
+  <text x="248" y="306" fill="#4338CA" font-size="10" font-weight="700">HTTPS / REST</text>
+
+  <path d="M 1460 280 L 1460 320" stroke="#8B5CF6" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+  <text x="1468" y="306" fill="#6D28D9" font-size="10" font-weight="700">WebSocket / ⌘K</text>
+
+  <path d="M 1880 280 L 1880 320" stroke="#0891B2" stroke-width="2.5" marker-end="url(#arrow-cyan)"/>
+  <text x="1888" y="306" fill="#0E7490" font-size="10" font-weight="700">Multipart Upload</text>
+
+  <g id="layer-backend">
+    <rect x="35" y="325" width="2530" height="145" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="35" y="325" width="2530" height="34" rx="16" fill="#F0FDF4" />
+    <rect x="35" y="343" width="2530" height="16" fill="#F0FDF4" />
+    <path d="M 50 342 L 50 334 Q 50 330 54 330 L 250 330 Q 254 330 254 334 L 254 342 Z" fill="#0D9488" />
+    <text x="152" y="340" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">2. BACKEND &amp; API GATEWAY</text>
+    <text x="268" y="347" fill="#065F46" font-size="12" font-weight="600">FastAPI Asynchronous Backend • REST Router • Dual-Control RBAC • LangGraph Orchestration • Zero-Trust Verifier Gate</text>
+
+    <!-- Subcomponent 1: REST API Gateway -->
+    <g transform="translate(55, 368)">
+      <rect x="0" y="0" width="370" height="88" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#F0FDF4" stroke="#A7F3D0" stroke-width="1"/>
+      <path d="M 18 20 L 36 20 M 18 25 L 36 25 M 18 30 L 36 30" stroke="#0D9488" stroke-width="2" stroke-linecap="round"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">FastAPI REST &amp; ASGI Gateway</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">Uvicorn Async Workers • OpenAPI / Swagger</text>
+      <line x1="12" y1="48" x2="358" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• Routes: /api/v1/sources, /batches, /exceptions, /agents</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• CORS middleware, Rate Limiting, Request ID tracing</text>
+    </g>
+
+    <!-- Subcomponent 2: Security & RBAC -->
+    <g transform="translate(445, 368)">
+      <rect x="0" y="0" width="370" height="88" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+      <path d="M 27 15 L 35 19 C 35 25 31 31 27 33 C 23 31 19 25 19 19 Z" fill="#EF4444"/>
+      <circle cx="27" cy="23" r="2" fill="#FFFFFF"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Authentication &amp; Dual-Control RBAC</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">PyJWT (HMAC-SHA256) • Argon2-cffi Hashing</text>
+      <line x1="12" y1="48" x2="358" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• Segregation of Duties: Maker (Analyst) vs Checker (Approver)</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• Stateless Bearer tokens with strict role expiration</text>
+    </g>
+
+    <!-- Subcomponent 3: Business Logic & Batch Orchestrator -->
+    <g transform="translate(835, 368)">
+      <rect x="0" y="0" width="410" height="88" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#F0FDF4" stroke="#A7F3D0" stroke-width="1"/>
+      <circle cx="27" cy="25" r="7" fill="none" stroke="#059669" stroke-width="2.5"/>
+      <circle cx="27" cy="25" r="2.5" fill="#059669"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Batch &amp; Pipeline Orchestration</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">High-Throughput Coordination &amp; State Transitions</text>
+      <line x1="12" y1="48" x2="398" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• Windowed 6-pass reconciliation trigger &amp; status polling</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• Asynchronous background job dispatch &amp; Redis atomic locks</text>
+    </g>
+
+    <!-- Subcomponent 4: Agent Orchestration Engine -->
+    <g transform="translate(1265, 368)">
+      <rect x="0" y="0" width="410" height="88" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <circle cx="20" cy="20" r="3" fill="#7C3AED"/>
+      <circle cx="34" cy="20" r="3" fill="#7C3AED"/>
+      <circle cx="27" cy="30" r="3" fill="#7C3AED"/>
+      <line x1="20" y1="20" x2="34" y2="20" stroke="#7C3AED" stroke-width="1.5"/>
+      <line x1="20" y1="20" x2="27" y2="30" stroke="#7C3AED" stroke-width="1.5"/>
+      <line x1="34" y1="20" x2="27" y2="30" stroke="#7C3AED" stroke-width="1.5"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Agent Orchestration (LangGraph)</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">Bounded StateGraph • Multi-Agent Supervisor</text>
+      <line x1="12" y1="48" x2="398" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• Coordinates specialized reasoning agents 9–13</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• Conditional routing, cycle detection &amp; task fan-out</text>
+    </g>
+
+    <!-- Subcomponent 5: Zero-Arithmetic-Trust Verifier Gate -->
+    <g transform="translate(1695, 368)">
+      <rect x="0" y="0" width="430" height="88" rx="10" fill="#FEF2F2" stroke="#F87171" stroke-width="1.5" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#DC2626" />
+      <path d="M 18 20 L 36 20 M 18 30 L 36 30 M 27 16 L 27 34" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+      <text x="50" y="24" fill="#991B1B" font-size="13" font-weight="800">Zero-Arithmetic-Trust Verifier Gate</text>
+      <text x="50" y="38" fill="#B91C1C" font-size="11" font-weight="600">Deterministic Mathematical Proof Gatekeeper</text>
+      <line x1="12" y1="48" x2="418" y2="48" stroke="#FECACA" stroke-width="1"/>
+      <text x="12" y="63" fill="#7F1D1D" font-size="10.5" font-weight="600">• Prohibits AI hallucinations from touching ledger accounts</text>
+      <text x="12" y="77" fill="#7F1D1D" font-size="10.5">• Re-computes: Gross - MDR Fee - 18% GST == Net Deposit</text>
+    </g>
+
+    <!-- Subcomponent 6: Provenance & Audit Interceptor -->
+    <g transform="translate(2145, 368)">
+      <rect x="0" y="0" width="400" height="88" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#FFF1F2" stroke="#FECDD3" stroke-width="1"/>
+      <rect x="18" y="21" width="10" height="6" rx="2" fill="none" stroke="#E11D48" stroke-width="2"/>
+      <rect x="26" y="23" width="10" height="6" rx="2" fill="none" stroke="#E11D48" stroke-width="2"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Provenance &amp; Audit Interceptor</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">Continuous SHA-256 Event Serialization</text>
+      <line x1="12" y1="48" x2="388" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• Captures timestamps, actor IDs, input snapshots</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• Pipes immutable audit records into SHA-256 chain</text>
+    </g>
+  </g>
+
+  <!-- Orchestration Flow into AI Agent Suite -->
+  <path d="M 1470 470 L 1470 510" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+  <text x="1480" y="495" fill="#6D28D9" font-size="10" font-weight="700">Dispatch Task Graph</text>
+
+  <!-- Ingestion Flow into Ingestion Pipeline -->
+  <path d="M 1910 470 L 1910 510" stroke="#0891B2" stroke-width="2.5" marker-end="url(#arrow-cyan)"/>
+  <text x="1920" y="495" fill="#0E7490" font-size="10" font-weight="700">Raw Files Stream</text>
+
+  <!-- ==================== 3. AI AGENTS & 8. SHARED STATE ==================== -->
+  <g id="layer-agents">
+    <rect x="35" y="510" width="1410" height="535" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="35" y="510" width="1410" height="34" rx="16" fill="#FAF5FF" />
+    <rect x="35" y="528" width="1410" height="16" fill="#FAF5FF" />
+    <path d="M 50 527 L 50 519 Q 50 515 54 515 L 290 515 Q 294 515 294 519 L 294 527 Z" fill="#7C3AED" />
+    <text x="172" y="525" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">3. AI AGENT REASONING LAYER</text>
+    <text x="305" y="532" fill="#5B21B6" font-size="12" font-weight="600">Bounded Multi-Agent Collective • Zero-Write Sandbox • LangGraph StateGraph</text>
+
+    <!-- Final Response / Controller Agent (Supervisor) -->
+    <g transform="translate(55, 550)">
+      <rect x="0" y="0" width="1370" height="85" rx="12" fill="#FAF5FF" stroke="#A855F7" stroke-width="1.8" filter="url(#subcard-shadow)"/>
+      <rect x="14" y="12" width="34" height="34" rx="8" fill="#7C3AED"/>
+      <path d="M 23 23 L 27 29 L 31 23 L 35 31 L 23 31 Z" fill="#FFFFFF"/>
+      <circle cx="23" cy="22" r="1.5" fill="#FBBF24"/>
+      <circle cx="31" cy="22" r="1.5" fill="#FBBF24"/>
+      <circle cx="39" cy="22" r="1.5" fill="#FBBF24"/>
+      <text x="58" y="27" fill="#581C87" font-size="14.5" font-weight="800">Final Response / Controller Agent (Agent 13 — Executive Supervisor)</text>
+      <text x="58" y="44" fill="#7E22CE" font-size="11.5" font-weight="600">Multi-Agent Deconstruction &amp; Synthesis • Query Intent Router • Consensus &amp; Voucher Drafter</text>
+      <line x1="14" y1="55" x2="1356" y2="55" stroke="#E9D5FF" stroke-width="1"/>
+      <text x="14" y="71" fill="#6B21A8" font-size="11">• Coordinates sub-agent execution passes, aggregates partial hypotheses, checks completeness against SOX-404 requirements</text>
+      <text x="820" y="71" fill="#6B21A8" font-size="11">• Formats executive summaries, generates board-ready briefs, and routes adjustment vouchers to Maker-Checker queue</text>
+    </g>
+
+    <!-- Sub-Agents Row 1 -->
+    <!-- Agent 1: Financial Analysis Agent -->
+    <g transform="translate(55, 645)">
+      <rect x="0" y="0" width="440" height="110" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+      <path d="M 18 28 L 24 22 L 28 26 L 36 17" stroke="#4F46E5" stroke-width="2" fill="none"/>
+      <text x="48" y="23" fill="#0F172A" font-size="12.5" font-weight="700">Financial Analysis Agent</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">KPIs, Revenue, Expenses &amp; Cash Flow</text>
+      <line x1="12" y1="46" x2="428" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Analyzes EBITDA, gross vs net revenue spreads</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Pinpoints 3-way reconciliation breaks &amp; fee slippage</text>
+      <text x="12" y="88" fill="#64748B" font-size="10">• Computes exact discrepancy variances in integer paise</text>
+      <text x="12" y="102" fill="#4F46E5" font-size="9.5" font-weight="600">Role: Deep transactional math &amp; break diagnosis</text>
+    </g>
+
+    <!-- Agent 2: Data / Ingestion Agent -->
+    <g transform="translate(515, 645)">
+      <rect x="0" y="0" width="440" height="110" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1"/>
+      <path d="M 18 20 L 34 20 L 34 30 L 18 30 Z M 22 24 L 30 24" stroke="#0284C7" stroke-width="1.8" fill="none"/>
+      <text x="48" y="23" fill="#0F172A" font-size="12.5" font-weight="700">Data / Ingestion Agent</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">Feed Structuring, Schema Extraction &amp; Mapping</text>
+      <line x1="12" y1="46" x2="428" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Automatically classifies transaction columns &amp; UTR keys</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Detects missing fields, malformed dates &amp; currency codes</text>
+      <text x="12" y="88" fill="#64748B" font-size="10">• Quantizes floating amounts into exact integer minor units</text>
+      <text x="12" y="102" fill="#0284C7" font-size="9.5" font-weight="600">Role: Ingestion normalization &amp; structural cleansing</text>
+    </g>
+
+    <!-- Agent 3: Anomaly / Risk Agent -->
+    <g transform="translate(975, 645)">
+      <rect x="0" y="0" width="450" height="110" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+      <path d="M 26 18 L 34 32 L 18 32 Z" fill="none" stroke="#DC2626" stroke-width="2"/>
+      <circle cx="26" cy="29" r="1" fill="#DC2626"/>
+      <text x="48" y="23" fill="#0F172A" font-size="12.5" font-weight="700">Anomaly / Risk Agent</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">Fraud, Outliers &amp; Unusual Patterns</text>
+      <line x1="12" y1="46" x2="438" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Flags duplicate charges, split payments &amp; velocity spikes</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Evaluates counterparty credibility &amp; phantom transactions</text>
+      <text x="12" y="88" fill="#64748B" font-size="10">• Assigns 0–100 risk severity scores to reconciliation breaks</text>
+      <text x="12" y="102" fill="#DC2626" font-size="9.5" font-weight="600">Role: Financial anomaly detection &amp; risk scoring</text>
+    </g>
+
+    <!-- Sub-Agents Row 2 (Balanced 2-Agent Layout) -->
+    <!-- Agent 4: Tax / Compliance Agent -->
+    <g transform="translate(55, 765)">
+      <rect x="0" y="0" width="675" height="110" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <rect x="18" y="18" width="16" height="16" rx="3" fill="none" stroke="#059669" stroke-width="1.8"/>
+      <text x="22" y="30" fill="#059669" font-size="10" font-weight="800">%</text>
+      <text x="48" y="23" fill="#0F172A" font-size="12.5" font-weight="700">Tax / Compliance Agent</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">GST, Withholding (TDS) &amp; Regulatory Checks</text>
+      <line x1="12" y1="46" x2="663" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Validates 18% GST splits on payment gateway MDR fees &amp; statutory codes</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Evaluates vendor tax invoices against statutory rules &amp; withholding tables</text>
+      <text x="12" y="88" fill="#64748B" font-size="10">• Identifies uncollected input tax credits (ITC) &amp; reverse charge discrepancies</text>
+      <text x="12" y="102" fill="#059669" font-size="9.5" font-weight="600">Role: Tax rules engine &amp; statutory compliance verification</text>
+    </g>
+
+    <!-- Agent 5: Audit & Explainability Agent -->
+    <g transform="translate(750, 765)">
+      <rect x="0" y="0" width="675" height="110" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <path d="M 20 20 L 32 20 M 20 25 L 32 25 M 20 30 L 28 30" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round"/>
+      <text x="48" y="23" fill="#0F172A" font-size="12.5" font-weight="700">Audit &amp; Explainability Agent</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">SOX-404 Explanations, Evidence &amp; Traceability</text>
+      <line x1="12" y1="46" x2="663" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Compiles step-by-step audit rationale and evidence dossiers for external auditors</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Cites document evidence, invoice numbers, UTR identifiers &amp; fee schedules</text>
+      <text x="12" y="88" fill="#64748B" font-size="10">• Verifies cryptographic SHA-256 block chain consistency and dual approvals</text>
+      <text x="12" y="102" fill="#7C3AED" font-size="9.5" font-weight="600">Role: Audit trail generator &amp; explainability compiler</text>
+    </g>
+
+    <!-- ==================== 8. SHARED STATE / CONTEXT BUS ==================== -->
+    <g transform="translate(55, 890)">
+      <rect x="0" y="0" width="1370" height="140" rx="12" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.8" filter="url(#subcard-shadow)"/>
+      <rect x="16" y="10" width="270" height="24" rx="6" fill="#D97706" />
+      <text x="151" y="26" fill="#FFFFFF" font-size="11.5" font-weight="800" text-anchor="middle" letter-spacing="0.5">8. SHARED APPLICATION STATE &amp; CONTEXT BUS</text>
+      <text x="300" y="27" fill="#92400E" font-size="12" font-weight="700">Central In-Memory StateGraph Bus • Bi-Directional Read / Write Access Across All Agents</text>
+      
+      <!-- 7 State Elements with explicit individual <g transform> -->
+      <!-- State 1 -->
+      <g transform="translate(16, 42)">
+        <rect x="0" y="0" width="180" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">User Query &amp; Intent</text>
+        <line x1="10" y1="28" x2="170" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• Parsed intent &amp; scope</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• Batch ID &amp; filter tags</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Target account/date</text>
+      </g>
+
+      <!-- State 2 -->
+      <g transform="translate(208, 42)">
+        <rect x="0" y="0" width="180" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">Financial Data Slices</text>
+        <line x1="10" y1="28" x2="170" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• Ingested transaction rows</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• 3-way pair candidates</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Paise ledger balances</text>
+      </g>
+
+      <!-- State 3 -->
+      <g transform="translate(400, 42)">
+        <rect x="0" y="0" width="185" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">Retrieved Documents</text>
+        <line x1="10" y1="28" x2="175" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• RAG semantic chunks</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• Invoice line-item tables</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Contract fee schedules</text>
+      </g>
+
+      <!-- State 4 -->
+      <g transform="translate(597, 42)">
+        <rect x="0" y="0" width="185" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">Agent Results &amp; Hypotheses</text>
+        <line x1="10" y1="28" x2="175" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• Break diagnosis &amp; RCA</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• Proposed adjustment drafts</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Confidence probabilities</text>
+      </g>
+
+      <!-- State 5 -->
+      <g transform="translate(794, 42)">
+        <rect x="0" y="0" width="180" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">Variance &amp; Exception Triage</text>
+        <line x1="10" y1="28" x2="170" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• 16-type residual taxonomy</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• Impact paise calculation</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Timing delay &amp; risk tags</text>
+      </g>
+
+      <!-- State 6 -->
+      <g transform="translate(986, 42)">
+        <rect x="0" y="0" width="175" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">Risks &amp; Anomalies</text>
+        <line x1="10" y1="28" x2="165" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• Anomaly severity alerts</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• Flagged duplicate charges</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Phantom deduction flags</text>
+      </g>
+
+      <!-- State 7 -->
+      <g transform="translate(1173, 42)">
+        <rect x="0" y="0" width="180" height="85" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
+        <text x="10" y="20" fill="#B45309" font-size="11.5" font-weight="700">Final Response Context</text>
+        <line x1="10" y1="28" x2="170" y2="28" stroke="#FEF3C7" stroke-width="1"/>
+        <text x="10" y="44" fill="#78350F" font-size="10">• Synthesized executive text</text>
+        <text x="10" y="58" fill="#78350F" font-size="10">• Verified vouchers ready</text>
+        <text x="10" y="72" fill="#78350F" font-size="10">• Structured JSON payload</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Downward Flow from Shared State / Agents to Tools -->
+  <path d="M 740 1045 L 740 1065" stroke="#E11D48" stroke-width="2.5" marker-end="url(#arrow-indigo)"/>
+  <text x="750" y="1058" fill="#BE123C" font-size="10" font-weight="700">Agent Tool Invocations</text>
+
+  <!-- ==================== 7. TOOLS & EXECUTION RUNTIME ==================== -->
+  <g id="layer-tools">
+    <rect x="35" y="1070" width="1410" height="150" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="35" y="1070" width="1410" height="32" rx="16" fill="#FFF1F2" />
+    <rect x="35" y="1086" width="1410" height="16" fill="#FFF1F2" />
+    <path d="M 50 1086 L 50 1079 Q 50 1075 54 1075 L 320 1075 Q 324 1075 324 1079 L 324 1086 Z" fill="#E11D48" />
+    <text x="187" y="1084" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">7. TOOLS &amp; EXECUTION RUNTIME</text>
+    <text x="335" y="1090" fill="#9F1239" font-size="12" font-weight="600">Deterministic Mathematical, Algorithmic, Database &amp; Retrieval Tools Callable by Agents</text>
+
+    <!-- Tool 1: SQL & DB Tool -->
+    <g transform="translate(55, 1110)">
+      <rect x="0" y="0" width="220" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="24" height="24" rx="5" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+      <path d="M 15 15 C 15 13 29 13 29 15 C 29 17 15 17 15 15 Z M 15 18 C 15 20 29 20 29 18 M 15 23 C 15 25 29 25 29 23" fill="none" stroke="#4F46E5" stroke-width="1.5"/>
+      <text x="40" y="20" fill="#0F172A" font-size="12" font-weight="700">SQL / DB Tool</text>
+      <text x="40" y="32" fill="#475569" font-size="9.5" font-weight="600">PostgreSQL Reader</text>
+      <line x1="10" y1="40" x2="210" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#64748B" font-size="9.5">• Read-only bounded SQL queries</text>
+      <text x="10" y="68" fill="#64748B" font-size="9.5">• Parameterized filter queries</text>
+      <text x="10" y="82" fill="#64748B" font-size="9.5">• Zero database write authority</text>
+    </g>
+
+    <!-- Tool 2: SciPy Hungarian & Subset-Sum -->
+    <g transform="translate(285, 1110)">
+      <rect x="0" y="0" width="250" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="24" height="24" rx="5" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1"/>
+      <text x="15" y="24" fill="#D97706" font-size="11" font-weight="800">Σ</text>
+      <text x="40" y="20" fill="#0F172A" font-size="12" font-weight="700">SciPy Hungarian &amp; Knapsack</text>
+      <text x="40" y="32" fill="#475569" font-size="9.5" font-weight="600">Optimal Matching Solvers</text>
+      <line x1="10" y1="40" x2="240" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#64748B" font-size="9.5">• SciPy linear_sum_assignment (P3)</text>
+      <text x="10" y="68" fill="#64748B" font-size="9.5">• Subset-sum solver for N:1 payouts (P4)</text>
+      <text x="10" y="82" fill="#64748B" font-size="9.5">• Global cost optimization matrix</text>
+    </g>
+
+    <!-- Tool 3: Python Math & Minor Unit Tool -->
+    <g transform="translate(545, 1110)">
+      <rect x="0" y="0" width="230" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="24" height="24" rx="5" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="15" y="24" fill="#059669" font-size="11" font-weight="800">₹</text>
+      <text x="40" y="20" fill="#0F172A" font-size="12" font-weight="700">Python Math Tool</text>
+      <text x="40" y="32" fill="#475569" font-size="9.5" font-weight="600">Minor Unit Paise Arithmetic</text>
+      <line x1="10" y1="40" x2="220" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#64748B" font-size="9.5">• Integer paise (no float drift)</text>
+      <text x="10" y="68" fill="#64748B" font-size="9.5">• MDR 2.0% + 18% GST splits</text>
+      <text x="10" y="82" fill="#64748B" font-size="9.5">• Verified variance calculations</text>
+    </g>
+
+    <!-- Tool 4: Vector Search / RAG Tool -->
+    <g transform="translate(785, 1110)">
+      <rect x="0" y="0" width="230" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="24" height="24" rx="5" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1"/>
+      <circle cx="22" cy="18" r="5" fill="none" stroke="#0284C7" stroke-width="1.8"/>
+      <line x1="26" y1="22" x2="30" y2="26" stroke="#0284C7" stroke-width="2"/>
+      <text x="40" y="20" fill="#0F172A" font-size="12" font-weight="700">RAG Vector Search</text>
+      <text x="40" y="32" fill="#475569" font-size="9.5" font-weight="600">Semantic Context Retriever</text>
+      <line x1="10" y1="40" x2="220" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#64748B" font-size="9.5">• Top-k cosine similarity search</text>
+      <text x="10" y="68" fill="#64748B" font-size="9.5">• Queries embedded document chunks</text>
+      <text x="10" y="82" fill="#64748B" font-size="9.5">• Extracts invoice clauses &amp; terms</text>
+    </g>
+
+    <!-- Tool 5: Document Parsing & OCR -->
+    <g transform="translate(1025, 1110)">
+      <rect x="0" y="0" width="200" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="24" height="24" rx="5" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <rect x="15" y="13" width="14" height="14" rx="2" fill="none" stroke="#7C3AED" stroke-width="1.5"/>
+      <line x1="18" y1="17" x2="26" y2="17" stroke="#7C3AED" stroke-width="1.5"/>
+      <text x="40" y="20" fill="#0F172A" font-size="12" font-weight="700">Document Parsing</text>
+      <text x="40" y="32" fill="#475569" font-size="9.5" font-weight="600">PDF &amp; Invoice OCR</text>
+      <line x1="10" y1="40" x2="190" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#64748B" font-size="9.5">• Extracts tables &amp; line items</text>
+      <text x="10" y="68" fill="#64748B" font-size="9.5">• Parses UTR &amp; GSTIN numbers</text>
+      <text x="10" y="82" fill="#64748B" font-size="9.5">• Normalizes invoice metadata</text>
+    </g>
+
+    <!-- Tool 6: Variance & Exception Engine -->
+    <g transform="translate(1235, 1110)">
+      <rect x="0" y="0" width="190" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="24" height="24" rx="5" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1"/>
+      <path d="M 14 26 L 19 21 L 24 24 L 29 15" stroke="#D97706" stroke-width="1.8" fill="none"/>
+      <text x="40" y="20" fill="#0F172A" font-size="12" font-weight="700">Variance Engine</text>
+      <text x="40" y="32" fill="#475569" font-size="9.5" font-weight="600">Taxonomy &amp; Impact</text>
+      <line x1="10" y1="40" x2="180" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#64748B" font-size="9.5">• 16-type break taxonomy</text>
+      <text x="10" y="68" fill="#64748B" font-size="9.5">• Exact minor unit impact</text>
+      <text x="10" y="82" fill="#64748B" font-size="9.5">• Settlement cut-off rules</text>
+    </g>
+  </g>
+
+  <!-- ==================== 4. DATA INGESTION PIPELINE ==================== -->
+  <g id="layer-ingestion">
+    <rect x="1475" y="510" width="1090" height="255" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="1475" y="510" width="1090" height="34" rx="16" fill="#F0F9FF" />
+    <rect x="1475" y="528" width="1090" height="16" fill="#F0F9FF" />
+    <path d="M 1490 527 L 1490 519 Q 1490 515 1494 515 L 1750 515 Q 1754 515 1754 519 L 1754 527 Z" fill="#0284C7" />
+    <text x="1622" y="525" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">4. DATA INGESTION PIPELINE</text>
+    <text x="1765" y="532" fill="#0369A1" font-size="12" font-weight="600">Multi-Source Financial Ingestion • Validation • Paise Quantization • Storage Dispatch</text>
+
+    <!-- Source Ingestion Types (Top Row) with separate <g transform> -->
+    <g transform="translate(1495, 550)">
+      <rect x="0" y="0" width="245" height="70" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="10" y="18" fill="#0F172A" font-size="12" font-weight="700">Payment Gateways (PSPs)</text>
+      <text x="10" y="32" fill="#475569" font-size="10.5">• Razorpay, Stripe CSV / Webhooks</text>
+      <text x="10" y="46" fill="#475569" font-size="10.5">• Gross charges, fee deductions, tax</text>
+      <text x="10" y="60" fill="#0284C7" font-size="9.5" font-weight="600">Ref: Payment ID, Order ID</text>
+    </g>
+
+    <g transform="translate(1755, 550)">
+      <rect x="0" y="0" width="255" height="70" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="10" y="18" fill="#0F172A" font-size="12" font-weight="700">Bank Statements</text>
+      <text x="10" y="32" fill="#475569" font-size="10.5">• HDFC, ICICI, Citi CSV / MT940</text>
+      <text x="10" y="46" fill="#475569" font-size="10.5">• Net wire payouts &amp; bank charges</text>
+      <text x="10" y="60" fill="#0284C7" font-size="9.5" font-weight="600">Ref: UTR Number, Value Date</text>
+    </g>
+
+    <g transform="translate(2025, 550)">
+      <rect x="0" y="0" width="255" height="70" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="10" y="18" fill="#0F172A" font-size="12" font-weight="700">General Ledger ERP</text>
+      <text x="10" y="32" fill="#475569" font-size="10.5">• NetSuite, SAP, Tally CSV</text>
+      <text x="10" y="46" fill="#475569" font-size="10.5">• Double-entry AR/AP debits &amp; credits</text>
+      <text x="10" y="60" fill="#0284C7" font-size="9.5" font-weight="600">Ref: Invoice No, Account Code</text>
+    </g>
+
+    <g transform="translate(2295, 550)">
+      <rect x="0" y="0" width="250" height="70" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="10" y="18" fill="#0F172A" font-size="12" font-weight="700">Financial Invoices / PDFs</text>
+      <text x="10" y="32" fill="#475569" font-size="10.5">• Vendor tax invoices &amp; receipts</text>
+      <text x="10" y="46" fill="#475569" font-size="10.5">• Unstructured PDF contracts</text>
+      <text x="10" y="60" fill="#0284C7" font-size="9.5" font-weight="600">Ref: Line items, GSTIN, Terms</text>
+    </g>
+
+    <!-- Step Flow (Sequential 6 Stages) with separate <g transform> -->
+    <!-- Stage 1 -->
+    <g transform="translate(1495, 635)">
+      <rect x="0" y="0" width="160" height="110" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.2"/>
+      <circle cx="20" cy="18" r="10" fill="#0284C7"/>
+      <text x="20" y="22" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">1</text>
+      <text x="36" y="21" fill="#0369A1" font-size="11.5" font-weight="700">Upload &amp; MIME</text>
+      <line x1="8" y1="32" x2="152" y2="32" stroke="#E0F2FE" stroke-width="1"/>
+      <text x="8" y="48" fill="#0C4A6E" font-size="10">• File type verification</text>
+      <text x="8" y="62" fill="#0C4A6E" font-size="10">• Size limits check</text>
+      <text x="8" y="76" fill="#0C4A6E" font-size="10">• Streamed I/O storage</text>
+      <text x="8" y="90" fill="#0C4A6E" font-size="10">• Payload SHA-256 hash</text>
+
+      <path d="M 163 55 L 177 55" stroke="#0284C7" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+    </g>
+
+    <!-- Stage 2 -->
+    <g transform="translate(1675, 635)">
+      <rect x="0" y="0" width="160" height="110" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.2"/>
+      <circle cx="20" cy="18" r="10" fill="#0284C7"/>
+      <text x="20" y="22" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">2</text>
+      <text x="36" y="21" fill="#0369A1" font-size="11.5" font-weight="700">Validation</text>
+      <line x1="8" y1="32" x2="152" y2="32" stroke="#E0F2FE" stroke-width="1"/>
+      <text x="8" y="48" fill="#0C4A6E" font-size="10">• Pydantic v2 schemas</text>
+      <text x="8" y="62" fill="#0C4A6E" font-size="10">• Column presence check</text>
+      <text x="8" y="76" fill="#0C4A6E" font-size="10">• Date window bounds</text>
+      <text x="8" y="90" fill="#0C4A6E" font-size="10">• Currency code check</text>
+
+      <path d="M 163 55 L 177 55" stroke="#0284C7" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+    </g>
+
+    <!-- Stage 3 -->
+    <g transform="translate(1855, 635)">
+      <rect x="0" y="0" width="160" height="110" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.2"/>
+      <circle cx="20" cy="18" r="10" fill="#0284C7"/>
+      <text x="20" y="22" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">3</text>
+      <text x="36" y="21" fill="#0369A1" font-size="11.5" font-weight="700">Parse &amp; Extract</text>
+      <line x1="8" y1="32" x2="152" y2="32" stroke="#E0F2FE" stroke-width="1"/>
+      <text x="8" y="48" fill="#0C4A6E" font-size="10">• Polars multi-thread</text>
+      <text x="8" y="62" fill="#0C4A6E" font-size="10">• PDF text / OCR parse</text>
+      <text x="8" y="76" fill="#0C4A6E" font-size="10">• Table normalization</text>
+      <text x="8" y="90" fill="#0C4A6E" font-size="10">• Key extraction</text>
+
+      <path d="M 163 55 L 177 55" stroke="#0284C7" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+    </g>
+
+    <!-- Stage 4 -->
+    <g transform="translate(2035, 635)">
+      <rect x="0" y="0" width="160" height="110" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.2"/>
+      <circle cx="20" cy="18" r="10" fill="#0284C7"/>
+      <text x="20" y="22" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">4</text>
+      <text x="36" y="21" fill="#0369A1" font-size="11.5" font-weight="700">Cleaning &amp; Dedup</text>
+      <line x1="8" y1="32" x2="152" y2="32" stroke="#E0F2FE" stroke-width="1"/>
+      <text x="8" y="48" fill="#0C4A6E" font-size="10">• Pass 0 Deduplication</text>
+      <text x="8" y="62" fill="#0C4A6E" font-size="10">• In-feed duplicate IDs</text>
+      <text x="8" y="76" fill="#0C4A6E" font-size="10">• Whitespace &amp; casing</text>
+      <text x="8" y="90" fill="#0C4A6E" font-size="10">• Timestamp UTC sync</text>
+
+      <path d="M 163 55 L 177 55" stroke="#0284C7" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+    </g>
+
+    <!-- Stage 5 -->
+    <g transform="translate(2215, 635)">
+      <rect x="0" y="0" width="160" height="110" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.2"/>
+      <circle cx="20" cy="18" r="10" fill="#0284C7"/>
+      <text x="20" y="22" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">5</text>
+      <text x="36" y="21" fill="#0369A1" font-size="11.5" font-weight="700">Structuring</text>
+      <line x1="8" y1="32" x2="152" y2="32" stroke="#E0F2FE" stroke-width="1"/>
+      <text x="8" y="48" fill="#0C4A6E" font-size="10">• Paise quantization</text>
+      <text x="8" y="62" fill="#0C4A6E" font-size="10">• Minor integer units</text>
+      <text x="8" y="76" fill="#0C4A6E" font-size="10">• Direction: DR vs CR</text>
+      <text x="8" y="90" fill="#0C4A6E" font-size="10">• 3-way entity schema</text>
+
+      <path d="M 163 55 L 177 55" stroke="#0284C7" stroke-width="2" marker-end="url(#arrow-cyan)"/>
+    </g>
+
+    <!-- Stage 6 -->
+    <g transform="translate(2395, 635)">
+      <rect x="0" y="0" width="150" height="110" rx="8" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.4"/>
+      <circle cx="20" cy="18" r="10" fill="#059669"/>
+      <text x="20" y="22" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">6</text>
+      <text x="36" y="21" fill="#065F46" font-size="11.5" font-weight="700">Storage Dispatch</text>
+      <line x1="8" y1="32" x2="142" y2="32" stroke="#DCFCE7" stroke-width="1"/>
+      <text x="8" y="48" fill="#14532D" font-size="10">• Relational ──► SQL</text>
+      <text x="8" y="62" fill="#14532D" font-size="10">• Files ──► Object</text>
+      <text x="8" y="76" fill="#14532D" font-size="10">• Invoices ──► RAG</text>
+      <text x="8" y="90" fill="#059669" font-size="9.5" font-weight="700">Dual routing path</text>
+    </g>
+  </g>
+
+  <!-- ==================== 6. RAG & KNOWLEDGE RETRIEVAL ==================== -->
+  <g id="layer-rag">
+    <rect x="1475" y="785" width="1090" height="260" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="1475" y="785" width="1090" height="34" rx="16" fill="#EFF6FF" />
+    <rect x="1475" y="803" width="1090" height="16" fill="#EFF6FF" />
+    <path d="M 1490 802 L 1490 794 Q 1490 790 1494 790 L 1770 790 Q 1774 790 1774 794 L 1774 802 Z" fill="#2563EB" />
+    <text x="1632" y="800" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">6. RAG / KNOWLEDGE RETRIEVAL</text>
+    <text x="1785" y="807" fill="#1E40AF" font-size="12" font-weight="600">Unstructured Document Indexing • Semantic Embeddings • Dense Vector Search • Relevant Context Augmentation</text>
+
+    <!-- RAG 6 Stages with separate <g transform> -->
+    <!-- Stage 1 -->
+    <g transform="translate(1495, 830)">
+      <rect x="0" y="0" width="150" height="100" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="12" y="20" fill="#0F172A" font-size="12" font-weight="700">Financial Docs</text>
+      <text x="12" y="34" fill="#64748B" font-size="10">• Vendor invoices</text>
+      <text x="12" y="48" fill="#64748B" font-size="10">• Fee agreements</text>
+      <text x="12" y="62" fill="#64748B" font-size="10">• Policy guidelines</text>
+      <text x="12" y="76" fill="#64748B" font-size="10">• Tax exemption forms</text>
+      <text x="12" y="90" fill="#2563EB" font-size="9.5" font-weight="600">Unstructured PDF/DOC</text>
+
+      <path d="M 153 50 L 172 50" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow-sky)"/>
+    </g>
+
+    <!-- Stage 2 -->
+    <g transform="translate(1670, 830)">
+      <rect x="0" y="0" width="155" height="100" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="12" y="20" fill="#0F172A" font-size="12" font-weight="700">Chunking Engine</text>
+      <text x="12" y="34" fill="#64748B" font-size="10">• Sliding window split</text>
+      <text x="12" y="48" fill="#64748B" font-size="10">• 500-token chunks</text>
+      <text x="12" y="62" fill="#64748B" font-size="10">• 50-token overlap</text>
+      <text x="12" y="76" fill="#64748B" font-size="10">• Table cell preservation</text>
+      <text x="12" y="90" fill="#2563EB" font-size="9.5" font-weight="600">Structured Chunks</text>
+
+      <path d="M 158 50 L 177 50" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow-sky)"/>
+    </g>
+
+    <!-- Stage 3 -->
+    <g transform="translate(1850, 830)">
+      <rect x="0" y="0" width="155" height="100" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="12" y="20" fill="#0F172A" font-size="12" font-weight="700">Vector Embeddings</text>
+      <text x="12" y="34" fill="#64748B" font-size="10">• Dense embedding model</text>
+      <text x="12" y="48" fill="#64748B" font-size="10">• Text-embedding-3</text>
+      <text x="12" y="62" fill="#64748B" font-size="10">• 1536-dim vector space</text>
+      <text x="12" y="76" fill="#64748B" font-size="10">• Semantic clustering</text>
+      <text x="12" y="90" fill="#2563EB" font-size="9.5" font-weight="600">Vector Embeddings</text>
+
+      <path d="M 158 50 L 177 50" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow-sky)"/>
+    </g>
+
+    <!-- Stage 4 -->
+    <g transform="translate(2030, 830)">
+      <rect x="0" y="0" width="170" height="100" rx="8" fill="#F0F9FF" stroke="#0284C7" stroke-width="1.4"/>
+      <text x="12" y="20" fill="#0369A1" font-size="12" font-weight="800">Vector Database</text>
+      <text x="12" y="34" fill="#0C4A6E" font-size="10">• pgvector / ChromaDB</text>
+      <text x="12" y="48" fill="#0C4A6E" font-size="10">• HNSW Indexing</text>
+      <text x="12" y="62" fill="#0C4A6E" font-size="10">• Metadata filters (date,</text>
+      <text x="12" y="76" fill="#0C4A6E" font-size="10">  vendor, doc type)</text>
+      <text x="12" y="90" fill="#0284C7" font-size="9.5" font-weight="700">Indexed Knowledge</text>
+
+      <path d="M 173 50 L 192 50" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow-sky)"/>
+    </g>
+
+    <!-- Stage 5 -->
+    <g transform="translate(2225, 830)">
+      <rect x="0" y="0" width="160" height="100" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="12" y="20" fill="#0F172A" font-size="12" font-weight="700">Semantic Search</text>
+      <text x="12" y="34" fill="#64748B" font-size="10">• Cosine similarity</text>
+      <text x="12" y="48" fill="#64748B" font-size="10">• Top-K nearest chunks</text>
+      <text x="12" y="62" fill="#64748B" font-size="10">• Reciprocal rank fusion</text>
+      <text x="12" y="76" fill="#64748B" font-size="10">• Query re-ranking</text>
+      <text x="12" y="90" fill="#2563EB" font-size="9.5" font-weight="600">Ranked Results</text>
+
+      <path d="M 163 50 L 182 50" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow-sky)"/>
+    </g>
+
+    <!-- Stage 6 -->
+    <g transform="translate(2410, 830)">
+      <rect x="0" y="0" width="135" height="100" rx="8" fill="#FAF5FF" stroke="#A855F7" stroke-width="1.4"/>
+      <text x="10" y="20" fill="#6B21A8" font-size="12" font-weight="800">Augmented</text>
+      <text x="10" y="34" fill="#6B21A8" font-size="11" font-weight="800">Context Window</text>
+      <line x1="8" y1="42" x2="127" y2="42" stroke="#F3E8FF" stroke-width="1"/>
+      <text x="8" y="58" fill="#581C87" font-size="9.5">• Injected into</text>
+      <text x="8" y="70" fill="#581C87" font-size="9.5">  Shared State</text>
+      <text x="8" y="82" fill="#581C87" font-size="9.5">• Cites clauses</text>
+      <text x="8" y="94" fill="#7C3AED" font-size="9.5" font-weight="700">──► To AI Agents</text>
+    </g>
+
+    <!-- Key Architectural Distinction Callout Banner -->
+    <g transform="translate(1495, 945)">
+      <rect x="0" y="0" width="1050" height="85" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <rect x="12" y="10" width="505" height="65" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="24" y="28" fill="#065F46" font-size="11.5" font-weight="800">DIRECT STRUCTURED SQL RETRIEVAL (PostgreSQL)</text>
+      <text x="24" y="44" fill="#047857" font-size="10.5">• High-speed deterministic queries on transactions, batches &amp; ledgers</text>
+      <text x="24" y="60" fill="#047857" font-size="10.5">• Authoritative single source of truth for all quantitative balances</text>
+
+      <rect x="532" y="10" width="505" height="65" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <text x="544" y="28" fill="#1E40AF" font-size="11.5" font-weight="800">UNSTRUCTURED SEMANTIC RETRIEVAL (RAG / Vector DB)</text>
+      <text x="544" y="44" fill="#1D4ED8" font-size="10.5">• Semantic search on scanned invoices, contracts, dispute emails &amp; SOPs</text>
+      <text x="544" y="60" fill="#1D4ED8" font-size="10.5">• Supplies qualitative rationale &amp; contextual evidence to AI Agents</text>
+    </g>
+  </g>
+
+  <!-- ==================== 5. DATA STORAGE LAYER ==================== -->
+  <g id="layer-storage">
+    <rect x="1475" y="1070" width="1090" height="150" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="1475" y="1070" width="1090" height="32" rx="16" fill="#F1F5F9" />
+    <rect x="1475" y="1086" width="1090" height="16" fill="#F1F5F9" />
+    <path d="M 1490 1086 L 1490 1079 Q 1490 1075 1494 1075 L 1725 1075 Q 1729 1075 1729 1079 L 1729 1086 Z" fill="#334155" />
+    <text x="1609" y="1084" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">5. MULTI-TIER DATA STORAGE</text>
+    <text x="1745" y="1090" fill="#1E293B" font-size="12" font-weight="600">Relational ACID Database • Vector Store • File/Object Storage with Strict Tier Isolation</text>
+
+    <!-- Storage Tier 1: PostgreSQL -->
+    <g transform="translate(1495, 1110)">
+      <rect x="0" y="0" width="370" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="26" height="26" rx="5" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <path d="M 17 15 C 17 13 29 13 29 15 L 29 27 C 29 29 17 29 17 27 Z" fill="none" stroke="#059669" stroke-width="1.8"/>
+      <ellipse cx="23" cy="15" rx="6" ry="2" fill="none" stroke="#059669" stroke-width="1.8"/>
+      <text x="44" y="20" fill="#0F172A" font-size="13" font-weight="700">PostgreSQL 16 (Relational DB)</text>
+      <text x="44" y="32" fill="#059669" font-size="10" font-weight="600">ACID Relational Core • SQLAlchemy 2.0</text>
+      <line x1="10" y1="40" x2="360" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#334155" font-size="10">• Normalized Transactions (Paise Units) • Matched Pairs</text>
+      <text x="10" y="68" fill="#334155" font-size="10">• Unresolved Exceptions • Users &amp; RBAC • Conversation Logs</text>
+      <text x="10" y="82" fill="#334155" font-size="10">• Cryptographic SHA-256 Audit Trail Blocks &amp; Hashes</text>
+    </g>
+
+    <!-- Storage Tier 2: Vector Database -->
+    <g transform="translate(1885, 1110)">
+      <rect x="0" y="0" width="340" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="26" height="26" rx="5" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="15" y="13" width="16" height="16" rx="2" fill="none" stroke="#2563EB" stroke-width="1.5"/>
+      <circle cx="19" cy="17" r="1.5" fill="#2563EB"/>
+      <circle cx="27" cy="25" r="1.5" fill="#2563EB"/>
+      <text x="44" y="20" fill="#0F172A" font-size="13" font-weight="700">Vector Store (pgvector / ChromaDB)</text>
+      <text x="44" y="32" fill="#2563EB" font-size="10" font-weight="600">Dense Vector Index • HNSW Similarity</text>
+      <line x1="10" y1="40" x2="330" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#334155" font-size="10">• Financial document chunks &amp; 1536-dim embeddings</text>
+      <text x="10" y="68" fill="#334155" font-size="10">• Contract fee policies, vendor clauses, tax rulings</text>
+      <text x="10" y="82" fill="#334155" font-size="10">• Fast top-K semantic retrieval for AI Agent prompts</text>
+    </g>
+
+    <!-- Storage Tier 3: File / Object Storage -->
+    <g transform="translate(2245, 1110)">
+      <rect x="0" y="0" width="300" height="95" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="10" y="8" width="26" height="26" rx="5" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <path d="M 16 26 C 14 26 13 24 13 22 C 13 20 15 18 17 18 C 18 15 21 14 24 14 C 27 14 30 16 31 19 C 33 20 34 22 34 24 C 34 26 32 26 30 26 Z" fill="none" stroke="#475569" stroke-width="1.6"/>
+      <text x="44" y="20" fill="#0F172A" font-size="13" font-weight="700">Object / File Storage</text>
+      <text x="44" y="32" fill="#475569" font-size="10" font-weight="600">Local / S3 / MinIO Object Store</text>
+      <line x1="10" y1="40" x2="290" y2="40" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="10" y="54" fill="#334155" font-size="10">• Original raw CSV files (Gateway, Bank, Ledger)</text>
+      <text x="10" y="68" fill="#334155" font-size="10">• Scanned PDF invoices, receipts &amp; contracts</text>
+      <text x="10" y="82" fill="#334155" font-size="10">• Generated executive DOCX &amp; PDF audit packs</text>
+    </g>
+  </g>
+
+  <!-- Cross-System Connectors: Tools <-> Databases -->
+  <!-- SQL Tool bottom center (165, 1205) down to y=1235, across to PostgreSQL bottom center (1680, 1235), and up to (1680, 1205) -->
+  <path d="M 165 1205 L 165 1235 L 1680 1235 L 1680 1205" fill="none" stroke="#059669" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-emerald)"/>
+  <rect x="880" y="1223" width="240" height="22" rx="5" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="1000" y="1238" fill="#065F46" font-size="10" font-weight="800" text-anchor="middle">Direct Structured SQL Queries (PostgreSQL)</text>
+
+  <!-- Vector Search Tool top center (900, 1110) up to y=1055, across to Vector Store (2055, 1055), and down to (2055, 1110) -->
+  <path d="M 900 1110 L 900 1055 L 2055 1055 L 2055 1110" fill="none" stroke="#0284C7" stroke-width="2.5" stroke-dasharray="5,3" marker-end="url(#arrow-sky)"/>
+  <rect x="1360" y="1044" width="210" height="22" rx="5" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="1465" y="1059" fill="#1D4ED8" font-size="10" font-weight="800" text-anchor="middle">Semantic Vector Search (RAG)</text>
+
+  <!-- RAG Context Window into Shared State Bus -->
+  <path d="M 2410 880 L 1435 880 L 1435 940 L 1425 940" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+
+  <!-- ==================== 9. AUDIT TRAIL & GOVERNANCE ==================== -->
+  <g id="layer-audit">
+    <rect x="35" y="1255" width="2530" height="155" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="35" y="1255" width="2530" height="34" rx="16" fill="#FEF2F2" />
+    <rect x="35" y="1273" width="2530" height="16" fill="#FEF2F2" />
+    <path d="M 50 1272 L 50 1264 Q 50 1260 54 1260 L 330 1260 Q 334 1260 334 1264 L 334 1272 Z" fill="#DC2626" />
+    <text x="192" y="1270" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">9. AUDIT TRAIL &amp; GOVERNANCE LAYER</text>
+    <text x="348" y="1277" fill="#991B1B" font-size="12" font-weight="600">Explainability Engine • Data Provenance • Dual-Control Maker-Checker Workflow • Cryptographic SHA-256 Hash Chain</text>
+
+    <!-- Component 1: Data Provenance & Activity History -->
+    <g transform="translate(55, 1298)">
+      <rect x="0" y="0" width="480" height="98" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+      <path d="M 27 16 L 27 26 L 33 26" stroke="#DC2626" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <circle cx="27" cy="25" r="9" stroke="#DC2626" stroke-width="1.8" fill="none"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Data Provenance &amp; Explainability</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">Step-by-step evidence log for every figure</text>
+      <line x1="12" y1="48" x2="468" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• What exact data slice was analyzed (Source feeds &amp; row hashes)</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• Which AI agent performed analysis &amp; which tools were invoked</text>
+      <text x="12" y="91" fill="#64748B" font-size="10.5">• Specific document citations, clauses &amp; timestamps attached</text>
+    </g>
+
+    <!-- Component 2: Dual Control Maker-Checker Workflow -->
+    <g transform="translate(555, 1298)">
+      <rect x="0" y="0" width="560" height="98" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <circle cx="22" cy="22" r="3" fill="#2563EB"/>
+      <circle cx="32" cy="22" r="3" fill="#059669"/>
+      <path d="M 22 28 C 22 26 25 25 27 25 C 29 25 32 26 32 28" stroke="#334155" stroke-width="1.5" fill="none"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Dual-Control Maker-Checker Governance</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">Strict Segregation of Duties for Financial Adjustments</text>
+      <line x1="12" y1="48" x2="548" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <rect x="12" y="56" width="130" height="32" rx="5" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+      <text x="77" y="72" fill="#4338CA" font-size="10" font-weight="700" text-anchor="middle">1. AI Agent Drafts</text>
+      <text x="77" y="83" fill="#6366F1" font-size="9" text-anchor="middle">Adjustment Voucher</text>
+
+      <path d="M 144 72 L 160 72" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow-indigo)"/>
+
+      <rect x="162" y="56" width="150" height="32" rx="5" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1"/>
+      <text x="237" y="72" fill="#B45309" font-size="10" font-weight="700" text-anchor="middle">2. Maker (Analyst)</text>
+      <text x="237" y="83" fill="#D97706" font-size="9" text-anchor="middle">Reviews &amp; Submits</text>
+
+      <path d="M 314 72 L 330 72" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow-indigo)"/>
+
+      <rect x="332" y="56" width="155" height="32" rx="5" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="409" y="72" fill="#065F46" font-size="10" font-weight="700" text-anchor="middle">3. Checker (Approver)</text>
+      <text x="409" y="83" fill="#059669" font-size="9" text-anchor="middle">Signs Off (Dual Sign)</text>
+
+      <path d="M 489 72 L 505 72" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow-emerald)"/>
+
+      <rect x="507" y="56" width="45" height="32" rx="5" fill="#1E293B"/>
+      <text x="529" y="76" fill="#38BDF8" font-size="10" font-weight="800" text-anchor="middle">GL</text>
+    </g>
+
+    <!-- Component 3: Cryptographic SHA-256 Audit Chain with individual <g transform> -->
+    <g transform="translate(1135, 1298)">
+      <rect x="0" y="0" width="940" height="98" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <path d="M 21 21 L 25 17 L 31 17 L 31 23 L 27 27 M 27 27 L 23 31 L 17 31 L 17 25 L 21 21" stroke="#7C3AED" stroke-width="2" fill="none"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">Cryptographic SHA-256 Hash Chain</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">Mathematically Tamper-Evident Chronological Ledger</text>
+      <line x1="12" y1="48" x2="928" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+
+      <!-- Chain Blocks Visualization -->
+      <!-- Block 0 -->
+      <g transform="translate(12, 54)">
+        <rect x="0" y="0" width="200" height="36" rx="5" fill="#1E293B"/>
+        <text x="10" y="15" fill="#38BDF8" font-size="10" font-weight="700">Block #0 [GENESIS]</text>
+        <text x="10" y="29" fill="#94A3B8" font-size="9" font-family="monospace">Hash: 0000a89f72c1...</text>
+
+        <path d="M 203 18 L 222 18" stroke="#64748B" stroke-width="1.8" marker-end="url(#arrow-crimson)"/>
+      </g>
+
+      <!-- Block 1 -->
+      <g transform="translate(240, 54)">
+        <rect x="0" y="0" width="215" height="36" rx="5" fill="#1E293B"/>
+        <text x="10" y="15" fill="#A78BFA" font-size="10" font-weight="700">Block #1 [BATCH_CREATED]</text>
+        <text x="10" y="29" fill="#94A3B8" font-size="9" font-family="monospace">PrevHash: 0000a89f...</text>
+
+        <path d="M 218 18 L 237 18" stroke="#64748B" stroke-width="1.8" marker-end="url(#arrow-crimson)"/>
+      </g>
+
+      <!-- Block 2 -->
+      <g transform="translate(485, 54)">
+        <rect x="0" y="0" width="220" height="36" rx="5" fill="#1E293B"/>
+        <text x="10" y="15" fill="#FBBF24" font-size="10" font-weight="700">Block #2 [VOUCHER_PROPOSED]</text>
+        <text x="10" y="29" fill="#94A3B8" font-size="9" font-family="monospace">PrevHash: e3b0c442...</text>
+
+        <path d="M 223 18 L 242 18" stroke="#64748B" stroke-width="1.8" marker-end="url(#arrow-crimson)"/>
+      </g>
+
+      <!-- Block 3 -->
+      <g transform="translate(735, 54)">
+        <rect x="0" y="0" width="195" height="36" rx="5" fill="#1E293B"/>
+        <text x="10" y="15" fill="#34D399" font-size="10" font-weight="700">Block #3 [CHECKER_APPROVED]</text>
+        <text x="10" y="29" fill="#94A3B8" font-size="9" font-family="monospace">PrevHash: 8f9b12a0...</text>
+      </g>
+    </g>
+
+    <!-- Component 4: SOX-404 & External Audit Proof -->
+    <g transform="translate(2095, 1298)">
+      <rect x="0" y="0" width="450" height="98" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="30" height="30" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <path d="M 21 25 L 25 29 L 33 21" stroke="#059669" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <text x="50" y="24" fill="#0F172A" font-size="13" font-weight="700">SOX-404 Compliance &amp; Verification</text>
+      <text x="50" y="38" fill="#475569" font-size="11" font-weight="600">GET /api/v1/audit/verify-chain</text>
+      <line x1="12" y1="48" x2="438" y2="48" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="63" fill="#64748B" font-size="10.5">• Full recalculation of sequential block hashes in O(N)</text>
+      <text x="12" y="77" fill="#64748B" font-size="10.5">• If a single byte or amount in DB is tampered ──► Alert sounds</text>
+      <text x="12" y="91" fill="#059669" font-size="10.5" font-weight="700">Audit Status: Cryptographically Intact &amp; Verified</text>
+    </g>
+  </g>
+
+  <!-- Downward Flow from Governance to Final Output -->
+  <path d="M 1300 1410 L 1300 1425" stroke="#10B981" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <text x="1312" y="1420" fill="#047857" font-size="10" font-weight="800">Verified Responses &amp; Approved Vouchers Return</text>
+
+  <!-- ==================== 10. FINAL OUTPUT & DECISION INTELLIGENCE ==================== -->
+  <g id="layer-output">
+    <rect x="35" y="1430" width="2530" height="150" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#card-shadow)" />
+    <rect x="35" y="1430" width="2530" height="34" rx="16" fill="#ECFDF5" />
+    <rect x="35" y="1448" width="2530" height="16" fill="#ECFDF5" />
+    <path d="M 50 1447 L 50 1439 Q 50 1435 54 1435 L 320 1435 Q 324 1435 324 1439 L 324 1447 Z" fill="#059669" />
+    <text x="187" y="1445" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle" letter-spacing="0.5">10. FINAL EXECUTIVE OUTPUT</text>
+    <text x="335" y="1452" fill="#065F46" font-size="12" font-weight="600">Actionable Financial Intelligence • Real-Time Dashboard KPI Cards • AI Explanations • Exportable Audit Packs</text>
+
+    <!-- Output 1: Financial Insights & KPIs -->
+    <g transform="translate(55, 1473)">
+      <rect x="0" y="0" width="470" height="92" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="21" y="28" fill="#059669" font-size="14" font-weight="800">98</text>
+      <text x="48" y="23" fill="#0F172A" font-size="13" font-weight="700">Financial Insights &amp; KPI Analysis</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">Reconciliation Match Rates &amp; Volumes</text>
+      <line x1="12" y1="46" x2="458" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• 98.4% Match Rate across 3 feeds (Gateway, Bank, Ledger)</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Gross revenue, MDR fees, GST &amp; net settlement breakdown</text>
+      <text x="12" y="88" fill="#059669" font-size="9.5" font-weight="700">Live Dashboard Scorecards &amp; KPI Cards</text>
+    </g>
+
+    <!-- Output 2: Anomaly Alerts & Root Cause -->
+    <g transform="translate(545, 1473)">
+      <rect x="0" y="0" width="480" height="92" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+      <path d="M 26 17 L 33 29 L 19 29 Z" fill="none" stroke="#DC2626" stroke-width="2"/>
+      <text x="48" y="23" fill="#0F172A" font-size="13" font-weight="700">Anomaly Alerts &amp; Root Cause Analysis</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">16-Type Residual Exception Taxonomy</text>
+      <line x1="12" y1="46" x2="468" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Identified fee rule misconfigurations on Razorpay/Stripe</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Detected duplicate ledger debits &amp; delayed bank wire deposits</text>
+      <text x="12" y="88" fill="#DC2626" font-size="9.5" font-weight="700">Actionable Exception Workbench with Severity Scores</text>
+    </g>
+
+    <!-- Output 3: Multi-Tier Settlement Analytics -->
+    <g transform="translate(1045, 1473)">
+      <rect x="0" y="0" width="480" height="92" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1"/>
+      <path d="M 16 30 L 16 22 M 22 30 L 22 16 M 28 30 L 28 20 M 34 30 L 34 12" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>
+      <text x="48" y="23" fill="#0F172A" font-size="13" font-weight="700">Three-Way Settlement Analytics</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">Gateway, Bank &amp; ERP Ledger Distribution</text>
+      <line x1="12" y1="46" x2="468" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Three-way settlement volume distribution across all feeds</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• In-transit clearing balance monitoring &amp; timing analysis</text>
+      <text x="12" y="88" fill="#D97706" font-size="9.5" font-weight="700">Chart.js Multi-Stream Visual Settlement &amp; Ledger Cards</text>
+    </g>
+
+    <!-- Output 4: Approved Journal Adjustment Vouchers -->
+    <g transform="translate(1545, 1473)">
+      <rect x="0" y="0" width="480" height="92" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <path d="M 18 20 L 34 20 M 18 25 L 30 25 M 18 30 L 26 30" stroke="#2563EB" stroke-width="2"/>
+      <text x="48" y="23" fill="#0F172A" font-size="13" font-weight="700">One-Click Approved Adjustment Vouchers</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">Dual-Control Signed Journal Adjustment Entries</text>
+      <line x1="12" y1="46" x2="468" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Auto-drafted journal vouchers: DR MDR Fee, DR GST, CR AR</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Signed by Checker, sealed with SHA-256 hash &amp; timestamp</text>
+      <text x="12" y="88" fill="#2563EB" font-size="9.5" font-weight="700">Direct ERP Sync to NetSuite / SAP Clearing Accounts</text>
+    </g>
+
+    <!-- Output 5: Board-Ready Reports & Copilot Answers -->
+    <g transform="translate(2045, 1473)">
+      <rect x="0" y="0" width="500" height="92" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" filter="url(#subcard-shadow)"/>
+      <rect x="12" y="10" width="28" height="28" rx="6" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <path d="M 20 20 L 32 20 M 20 24 L 32 24 M 20 28 L 28 28" stroke="#7C3AED" stroke-width="1.8"/>
+      <text x="48" y="23" fill="#0F172A" font-size="13" font-weight="700">Board-Ready DOCX/PDF &amp; ⌘K Copilot Answers</text>
+      <text x="48" y="36" fill="#475569" font-size="10.5" font-weight="600">Executive Synthesis &amp; Cited Conversational Answers</text>
+      <line x1="12" y1="46" x2="488" y2="46" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="60" fill="#64748B" font-size="10">• Downloadable executive audit reports generated via python-docx</text>
+      <text x="12" y="74" fill="#64748B" font-size="10">• Instant conversational answers in ⌘K drawer with evidence links</text>
+      <text x="12" y="88" fill="#7C3AED" font-size="9.5" font-weight="700">Complete Audit Trail Pack for SOX Auditors &amp; CFO</text>
+    </g>
+  </g>
+
+  <!-- ==================== LEGEND & ARCHITECTURE PRINCIPLES ==================== -->
+  <g id="footer-legend" transform="translate(35, 1600)">
+    <rect x="0" y="0" width="2530" height="195" rx="16" fill="#0F172A" filter="url(#card-shadow)"/>
+    
+    <text x="30" y="32" fill="#FFFFFF" font-size="15" font-weight="800" letter-spacing="0.5">ARCHITECTURE SPECIFICATION &amp; DATA FLOW LEGEND</text>
+    <line x1="30" y1="45" x2="2500" y2="45" stroke="#334155" stroke-width="1"/>
+
+    <!-- Left Column: Arrow Types -->
+    <g transform="translate(30, 60)">
+      <text x="0" y="16" fill="#94A3B8" font-size="12" font-weight="700">DATA FLOW &amp; PROTOCOL TYPES:</text>
+      
+      <line x1="0" y1="36" x2="45" y2="36" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrow-indigo)"/>
+      <text x="55" y="40" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#818CF8">Synchronous HTTP / REST / WebSocket:</tspan> Client requests, user queries, and UI actions</text>
+
+      <line x1="0" y1="62" x2="45" y2="62" stroke="#8B5CF6" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-purple)"/>
+      <text x="55" y="66" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#C084FC">Agent Orchestration &amp; State Access:</tspan> LangGraph task dispatch and bi-directional Shared State R/W</text>
+
+      <line x1="0" y1="88" x2="45" y2="88" stroke="#0891B2" stroke-width="2.5" marker-end="url(#arrow-cyan)"/>
+      <text x="55" y="92" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#22D3EE">Data Ingestion Pipeline Stream:</tspan> Raw multi-feed file uploads, validation, parsing &amp; structuring</text>
+
+      <line x1="0" y1="114" x2="45" y2="114" stroke="#059669" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-emerald)"/>
+      <text x="55" y="118" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#34D399">Direct Structured SQL Queries:</tspan> High-speed deterministic data retrieval from PostgreSQL 16</text>
+    </g>
+
+    <!-- Middle Column: Additional Flow Types -->
+    <g transform="translate(850, 60)">
+      <text x="0" y="16" fill="#94A3B8" font-size="12" font-weight="700">RETRIEVAL &amp; SECURITY PROTOCOLS:</text>
+      
+      <line x1="0" y1="36" x2="45" y2="36" stroke="#0284C7" stroke-width="2.5" stroke-dasharray="5,3" marker-end="url(#arrow-sky)"/>
+      <text x="55" y="40" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#38BDF8">Semantic Vector Retrieval (RAG):</tspan> Cosine similarity search over embedded PDF invoices &amp; rules</text>
+
+      <line x1="0" y1="62" x2="45" y2="62" stroke="#DC2626" stroke-width="2.5" stroke-dasharray="3,3" marker-end="url(#arrow-crimson)"/>
+      <text x="55" y="66" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#F87171">Cryptographic Audit Chain Hash:</tspan> Tamper-evident SHA-256 sequential block event sealing</text>
+
+      <line x1="0" y1="88" x2="45" y2="88" stroke="#10B981" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+      <text x="55" y="92" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#34D399">Verified Response &amp; Vouchers Return:</tspan> Approved mathematical outputs flowing back to Frontend SPA</text>
+
+      <circle cx="20" cy="114" r="5" fill="#EF4444"/>
+      <text x="55" y="118" fill="#CBD5E1" font-size="11.5"><tspan font-weight="700" fill="#F87171">Zero-Arithmetic-Trust Barrier:</tspan> LLM proposals are rejected if Gross - Fee - GST != Net Deposit</text>
+    </g>
+
+    <!-- Right Column: Core Architectural Principles -->
+    <g transform="translate(1700, 60)">
+      <text x="0" y="16" fill="#94A3B8" font-size="12" font-weight="700">CORE ARCHITECTURAL PRINCIPLES:</text>
+      
+      <text x="0" y="40" fill="#E2E8F0" font-size="11">• <tspan font-weight="700" fill="#38BDF8">Zero IEEE-754 Float Drift:</tspan> All currency figures computed in exact integer minor units (paise).</text>
+      <text x="0" y="64" fill="#E2E8F0" font-size="11">• <tspan font-weight="700" fill="#A78BFA">Bounded AI Authority:</tspan> AI models reason on ambiguity, but cannot modify DB without Verifier Gate.</text>
+      <text x="0" y="88" fill="#E2E8F0" font-size="11">• <tspan font-weight="700" fill="#34D399">Dual-Control Governance:</tspan> Maker (Analyst) cannot approve their own proposed journal vouchers.</text>
+      <text x="0" y="112" fill="#E2E8F0" font-size="11">• <tspan font-weight="700" fill="#FBBF24">Algorithmic Rigor:</tspan> SciPy Hungarian bipartite matching eliminates greedy false reconciliations.</text>
+    </g>
+  </g>
+</svg>

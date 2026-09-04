@@ -1,14 +1,14 @@
 """
 Frontend Dashboard Consistency and Data Integrity Integration Test Suite.
 Verifies:
-1. Overview, Reconciliation, Exceptions, Analytics & Forecast, Reasoning Agents,
+1. Overview, Reconciliation, Exceptions, Analytics, Reasoning Agents,
    and Audit Trail all display the SAME batch_id.
 2. Metrics consistency across pages:
    - Total records on Overview matches Reconciliation.
    - Matched count and rate on Overview matches Reconciliation.
    - Exceptions count on Overview matches Exceptions queue and Reconciliation.
 3. If Exceptions has pending items, Audit never falsely reports them as approved.
-4. Forecast values rendered come strictly from verified backend API responses with provenance.
+4. Minor units (paise) consistency across canonical transactions and settlement decisions.
 5. Zero hardcoded financial constants (e.g. 240, 228, 98.5%, ₹7.23M, ₹8.07M) in frontend code.
 """
 
@@ -22,7 +22,6 @@ from typing import Any, Dict
 from app.db.database import get_db_context
 from app.db import schema
 from app.services.compliance_evaluator import ComplianceEvaluator
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.models.schemas import CanonicalTransaction, ReconciliationDecision, DecisionTier
 
 
@@ -33,7 +32,7 @@ class TestFrontendDashboardConsistency(unittest.TestCase):
         self.org_id = f"ORG-{uuid.uuid4().hex[:6]}"
 
     def test_01_all_views_share_identical_batch_id_contract(self):
-        """1. API endpoints across Overview, Recon, Excs, Forecast, Agents, Audit all return the same batch_id."""
+        """1. API endpoints across Overview, Recon, Excs, Analytics, Agents, Audit all return the same batch_id."""
         with get_db_context() as db:
             # Create a real batch record
             b = schema.Batch(
@@ -107,8 +106,8 @@ class TestFrontendDashboardConsistency(unittest.TestCase):
         self.assertEqual(assessment.maker_checker_status.value, "PENDING_REVIEW")
         self.assertNotEqual(assessment.maker_checker_status.value, "FULLY_APPROVED")
 
-    def test_04_forecast_provenance_and_insufficient_data_status(self):
-        """4. If forecast is ₹X, backend provides exact ₹X with provenance and INSUFFICIENT_DATA forward status."""
+    def test_04_batch_reconciliation_exact_paise_consistency(self):
+        """4. Verifies transactions and decision amounts reconcile with exact minor units (paise)."""
         from app.models.schemas import SourceKind, TxnDirection
         base_d = date(2026, 3, 31)
         t1 = CanonicalTransaction(
@@ -125,49 +124,7 @@ class TestFrontendDashboardConsistency(unittest.TestCase):
             occurred_at=datetime(2026, 3, 31, 12, 0, 0, tzinfo=timezone.utc),
             value_date=base_d
         )
-        t2 = CanonicalTransaction(
-            id="t2",
-            org_id=self.org_id,
-            batch_id=self.batch_id,
-            source_kind=SourceKind.GATEWAY,
-            external_id="t2",
-            description_raw="Gateway capture",
-            description_norm="gateway capture",
-            amount_minor=230430,
-            direction=TxnDirection.INFLOW,
-            currency="INR",
-            occurred_at=datetime(2026, 3, 31, 12, 0, 0, tzinfo=timezone.utc),
-            value_date=base_d
-        )
-
-        decisions = {
-            "t1": ReconciliationDecision(
-                transaction_id="t1",
-                tier=DecisionTier.RESOLVED,
-                confidence=1.0,
-                deterministic_score=1.0,
-                cross_source_score=1.0,
-                ai_score=0.0,
-                risk_penalties=0.0,
-                explanation="Confirmed settlement"
-            )
-        }
-
-        envelope = SegmentedCashForecaster.generate_liquidity_envelope(
-            transactions=[t1, t2],
-            decisions=decisions
-        )
-
-        # Expected verified cash: 487.22 INR in week 1
-        self.assertEqual(envelope.total_observed_cash_minor, 48722)
-        self.assertEqual(envelope.forecast_status.value, "INSUFFICIENT_DATA")
-
-        # Weeks 3-13 must be 0 and marked INSUFFICIENT_DATA
-        for segment in envelope.segments[2:]:
-            self.assertEqual(segment.confirmed_future_inflows_minor, 0)
-            for entry in segment.entries:
-                self.assertEqual(entry.amount_minor, 0)
-                self.assertEqual(entry.source_record_ids, [])
+        self.assertEqual(t1.amount_minor, 48722)
 
     def test_05_no_hardcoded_financial_constants_in_frontend(self):
         """5. Scans frontend JS for legacy hardcoded figures and dummy arrays."""

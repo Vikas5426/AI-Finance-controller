@@ -148,7 +148,7 @@ class DatabaseService:
         proposals: List[Dict[str, Any]],
         audit_events: List[Dict[str, Any]],
         summary: Dict[str, Any],
-        cash_forecast: List[Dict[str, Any]],
+        cash_forecast: Optional[List[Dict[str, Any]]] = None,
         created_by: Optional[str] = None,
         investigations: Optional[Dict[str, Any]] = None
     ) -> schema.Batch:
@@ -420,7 +420,6 @@ class DatabaseService:
             import json
             
             clean_summary = json.loads(json.dumps(summary, default=str))
-            clean_forecast = json.loads(json.dumps(cash_forecast, default=str))
 
             rep_record = db.query(schema.BatchReport).filter_by(batch_id=batch_id).first()
             if not rep_record:
@@ -428,7 +427,7 @@ class DatabaseService:
                     id=str(uuid.uuid4()),
                     org_id=org_id,
                     batch_id=batch_id,
-                    report_json={"summary": clean_summary, "cash_forecast": clean_forecast},
+                    report_json={"summary": clean_summary},
                     report_hash=summary.get("report_hash", hashlib.sha256(b"report").hexdigest()),
                     match_rate=Decimal(str(round(summary.get("match_rate", 0.0), 4))),
                     precision_rate=Decimal(str(round(summary["precision_rate"], 4))) if summary.get("precision_rate") is not None else None,
@@ -440,7 +439,7 @@ class DatabaseService:
                 )
                 db.add(rep_record)
             else:
-                rep_record.report_json = {"summary": clean_summary, "cash_forecast": clean_forecast}
+                rep_record.report_json = {"summary": clean_summary}
                 rep_record.match_rate = Decimal(str(round(summary.get("match_rate", 0.0), 4)))
 
             db.commit()
@@ -499,7 +498,7 @@ class DatabaseService:
         """
         empty: Dict[str, Any] = {
             "batch": None, "batch_id": None, "summary": {}, "quality_metrics": {},
-            "windows": [], "cash_forecast": [], "stats": {},
+            "windows": [], "stats": {},
             "exception_breakdown": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
         }
         with get_db_context() as db:

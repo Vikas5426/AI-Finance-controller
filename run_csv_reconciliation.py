@@ -46,7 +46,6 @@ from app.services.validation_service import DataValidationService
 from app.services.context_builder import TransactionContextBuilder
 from app.services.batch_orchestrator import WindowedBatchOrchestrator
 from app.services.agent_runtime import AIAgentRuntime
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.services.audit_chain import AuditHashChain
 
 
@@ -185,13 +184,6 @@ def run_reconciliation_pipeline(
     print(f"  * Completed AI agent investigations on {len(investigation_reports)} exception cases.")
 
     # -------------------------------------------------------------------------
-    # Layer 6: Segmented 13-Week Cash Flow Forecaster
-    # -------------------------------------------------------------------------
-    print("\n[Step 6] Generating Segmented 13-Week Cash Flow Forecast...")
-    cash_forecast = SegmentedCashForecaster.forecast_13_weeks(canonical_txns, orchestrator.decisions)
-    print(f"  * Generated 13 weekly liquidity projections.")
-
-    # -------------------------------------------------------------------------
     # Layer 7: Cryptographic SHA-256 Audit Hash Chain
     # -------------------------------------------------------------------------
     print("\n[Step 7] Verifying Cryptographic SHA-256 Audit Hash Chain...")
@@ -213,8 +205,7 @@ def run_reconciliation_pipeline(
         decisions=orchestrator.decisions,
         proposals=orchestrator.proposals,
         audit_events=orchestrator.audit_events,
-        summary=summary,
-        cash_forecast=[f.model_dump() for f in cash_forecast]
+        summary=summary
     )
     print(f"  * Batch {batch_id} persisted to database.")
 
@@ -244,7 +235,6 @@ def run_reconciliation_pipeline(
         "sample_matches": [m.model_dump() for m in orchestrator.matches[:10]],
         "sample_exceptions": [e.model_dump() for e in orchestrator.exceptions[:10]],
         "sample_proposals": orchestrator.proposals[:5],
-        "cash_forecast_preview": [f.model_dump() for f in cash_forecast[:4]],
         "ai_investigations": [inv.model_dump() for inv in investigation_reports[:3]],
         "audit_chain_status": {
             "is_valid": chain_valid,

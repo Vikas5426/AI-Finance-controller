@@ -7,7 +7,7 @@ Coordinates autonomous three-way financial reconciliation across 7 stages:
 4. AI Exception Investigation Node (Single Reasoning Agent with Deterministic Tools)
 5. Arithmetic & Link Verifier Gate Node (Hard Math Gate with Reflection)
 6. Decision Routing Node (Tier 1-4 Classification & Maker-Checker Proposals)
-7. Finalize Batch Node (13-Week Cash Forecast & SHA-256 Audit Sealing)
+7. Finalize Batch Node (Window Summaries & SHA-256 Audit Sealing)
 """
 
 import logging
@@ -37,7 +37,6 @@ from app.services.agent_tools import (
 from app.services.agent_runtime import AIAgentRuntime, DeterministicVerifier
 from app.services.decision_engine import HybridDecisionEngine
 from app.services.audit_chain import AuditHashChain
-from app.services.cash_forecaster import SegmentedCashForecaster
 
 
 class ReconciliationState(TypedDict):
@@ -72,7 +71,6 @@ class ReconciliationState(TypedDict):
     proposals: List[Dict[str, Any]]
     windows: List[BatchWindowSummary]
     audit_events: List[Dict[str, Any]]
-    cash_forecast: List[Dict[str, Any]]
     summary: Dict[str, Any]
     wall_clock_start: float
 
@@ -446,8 +444,9 @@ def decision_routing_node(state: ReconciliationState) -> Dict[str, Any]:
 
 def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
     """
-    Node 7: Constructs window summaries, 13-week cash liquidity forecast,
-    and seals the cryptographic audit hash chain.
+    Node 7: Constructs window summaries,
+    seals cryptographic SHA-256 audit blocks for all windows, and computes
+    holistic operational and financial quality metrics.
     """
     all_txns = state["canonical_transactions"]
     total = len(all_txns)
@@ -524,9 +523,6 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
         })
         prev_hash = h_win
         event_seq += 1
-
-    # 13-Week Cash Forecast
-    forecast = SegmentedCashForecaster.forecast_13_weeks(all_txns, state["decisions"])
 
     # Final summary calculations
     wall_clock = time.time() - state.get("wall_clock_start", time.time())
@@ -607,7 +603,6 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
     return {
         "windows": windows,
         "audit_events": audit_events,
-        "cash_forecast": [f.model_dump() for f in forecast],
         "summary": summary
     }
 
@@ -721,7 +716,6 @@ class LangGraphBatchOrchestrator:
         self.audit_events: List[Dict[str, Any]] = []
         self.windows: List[BatchWindowSummary] = []
         self.safeguards_triggered: List[Dict[str, Any]] = []
-        self.cash_forecast: List[Dict[str, Any]] = []
         self.summary: Dict[str, Any] = {}
 
     def run_windowed_pipeline(self, all_txns: List[CanonicalTransaction]) -> Dict[str, Any]:
@@ -748,7 +742,6 @@ class LangGraphBatchOrchestrator:
             "proposals": [],
             "windows": [],
             "audit_events": [],
-            "cash_forecast": [],
             "summary": {},
             "wall_clock_start": time.time()
         }
@@ -767,7 +760,6 @@ class LangGraphBatchOrchestrator:
         self.audit_events = final_state["audit_events"]
         self.windows = final_state["windows"]
         self.safeguards_triggered = final_state["safeguards_triggered"]
-        self.cash_forecast = final_state["cash_forecast"]
         self.summary = final_state["summary"]
 
         # If engine exceptions are empty, populate from unmatched transactions

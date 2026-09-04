@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Finance Controller — System Architecture Specification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B0F19;
+      --card-bg: #111827;
+      --border: #1F2937;
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #0F172A;
+      border-bottom: 1px solid #1E293B;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .badge {
+      background: rgba(37, 99, 235, 0.15);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      color: #60A5FA;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #E2E8F0;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      background: #334155;
+      color: #FFFFFF;
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, #111827 0%, #0B0F19 100%);
+      cursor: grab;
+    }
+    #viewport-container:active {
+      cursor: grabbing;
+    }
+    #svg-wrapper {
+      position: absolute;
+      transform-origin: 0 0;
+      transition: transform 0.05s ease-out;
+    }
+    #svg-wrapper img {
+      display: block;
+      width: 2600px;
+      height: 1820px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .overlay-controls {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 20;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .zoom-btn {
+      width: 36px;
+      height: 36px;
+      background: #1E293B;
+      border: 1px solid #475569;
+      color: #F8FAFC;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+    .zoom-btn:hover {
+      background: #334155;
+      border-color: #64748B;
+    }
+    .status-bar {
+      background: #0F172A;
+      border-top: 1px solid #1E293B;
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+    .status-bar a {
+      color: #60A5FA;
+      text-decoration: none;
+    }
+    .status-bar a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span class="badge">SPEC V2.4 — VERIFIED PRODUCTION</span>
+      <div>
+        <h1>AI Finance Controller — System Architecture</h1>
+        <div class="subtitle">Multi-Agent Deterministic Reconciliation, Cryptographic Audit Trails &amp; Executive Reporting</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="btn" onclick="resetView()">Reset View (Fit)</button>
+      <a class="btn" href="../architecture_diagram.svg" target="_blank" download="architecture_diagram.svg">Download SVG</a>
+      <a class="btn btn-primary" href="../architecture_diagram.png" target="_blank" download="architecture_diagram.png">Download PNG</a>
+    </div>
+  </header>
+
+  <div id="viewport-container">
+    <div id="svg-wrapper">
+      <img id="diagram-img" src="../architecture_diagram.svg" alt="AI Finance Controller Architecture Diagram" />
+    </div>
+
+    <div class="overlay-controls">
+      <button class="zoom-btn" onclick="zoom(1.2)" title="Zoom In">+</button>
+      <button class="zoom-btn" onclick="zoom(0.8)" title="Zoom Out">−</button>
+      <button class="zoom-btn" onclick="resetView()" title="Fit to Screen">⛶</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div><strong>Subsystems:</strong> 1. Client &amp; Interaction • 2. API Gateway • 3. AI Reasoning Agents (5 Specialized) • 4. Agent Tools • 5. Ingestion • 6. Normalization • 7. Reconciliation Engine • 8. State Bus • 9. Persistence &amp; Cryptography • 10. Deliverables</div>
+    <div>Deterministic minor-unit integer arithmetic (Paise) • Zero synthetic halluncination • Dual-control maker-checker SOX-404 compliance</div>
+  </div>
+
+  <script>
+    const container = document.getElementById('viewport-container');
+    const wrapper = document.getElementById('svg-wrapper');
+    const DIAGRAM_WIDTH = 2600;
+    const DIAGRAM_HEIGHT = 1820;
+
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    function applyTransform() {
+      wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+
+    function resetView() {
+      const rect = container.getBoundingClientRect();
+      const scaleX = (rect.width - 40) / DIAGRAM_WIDTH;
+      const scaleY = (rect.height - 40) / DIAGRAM_HEIGHT;
+      scale = Math.min(scaleX, scaleY);
+      translateX = (rect.width - DIAGRAM_WIDTH * scale) / 2;
+      translateY = (rect.height - DIAGRAM_HEIGHT * scale) / 2;
+      applyTransform();
+    }
+
+    function zoom(factor) {
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const newScale = Math.max(0.2, Math.min(5, scale * factor));
+      translateX = centerX - (centerX - translateX) * (newScale / scale);
+      translateY = centerY - (centerY - translateY) * (newScale / scale);
+      scale = newScale;
+      applyTransform();
+    }
+
+    window.addEventListener('resize', resetView);
+    window.addEventListener('load', resetView);
+
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - translateX;
+      startY = e.clientY - translateY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      translateX = e.clientX - startX;
+      translateY = e.clientY - startY;
+      applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.15 : 0.85;
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const newScale = Math.max(0.2, Math.min(5, scale * factor));
+      translateX = mouseX - (mouseX - translateX) * (newScale / scale);
+      translateY = mouseY - (mouseY - translateY) * (newScale / scale);
+      scale = newScale;
+      applyTransform();
+    }, { passive: false });
+
+    setTimeout(resetView, 100);
+  </script>
+</body>
+</html>

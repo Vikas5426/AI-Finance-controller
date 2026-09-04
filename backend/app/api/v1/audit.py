@@ -1,3 +1,4 @@
+from datetime import timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.api.v1.batches import STATE
@@ -8,6 +9,21 @@ from app.db import schema
 from app.services.audit_chain import AuditHashChain
 
 router = APIRouter(prefix="/audit", tags=["Cryptographic Audit Chain"])
+
+
+def _format_iso_utc(dt_val: Any) -> Optional[str]:
+    if not dt_val:
+        return None
+    if isinstance(dt_val, str):
+        if not dt_val.endswith("Z") and "+" not in dt_val and "-" not in dt_val[-6:]:
+            return f"{dt_val}Z"
+        return dt_val
+    if hasattr(dt_val, "tzinfo"):
+        if dt_val.tzinfo is None:
+            return dt_val.replace(tzinfo=timezone.utc).isoformat()
+        return dt_val.isoformat()
+    return str(dt_val)
+
 
 @router.get("/events")
 def get_audit_events(
@@ -41,7 +57,7 @@ def get_audit_events(
                         "payload": e.payload,
                         "prev_hash": e.prev_hash,
                         "event_hash": e.event_hash,
-                        "created_at": e.created_at.isoformat() if e.created_at else None
+                        "created_at": _format_iso_utc(e.created_at)
                     }
                     for e in events
                 ]
@@ -51,10 +67,17 @@ def get_audit_events(
     events = [e for e in STATE.get("audit_events", []) if e.get("org_id") == org_id]
     if batch_id:
         events = [e for e in events if e.get("batch_id") == batch_id or e.get("entity_id") == batch_id]
+    
+    formatted_items = []
+    for e in events[offset : offset + limit]:
+        item = dict(e)
+        item["created_at"] = _format_iso_utc(item.get("created_at"))
+        formatted_items.append(item)
+
     return {
         "total": len(events),
         "batch_id": batch_id,
-        "items": events[offset : offset + limit]
+        "items": formatted_items
     }
 
 @router.get("/verify-chain")

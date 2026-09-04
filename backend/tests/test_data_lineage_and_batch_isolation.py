@@ -4,7 +4,7 @@ Verifies:
 1. Running Batch A and then Batch B with completely different values guarantees
    Batch B contains ZERO records, matches, or exceptions from Batch A.
 2. Uploading/reconciling a tiny dataset (e.g. ₹100) ensures dashboard totals and
-   13-week cash forecast CANNOT show millions of rupees (no synthetic recurring baseline inflow).
+   settlement analytics CANNOT show millions of rupees (no synthetic recurring baseline inflow).
 3. Reconciling an empty dataset ensures zero records, zero matches, zero exceptions,
    and no stale residual data from previous runs.
 4. Simulating backend restart verifies that previous batch data does not silently leak
@@ -33,7 +33,6 @@ from app.models.schemas import (
     ExceptionSeverity,
     ExceptionState
 )
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.api.v1.batches import execute_batch_reconciliation, STATE, TENANT_STATES, get_active_batch
 from app.api.v1.transactions import get_transactions, get_matches
 from app.api.v1.exceptions import get_exceptions
@@ -110,8 +109,7 @@ class TestDataLineageAndBatchIsolation(unittest.TestCase):
             },
             proposals=[],
             audit_events=[],
-            summary={"total_records": 1, "exact_matches": 0, "contextual_matches": 0, "total_exceptions": 1, "match_rate": 0.0, "wall_clock_seconds": 0.1},
-            cash_forecast=[]
+            summary={"total_records": 1, "exact_matches": 0, "contextual_matches": 0, "total_exceptions": 1, "match_rate": 0.0, "wall_clock_seconds": 0.1}
         )
 
         # Batch B: ₹7,500 transaction
@@ -151,8 +149,7 @@ class TestDataLineageAndBatchIsolation(unittest.TestCase):
             },
             proposals=[],
             audit_events=[],
-            summary={"total_records": 1, "exact_matches": 1, "contextual_matches": 0, "total_exceptions": 0, "match_rate": 100.0, "wall_clock_seconds": 0.1},
-            cash_forecast=[]
+            summary={"total_records": 1, "exact_matches": 1, "contextual_matches": 0, "total_exceptions": 0, "match_rate": 100.0, "wall_clock_seconds": 0.1}
         )
 
         # Query transactions specifically for Batch B
@@ -174,8 +171,8 @@ class TestDataLineageAndBatchIsolation(unittest.TestCase):
         self.assertEqual(res_a["total"], 1)
         self.assertEqual(res_a["items"][0]["external_id"], "pay_ALPHA_50000")
 
-    def test_02_tiny_dataset_100_rupees_no_millions_in_forecast_or_dashboard(self):
-        """2. Upload tiny dataset containing only ₹100. Confirm dashboard totals CANNOT show millions."""
+    def test_02_tiny_dataset_100_rupees_no_millions_in_dashboard(self):
+        """2. Upload tiny dataset containing only ₹100. Confirm dashboard totals reflect exact records."""
         tiny_txn = CanonicalTransaction(
             id=f"TXN-TINY-{uuid.uuid4().hex[:6]}",
             org_id=self.org_id,
@@ -205,26 +202,7 @@ class TestDataLineageAndBatchIsolation(unittest.TestCase):
             )
         }
 
-        # 1. Compute 13-week forecast directly
-        forecast = SegmentedCashForecaster.forecast_13_weeks([tiny_txn], decisions)
-        self.assertEqual(len(forecast), 13)
-
-        # Verify Week 1 confirmed inflow is exactly ₹100.00 (10,000 paise), NOT ₹550,000.00+
-        self.assertEqual(
-            forecast[0].confirmed_inflow_minor,
-            10000,
-            "Week 1 confirmed inflow must be exactly ₹100.00 (10000 paise), without synthetic baseline additions"
-        )
-
-        # Verify sum of all weeks in forecast is bounded by actual transaction amount (₹100)
-        total_forecast_minor = sum(f.confirmed_inflow_minor + f.probable_inflow_minor for f in forecast)
-        self.assertEqual(
-            total_forecast_minor,
-            10000,
-            f"Total 13-week forecast ({total_forecast_minor} paise) must equal actual dataset value (10000 paise = ₹100), never millions"
-        )
-
-        # 2. Persist batch and check executive summary report
+        # Persist batch and check executive summary report
         DatabaseService.save_batch_run(
             org_id=self.org_id,
             batch_id="BATCH-TINY",
@@ -234,24 +212,14 @@ class TestDataLineageAndBatchIsolation(unittest.TestCase):
             decisions=decisions,
             proposals=[],
             audit_events=[],
-            summary={"total_records": 1, "exact_matches": 1, "contextual_matches": 0, "total_exceptions": 0, "match_rate": 100.0, "wall_clock_seconds": 0.05},
-            cash_forecast=[f.model_dump() for f in forecast]
+            summary={"total_records": 1, "exact_matches": 1, "contextual_matches": 0, "total_exceptions": 0, "match_rate": 100.0, "wall_clock_seconds": 0.05}
         )
 
         ctx = DatabaseService.load_batch_context(self.org_id, batch_id="BATCH-TINY")
-        fc_loaded = ctx["cash_forecast"]
-        self.assertEqual(fc_loaded[0]["confirmed_inflow_minor"], 10000)
-        self.assertLess(fc_loaded[0]["confirmed_inflow_minor"], 50000000, "Dashboard cannot report millions for ₹100 dataset")
+        self.assertEqual(ctx["batch"]["total_records"], 1)
 
     def test_03_empty_dataset_handling(self):
-        """3. Reconciling an empty dataset produces zero records and zero forecast with no residual leaks."""
-        forecast = SegmentedCashForecaster.forecast_13_weeks([], {})
-        self.assertEqual(len(forecast), 13)
-        for w in forecast:
-            self.assertEqual(w.confirmed_inflow_minor, 0)
-            self.assertEqual(w.probable_inflow_minor, 0)
-            self.assertEqual(w.at_risk_inflow_minor, 0)
-            self.assertEqual(w.unknown_inflow_minor, 0)
+        """3. Reconciling an empty dataset produces zero records with no residual leaks."""
 
         # Save empty batch run
         DatabaseService.save_batch_run(
@@ -263,8 +231,7 @@ class TestDataLineageAndBatchIsolation(unittest.TestCase):
             decisions={},
             proposals=[],
             audit_events=[],
-            summary={"total_records": 0, "exact_matches": 0, "contextual_matches": 0, "total_exceptions": 0, "match_rate": 0.0, "wall_clock_seconds": 0.01},
-            cash_forecast=[f.model_dump() for f in forecast]
+            summary={"total_records": 0, "exact_matches": 0, "contextual_matches": 0, "total_exceptions": 0, "match_rate": 0.0, "wall_clock_seconds": 0.01}
         )
 
         ctx = DatabaseService.load_batch_context(self.org_id, batch_id="BATCH-EMPTY")

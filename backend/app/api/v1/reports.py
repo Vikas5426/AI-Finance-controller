@@ -9,7 +9,7 @@ from app.db.database import get_db_context
 from app.db import schema
 from app.db.database_service import DatabaseService
 
-router = APIRouter(prefix="/reports", tags=["Reports & Forecasting"])
+router = APIRouter(prefix="/reports", tags=["Reports & Analytics"])
 
 @router.get("/summary")
 async def get_executive_summary(

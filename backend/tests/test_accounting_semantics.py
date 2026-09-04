@@ -218,8 +218,7 @@ class TestAccountingSemantics(unittest.TestCase):
             proposals=[],
             decisions={},
             audit_events=[ev1],
-            summary={"match_rate": 0.0, "wall_clock_seconds": 0.1},
-            cash_forecast={}
+            summary={"match_rate": 0.0, "wall_clock_seconds": 0.1}
         )
 
         # Save batch 2
@@ -232,8 +231,7 @@ class TestAccountingSemantics(unittest.TestCase):
             proposals=[],
             decisions={},
             audit_events=[ev2],
-            summary={"match_rate": 0.0, "wall_clock_seconds": 0.1},
-            cash_forecast={}
+            summary={"match_rate": 0.0, "wall_clock_seconds": 0.1}
         )
 
         # Verify both batches persisted their audit events
@@ -276,8 +274,7 @@ class TestAccountingSemantics(unittest.TestCase):
             proposals=[],
             decisions={},
             audit_events=[],
-            summary={"match_rate": 0.0, "wall_clock_seconds": 0.1},
-            cash_forecast={}
+            summary={"match_rate": 0.0, "wall_clock_seconds": 0.1}
         )
 
         # 2nd run with same batch ID: Must be rejected to preserve immutable history
@@ -291,8 +288,7 @@ class TestAccountingSemantics(unittest.TestCase):
                 proposals=[],
                 decisions={},
                 audit_events=[],
-                summary={"match_rate": 0.0, "wall_clock_seconds": 0.1},
-                cash_forecast={}
+                summary={"match_rate": 0.0, "wall_clock_seconds": 0.1}
             )
         self.assertIn("IMMUTABLE_BATCH_VIOLATION", str(ctx.exception))
 

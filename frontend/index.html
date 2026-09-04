@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css?v=8">
+  <link rel="stylesheet" href="/static/css/styles.css?v=10">
   <link rel="icon" type="image/png" href="/static/img/favicon.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
 </head>
@@ -201,6 +201,7 @@
           <span class="nav-badge-soon" style="background: rgba(56,189,248,0.15); color: var(--accent-cyan);">5 Agents</span>
         </a>
 
+
         <div id="active-feeds-section" style="display: none;">
           <div class="nav-group-title">Active Feeds</div>
           <a class="nav-link nav-project-link" href="javascript:void(0)" id="nav-proj-billing">
@@ -329,16 +330,6 @@
               <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
             </svg>
             <span>Reset Data</span>
-          </button>
-
-          <!-- Header AI Chatbot Icon Button -->
-          <button class="header-chatbot-btn" id="header-chatbot-btn" onclick="toggleQAModal()" title="Open AI Chatbot (⌘K)" aria-label="Open AI Chatbot">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              <circle cx="9" cy="10" r="1.2" fill="currentColor" />
-              <circle cx="15" cy="10" r="1.2" fill="currentColor" />
-            </svg>
-            <span class="header-chatbot-dot"></span>
           </button>
 
           <!-- Notification Bell Icon Button -->
@@ -550,14 +541,14 @@
                   </div>
                 </div>
 
-                <!-- Right: 13-Week Cash Liquidity Forecast -->
+                <!-- Right: Three-Way Settlement Volume -->
                 <div class="inner-graph-box">
                   <div class="graph-header">
                     <div>
-                      <div class="graph-title">13-Week Cash Liquidity Forecast</div>
-                      <div class="graph-subtitle">Confirmed Receipts vs Probable In-Transit Inflows (₹ in Lakhs)</div>
+                      <div class="graph-title">Three-Way Settlement Volume</div>
+                      <div class="graph-subtitle">Ingested Record Volume by Financial Channel (₹ in Lakhs)</div>
                     </div>
-                    <span class="reui-delta-badge delta-green">Forecast</span>
+                    <span class="reui-delta-badge delta-green">Settlement</span>
                   </div>
                   <div class="chart-wrapper-h220">
                     <canvas id="chartNetworkFlow"></canvas>
@@ -695,7 +686,7 @@
             <div class="workflow-sub-item active" data-sub-step="1" id="sub-step-1">1. File Ingestion</div>
             <div class="workflow-sub-item" data-sub-step="2" id="sub-step-2">2. Processing & Matching</div>
             <div class="workflow-sub-item" data-sub-step="3" id="sub-step-3">3. Results & Why</div>
-            <div class="workflow-sub-item" data-sub-step="4" id="sub-step-4">4. Analytics & Forecast</div>
+            <div class="workflow-sub-item" data-sub-step="4" id="sub-step-4">4. Reconciliation Analytics</div>
           </div>
 
           <!-- Stage 1: Clean Start & Ingestion -->
@@ -875,8 +866,8 @@
                     <span class="badge-min badge-green" style="font-size: 0.55rem;">DETERMINISTIC</span>
                   </div>
                   <div class="dag-node-title">Finalize Batch</div>
-                  <div class="dag-node-caption" id="dag-caption-6">Forecasting cash & sealing audit</div>
-                  <div class="dag-node-meta">13-Wk Cash Forecast & SHA-256</div>
+                  <div class="dag-node-caption" id="dag-caption-6">Finalizing batch & sealing audit</div>
+                  <div class="dag-node-meta">Window Summaries & SHA-256</div>
                   <div class="dag-node-status" style="color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
                     <span id="dag-status-6">Waiting</span>
                     <span class="dag-node-timer" id="dag-timer-6"></span>
@@ -923,7 +914,7 @@
                   proofs and SOP citations.</p>
               </div>
               <button class="btn btn-primary btn-sm" id="btn-wf-goto-analytics">
-                View Analytics & Forecast →
+                View Analytics & Quality →
               </button>
             </div>
 
@@ -1028,13 +1019,12 @@
             </div>
           </div>
 
-          <!-- Stage 4: Analytics & Cash Forecast -->
+          <!-- Stage 4: Analytics & Quality -->
           <div class="stage-view-sub" id="wf-stage-4" style="display: none;">
             <div class="overview-header" style="margin-bottom: 1.5rem;">
               <div>
-                <h2 style="font-size: 1.4rem; font-weight: 800;">Reconciliation Precision & Cash Forecast</h2>
-                <p style="font-size: 0.8rem; color: var(--text-secondary);">Calibrated accuracy benchmarks and 13-week
-                  liquidity waterfall projection.</p>
+                <h2 style="font-size: 1.4rem; font-weight: 800;">Reconciliation Precision & Quality Analytics</h2>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">Calibrated accuracy benchmarks and multi-pass reconciliation quality metrics.</p>
               </div>
             </div>
 
@@ -1096,22 +1086,6 @@
               </div>
             </div>
 
-            <div class="reui-card" style="padding: 1.5rem 1.6rem; border-radius: 12px; margin-top: 1.25rem;">
-              <div class="graph-header" style="margin-bottom: 1.25rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                <div>
-                  <div class="graph-title" style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">13-Week Segmented Liquidity Waterfall</div>
-                  <div class="graph-subtitle" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem;">Deterministic Cash Forecast · Confirmed Collections vs At-Risk Inflows (₹ in Lakhs)</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span class="badge-min badge-amber" style="font-family: var(--font-mono); font-size: 0.65rem; display: none;" id="wf-forecast-insufficient-badge">INSUFFICIENT HISTORY — 1 WEEK OF DATA</span>
-                  <span class="badge-min badge-green" style="font-family: var(--font-mono); font-size: 0.65rem;">13 BLOCKS SEALED</span>
-                  <span class="badge-min badge-gray" style="font-family: var(--font-mono); font-size: 0.65rem;" id="wf-waterfall-total-badge">13-Wk Total: ₹0.00L</span>
-                </div>
-              </div>
-              <div class="chart-wrapper-h220" style="height: 300px;">
-                <canvas id="chartWfLiquidityWaterfall"></canvas>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -1136,7 +1110,7 @@
           </div>
 
           <!-- 4 Top Stat KPI Cards -->
-          <div class="kpi-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem;">
+          <div class="kpi-grid-4" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
             <div class="reui-card" style="padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; position: relative; overflow: hidden;">
               <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center;">
                 <span>Active Held Exceptions</span>
@@ -1408,8 +1382,8 @@
                 <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent-emerald); font-weight: 700;">AGENT 11</span>
                 <span class="badge-min badge-green" style="font-size: 0.65rem;">Liquidity</span>
               </div>
-              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Cash & Liquidity Runway</div>
-              <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">13-week cash waterfall insights, treasury runway & working capital.</div>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Financial Insights & Settlement</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; margin-bottom: 0.75rem;">Settlement analytics, working capital optimization & treasury insights.</div>
               <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 0.3rem;" id="btn-run-agent-11">Run Agent 11 →</button>
             </div>
 
@@ -1741,6 +1715,8 @@
           </div>
         </section>
 
+
+
       </main>
     </div>
   </div>
@@ -1973,8 +1949,8 @@
           <button class="prompt-chip" data-query="Explain the MDR fee splits">
             <span>MDR fee rules</span>
           </button>
-          <button class="prompt-chip" data-query="What is the cash forecast for next month?">
-            <span>Cash forecast</span>
+          <button class="prompt-chip" data-query="Summarize audit hash chain status and SOX compliance">
+            <span>Audit & SOX status</span>
           </button>
         </div>
       </div>
@@ -2083,7 +2059,7 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=8"></script>
+  <script src="/static/js/app.js?v=13"></script>
 </body>
 
 </html>

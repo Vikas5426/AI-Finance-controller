@@ -12,7 +12,6 @@ from app.services.context_builder import TransactionContextBuilder
 from app.services.decision_engine import HybridDecisionEngine
 from app.services.matching_engine import ReconciliationEngine
 from app.services.batch_orchestrator import WindowedBatchOrchestrator
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.services.audit_chain import AuditHashChain
 from app.services.ingestion import IngestionService
 from app.api.v1.batches import STATE, execute_batch_reconciliation, RunBatchRequest

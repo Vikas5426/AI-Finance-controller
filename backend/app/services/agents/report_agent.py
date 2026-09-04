@@ -5,7 +5,7 @@ and Period-End Closing Memorandums strictly consuming verified outputs of:
 1. Deterministic Reconciliation Engine
 2. Exception Engine
 3. Systemic RCA Agent
-4. Liquidity / Forecast Engine
+4. Financial Insights & Liquidity Engine
 5. Cryptographic Audit & Compliance Engine
 
 Never recalculates, invents, or fabricates financial figures.

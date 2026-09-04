@@ -1,7 +1,7 @@
 """
 Agent 11: Financial Insight Agent
-Specialized LLM reasoning agent for 13-week cash liquidity forecasting,
-working capital optimization, treasury runway insights, and cash flow variance commentary.
+Specialized LLM reasoning agent for working capital optimization,
+treasury runway insights, settlement analysis, and financial variance commentary.
 """
 
 import json

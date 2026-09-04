@@ -36,7 +36,6 @@ from app.services.validation_service import DataValidationService
 from app.services.context_builder import TransactionContextBuilder
 from app.services.batch_orchestrator import WindowedBatchOrchestrator
 from app.services.agent_runtime import AIAgentRuntime
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.services.audit_chain import AuditHashChain
 
 
@@ -198,9 +197,6 @@ def run_external_reconciliation(
 
     ai_audit_stats = agent_runtime.get_audit_summary()
 
-    # 9. 13-Week Cash Forecast
-    cash_forecast = SegmentedCashForecaster.forecast_13_weeks(all_txns, orchestrator.decisions)
-
     # 10. Audit Chain Verification
     chain_valid, broken_seq = AuditHashChain.verify_chain_integrity(orchestrator.audit_events)
 
@@ -215,8 +211,7 @@ def run_external_reconciliation(
         decisions=orchestrator.decisions,
         proposals=orchestrator.proposals,
         audit_events=orchestrator.audit_events,
-        summary=summary,
-        cash_forecast=[f.model_dump() for f in cash_forecast]
+        summary=summary
     )
 
     wall_clock = time.time() - t_start
@@ -274,8 +269,7 @@ def run_external_reconciliation(
         "matches": [m.model_dump() for m in orchestrator.matches],
         "exceptions": [e.model_dump() for e in orchestrator.exceptions],
         "proposals": orchestrator.proposals,
-        "ai_investigations": [inv.model_dump() for inv in investigations],
-        "cash_forecast": [f.model_dump() for f in cash_forecast]
+        "ai_investigations": [inv.model_dump() for inv in investigations]
     }
 
     os.makedirs(os.path.dirname(output_json_path), exist_ok=True)

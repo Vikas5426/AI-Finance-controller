@@ -293,7 +293,7 @@ def run_financial_insights(
     req: Optional[BatchAgentRequest] = None,
     current_user: Dict[str, Any] = Depends(require_agent_operator)
 ):
-    """Agent 11: 13-Week Cash Liquidity Forecasting & Treasury Advisory."""
+    """Agent 11: Financial Insights & Treasury Liquidity Advisory."""
     b_id = req.batch_id if req else None
     data = _get_batch_context_data(b_id, current_user["org_id"])
     agent = FinancialInsightAgent()

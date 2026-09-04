@@ -5,7 +5,7 @@ Verifies:
    - Deterministic reconciliation engine
    - Exception engine
    - Systemic RCA agent
-   - Liquidity / forecast engine
+   - Financial insights & liquidity engine
    - Cryptographic audit & compliance engine
 2. Report uses exact values without recalculating or inventing numbers.
 3. If RCA / Liquidity / Audit exists, report never denies their presence.

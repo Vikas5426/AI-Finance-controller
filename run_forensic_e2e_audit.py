@@ -23,7 +23,6 @@ from app.services.normalizer import NormalizerService
 from app.services.provenance import InputProvenanceService
 from app.services.audit_chain import AuditHashChain
 from app.services.compliance_evaluator import ComplianceEvaluator
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.services.agents.rca_agent import RootCauseAnalysisAgent
 from app.services.agents.report_agent import ReportGenerationAgent
 from app.services.agents.investigation_agent import ExceptionInvestigationAgent
@@ -224,21 +223,13 @@ def run_forensic_e2e_audit():
             explanation=m.method.value if hasattr(m.method, "value") else str(m.method)
         )
 
-    liq_envelope = SegmentedCashForecaster.generate_liquidity_envelope(
-        transactions=all_txns,
-        decisions=decisions
-    )
-
     s8_data = {
         "batch_id": batch_id,
-        "total_observed_cash_inr": liq_envelope.total_observed_cash_minor / 100,
-        "total_projected_inflow_inr": liq_envelope.total_projected_inflow_minor / 100,
-        "forecast_status": liq_envelope.forecast_status.value,
-        "missing_fields_explanation": liq_envelope.missing_fields_explanation,
-        "weeks_3_to_13_zero": all(s.confirmed_future_inflows_minor == 0 for s in liq_envelope.segments[2:])
+        "total_transactions": len(all_txns),
+        "total_matches": len(graph.get("three_way_matches", [])) + len(graph.get("pairwise_matches", []))
     }
-    results["STAGE_8_LIQUIDITY"] = {"status": "PASS", "data": s8_data}
-    print(f"[STAGE 8: LIQUIDITY] PASS -> Status: {s8_data['forecast_status']}, Observed Cash: Rs. {s8_data['total_observed_cash_inr']:,.2f}, Weeks 3-13 clean: {s8_data['weeks_3_to_13_zero']}")
+    results["STAGE_8_SETTLEMENT"] = {"status": "PASS", "data": s8_data}
+    print(f"[STAGE 8: SETTLEMENT] PASS -> Transactions: {len(all_txns)}, Matches: {s8_data['total_matches']}")
 
     # -------------------------------------------------------------------------
     # STAGE 9: CRYPTOGRAPHIC AUDIT & COMPLIANCE (5-STATE CONTROLS)
@@ -333,11 +324,7 @@ def run_forensic_e2e_audit():
             operational_summary=rca_res.get("operational_summary")
         ),
         liquidity=ReportLiquiditySection(
-            status=liq_envelope.forecast_status.value,
-            missing_fields_explanation=liq_envelope.missing_fields_explanation,
-            total_observed_cash_inr=liq_envelope.total_observed_cash_minor / 100,
-            total_projected_inflow_inr=liq_envelope.total_projected_inflow_minor / 100,
-            forward_weeks_status=liq_envelope.forecast_status.value
+            status="NOT_AVAILABLE"
         ),
         audit=ReportAuditSection(
             status="AVAILABLE",

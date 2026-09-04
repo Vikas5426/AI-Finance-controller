@@ -262,65 +262,6 @@ class ExceptionSchema(BaseModel):
     investigation: Optional[InvestigationResult] = None
     detected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class ForecastClassification(str, Enum):
-    OBSERVED_CASH = "OBSERVED_CASH"
-    CONFIRMED_FUTURE_INFLOWS = "CONFIRMED_FUTURE_INFLOWS"
-    PROBABLE_INFLOWS = "PROBABLE_INFLOWS"
-    AT_RISK_INFLOWS = "AT_RISK_INFLOWS"
-    UNKNOWN_INFLOWS = "UNKNOWN_INFLOWS"
-    ASSUMPTIONS = "ASSUMPTIONS"
-
-class DataNature(str, Enum):
-    OBSERVED = "Observed"
-    CALCULATED = "Calculated"
-    FORECAST = "Forecast"
-    ASSUMPTION = "Assumption"
-
-class ForecastStatus(str, Enum):
-    COMPLETE = "COMPLETE"
-    PARTIAL = "PARTIAL"
-    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
-
-class ForecastEntry(BaseModel):
-    week_number: int
-    amount_minor: int
-    amount_inr: float
-    classification: ForecastClassification
-    data_nature: DataNature
-    source_record_ids: List[str] = Field(default_factory=list)
-    calculation_method: str
-    assumption_ids: List[str] = Field(default_factory=list)
-    narrative: str
-
-class CashForecastSegment(BaseModel):
-    week_number: int
-    period_start: str
-    period_end: str
-    observed_cash_minor: int = 0
-    confirmed_future_inflows_minor: int = 0
-    probable_inflows_minor: int = 0
-    at_risk_inflows_minor: int = 0
-    unknown_inflows_minor: int = 0
-    assumptions_minor: int = 0
-    
-    # Backwards-compatible aliases
-    confirmed_inflow_minor: int = 0
-    probable_inflow_minor: int = 0
-    at_risk_inflow_minor: int = 0
-    unknown_inflow_minor: int = 0
-    
-    entries: List[ForecastEntry] = Field(default_factory=list)
-    risk_narrative: str
-
-class LiquidityForecastEnvelope(BaseModel):
-    forecast_status: ForecastStatus
-    missing_fields_explanation: Optional[str] = None
-    as_of_date: str
-    total_observed_cash_minor: int
-    total_projected_inflow_minor: int
-    segments: List[CashForecastSegment] = Field(default_factory=list)
-    provenance_summary: Dict[str, Any] = Field(default_factory=dict)
-
 class ExecutionMode(str, Enum):
     USER_UPLOAD = "USER_UPLOAD"
     INTERNAL_TEST = "INTERNAL_TEST"

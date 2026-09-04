@@ -25,7 +25,6 @@ from app.models.schemas import (
     JournalLine,
     DecisionTier,
     ReconciliationDecision,
-    ForecastStatus,
     AIExceptionContext,
     ExecutiveReportInputContract,
     ReportReconciliationSection,
@@ -37,7 +36,6 @@ from app.models.schemas import (
 )
 from app.services.matching_engine import ReconciliationEngine
 from app.services.normalizer import NormalizerService
-from app.services.cash_forecaster import SegmentedCashForecaster
 from app.services.compliance_evaluator import ComplianceEvaluator
 from app.services.agents.rca_agent import RootCauseAnalysisAgent
 from app.services.agents.report_agent import ReportGenerationAgent

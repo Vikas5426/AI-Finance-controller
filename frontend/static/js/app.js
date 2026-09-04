@@ -82,7 +82,6 @@ const appState = {
   allTransactions: [],
   allExceptions: [],
   pendingApprovals: [],
-  cashForecast: [],
   auditEvents: [],
   batchReport: null,
   activeCategory: 'matched',
@@ -829,7 +828,7 @@ const WORKFLOW_STAGE_NAMES = {
   1: 'Stage 1: Ingest Feeds',
   2: 'Stage 2: Source Mapping',
   3: 'Stage 3: Match Engine',
-  4: 'Stage 4: Liquidity Analytics'
+  4: 'Stage 4: Reconciliation Analytics'
 };
 
 function updateBreadcrumbUI(viewName, breadcrumbText) {
@@ -1272,50 +1271,34 @@ function initOverviewCharts() {
     });
   }
 
-  // 2. 13-Week Cash Liquidity Forecast Wave Splines (Ultra-Sharp High-DPI)
+  // 2. Three-Way Settlement Volume Distribution (Ultra-Sharp High-DPI)
   const ctxFlow = document.getElementById('chartNetworkFlow')?.getContext('2d');
   if (ctxFlow) {
     if (appState.charts.flow) appState.charts.flow.destroy();
 
-    const forecast = appState.cashForecast || [];
-    let flowLabels = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11', 'W12', 'W13'];
-    let flowConfirmed = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let flowProbable = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const txns = appState.allTransactions || [];
+    const gwAmt = txns.filter(t => (t.source_kind || '').toUpperCase().includes('GATEWAY')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 10000000;
+    const bkAmt = txns.filter(t => (t.source_kind || '').toUpperCase().includes('BANK')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 10000000;
+    const glAmt = txns.filter(t => (t.source_kind || '').toUpperCase().includes('LEDGER')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 10000000;
 
-    if (forecast.length > 0) {
-      flowLabels = forecast.map(f => `W${f.week_number || ''}`);
-      flowConfirmed = forecast.map(f => parseFloat(((f.confirmed_inflow_minor || 0) / 10000000).toFixed(2)));
-      flowProbable = forecast.map(f => parseFloat(((f.probable_inflow_minor || 0) / 10000000).toFixed(2)));
-    }
+    const flowLabels = ['Gateway PSP', 'Bank Deposits', 'General Ledger'];
+    const flowData = [parseFloat(gwAmt.toFixed(2)), parseFloat(bkAmt.toFixed(2)), parseFloat(glAmt.toFixed(2))];
 
     appState.charts.flow = new Chart(ctxFlow, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: flowLabels,
         datasets: [
           {
-            label: 'Confirmed Receipts (100%)',
-            data: flowConfirmed,
-            borderColor: isDark ? '#10b981' : '#059669',
-            backgroundColor: isDark ? '#10b981' : '#059669',
-            borderWidth: 2.5,
-            tension: 0.38,
-            pointRadius: 2.5,
-            pointBackgroundColor: isDark ? '#10b981' : '#059669',
-            pointHoverRadius: 5,
-            fill: false
-          },
-          {
-            label: 'Probable In-Transit (70%)',
-            data: flowProbable,
-            borderColor: isDark ? '#38bdf8' : '#0284c7',
-            backgroundColor: isDark ? '#38bdf8' : '#0284c7',
-            borderWidth: 2.5,
-            tension: 0.38,
-            pointRadius: 2.5,
-            pointBackgroundColor: isDark ? '#38bdf8' : '#0284c7',
-            pointHoverRadius: 5,
-            fill: false
+            label: 'Ingested Volume (₹ Lakhs)',
+            data: flowData,
+            backgroundColor: [
+              isDark ? '#38bdf8' : '#0284c7',
+              isDark ? '#10b981' : '#059669',
+              isDark ? '#a855f7' : '#7c3aed'
+            ],
+            borderRadius: 6,
+            barThickness: 32
           }
         ]
       },
@@ -1332,10 +1315,9 @@ function initOverviewCharts() {
             borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
             borderWidth: 1,
             cornerRadius: 6,
-            usePointStyle: true,
             callbacks: {
               label: function (context) {
-                return ` ${context.dataset.label}: ₹${context.raw.toFixed(2)} Lakhs`;
+                return ` Volume: ₹${context.raw.toFixed(2)} Lakhs`;
               }
             }
           }
@@ -1343,24 +1325,18 @@ function initOverviewCharts() {
         scales: {
           x: {
             grid: { display: false },
-            border: { display: false },
             ticks: { color: textColor, font: { family: FONT_MONO, size: 10.5, weight: '600' } }
           },
           y: {
             grid: { color: gridColor, borderDash: [4, 4] },
-            border: { display: false },
             ticks: {
-              color: textMuted,
-              font: { family: FONT_MONO, size: 10, weight: '600' },
-              callback: function (val) {
-                if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
-                return `₹${val}`;
-              }
+              color: tickColor,
+              font: { family: FONT_MONO, size: 9.5 },
+              callback: v => `₹${v}L`
             }
           }
         }
       }
-    });
   }
 }
 
@@ -1397,7 +1373,6 @@ async function resetWorkspace() {
     appState.allTransactions = [];
     appState.allExceptions = [];
     appState.pendingApprovals = [];
-    appState.cashForecast = [];
     appState.auditEvents = [];
     appState.batchReport = null;
     appState.uploadedFiles = [];
@@ -1650,9 +1625,6 @@ async function fetchProcessedData() {
       appState.batchReport = await repRes.json();
       const rep = appState.batchReport;
       if (rep.batch?.id) appState.batchId = rep.batch.id;
-      if (rep.cash_forecast && rep.cash_forecast.length > 0) {
-        appState.cashForecast = rep.cash_forecast;
-      }
       
       const op = rep.operational_metrics || activeSummary || {};
       const total = op.total_records !== undefined ? op.total_records : (txTotal || appState.allTransactions.length || 0);
@@ -1793,7 +1765,7 @@ async function fetchProcessedData() {
 
       updateActiveExceptionLanes(appState.allExceptions, excs);
 
-      if (total > 0 || (rep.cash_forecast && rep.cash_forecast.length > 0)) {
+      if (total > 0) {
         appState.isProcessed = true;
       }
 
@@ -2333,7 +2305,8 @@ async function startWorkflowProcessing() {
 
     function logLine(msg) {
       if (!term) return;
-      const t = new Date().toISOString().substring(11, 19);
+      const now = new Date();
+      const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
       term.innerHTML += `<div class="term-line"><span class="term-time">[${t}]</span> <span class="term-msg">${escapeHtml(msg)}</span></div>`;
       term.scrollTop = term.scrollHeight;
     }
@@ -2477,9 +2450,10 @@ async function startWorkflowProcessing() {
 
     // Node 6: Finalize Batch
     const auditHashShort = batchData.audit_hash ? `${batchData.audit_hash.slice(0, 12)}...` : `(${auditCount} Blocks)`;
-    updateDagNode('6', 'completed', `Sealed ${auditHashShort}`, 'Forecasting cash and sealing the audit record');
+    updateDagNode('6', 'completed', `Sealed ${auditHashShort}`, 'Finalizing batch & sealing audit');
+    renderAuditTrail();
     if (progressFill) progressFill.style.width = '100%';
-    logLine(`Node 06: Generated 13-week cash liquidity forecast and sealed SHA-256 audit blocks.`);
+    logLine(`Node 06: Generated window summaries and sealed SHA-256 audit blocks.`);
 
     if (dagStatus) {
       dagStatus.textContent = 'All 7 Nodes Executed · Verified';
@@ -2594,7 +2568,7 @@ function renderResultsTable() {
         <td style="color: var(--text-muted); white-space: nowrap;">${dt}</td>
         <td><span class="badge-min ${badgeCls}" style="white-space: nowrap;">${escapeHtml(humanStatus)}</span></td>
         <td>
-          <button class="btn btn-ghost btn-sm" onclick="askAboutTxn('${escapeHtml(t.external_id || t.id)}')" style="display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="askAboutTxn('${escapeHtml(t.external_id || t.id)}', '${escapeHtml(t.id)}')" style="display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
             Inspect
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -2604,193 +2578,51 @@ function renderResultsTable() {
   }).join('');
 }
 
-window.askAboutTxn = function (ref) {
+window.askAboutTxn = function (ref, txnId) {
+  // 1. Locate the specific transaction in appState.transactions
+  const t = (appState.transactions || []).find(x => (x.external_id && x.external_id === ref) || x.id === txnId || x.id === ref);
+  const isM = t ? isTxnMatched(t) : false;
+  const isExc = t ? isTxnException(t) : false;
+
+  // 2. Set structured context for QA endpoint
+  appState.qaContext = appState.qaContext || {};
+  if (t) {
+    appState.qaContext.target_transaction = {
+      id: t.id,
+      external_id: t.external_id || ref,
+      amount_minor: t.amount_minor,
+      source_kind: getTxnSourceKind(t),
+      direction: t.direction,
+      match_status: t.match_status,
+      occurred_at: t.occurred_at,
+      settled: isM && !isExc
+    };
+  }
+
+  // 3. Craft truthful, un-biased query based on ground truth
+  let queryPrompt = '';
+  if (isM && !isExc) {
+    queryPrompt = `Inspect transaction ${ref} and explain its settlement details in this batch.`;
+  } else if (isExc) {
+    queryPrompt = `Why is transaction ${ref} flagged with an exception in this batch?`;
+  } else {
+    queryPrompt = `What is the reconciliation and settlement status of transaction ${ref} in this batch?`;
+  }
+
   toggleQAModal();
   const input = document.getElementById('qa-user-input');
   if (input) {
-    input.value = `Why did invoice ${ref} not settle in this batch?`;
+    input.value = queryPrompt;
     sendQAMessage();
   }
 };
 
 // ==============================================================================
-// STAGE 4: 13-WEEK LIQUIDITY WATERFALL CHART
+// STAGE 4: RECONCILIATION ANALYTICS
 // ==============================================================================
 
 function renderWorkflowLiquidityChart() {
-  const ctx = document.getElementById('chartWfLiquidityWaterfall')?.getContext('2d');
-  if (!ctx) return;
-
-  const isDark = appState.theme === 'dark';
-  const gridColor = isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.04)';
-  const tickColor = isDark ? '#64748b' : '#94a3b8';
-  const tooltipBg = isDark ? '#080a0f' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
-  const tooltipTitle = isDark ? '#ffffff' : '#0f172a';
-  const tooltipBody = isDark ? '#94a3b8' : '#475569';
-
-  if (appState.charts.waterfall) appState.charts.waterfall.destroy();
-
-  const forecast = appState.cashForecast || [];
-  let labels = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11', 'W12', 'W13'];
-  let dataConfirmed = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-  let dataProbable = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-  let dataAtRisk = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
-  let isLakhs = false;
-  let maxMinor = 0;
-  if (forecast.length > 0) {
-    maxMinor = Math.max(...forecast.map(f => (f.confirmed_inflow_minor || 0) + (f.probable_inflow_minor || 0) + (f.at_risk_inflow_minor || 0)));
-    isLakhs = maxMinor >= 10000000;
-    const divisor = isLakhs ? 10000000 : 100;
-    labels = forecast.map(f => `W${f.week_number || ''}`);
-    dataConfirmed = forecast.map(f => parseFloat(((f.confirmed_inflow_minor || 0) / divisor).toFixed(2)));
-    dataProbable = forecast.map(f => parseFloat(((f.probable_inflow_minor || 0) / divisor).toFixed(2)));
-    dataAtRisk = forecast.map(f => parseFloat(((f.at_risk_inflow_minor || 0) / divisor).toFixed(2)));
-  }
-
-  // Update total badge
-  const total13Wk = dataConfirmed.concat(dataProbable, dataAtRisk).reduce((a, b) => a + b, 0);
-  const totalBadge = document.getElementById('wf-waterfall-total-badge');
-  const fcStatus = appState.batchReport?.forecast_status || 'PARTIAL';
-  const fcInsuffBadge = document.getElementById('wf-forecast-insufficient-badge');
-  if (fcInsuffBadge) {
-    fcInsuffBadge.style.display = fcStatus === 'INSUFFICIENT_DATA' ? 'inline-block' : 'none';
-  }
-  if (totalBadge) {
-    const formattedTotal = isLakhs ? `₹${total13Wk.toFixed(2)}L` : `₹${total13Wk.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    if (fcStatus === 'INSUFFICIENT_DATA') {
-      totalBadge.textContent = `13-Wk Total: ${formattedTotal} (Forward W3-13: Insufficient Data)`;
-      totalBadge.title = appState.batchReport?.missing_fields_explanation || 'No forward scheduled receivables provided in uploaded batch.';
-    } else {
-      totalBadge.textContent = `13-Wk Total: ${formattedTotal} [Audited Data]`;
-    }
-  }
-
-  appState.charts.waterfall = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Confirmed Receipts [Observed/Calculated]',
-          data: dataConfirmed,
-          backgroundColor: isDark ? 'rgba(16, 185, 129, 0.72)' : 'rgba(5, 150, 105, 0.85)',
-          borderColor: isDark ? 'rgba(16, 185, 129, 0.95)' : 'rgba(5, 150, 105, 1)',
-          borderWidth: 1,
-          borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 },
-          borderSkipped: false,
-          stack: 'stack1'
-        },
-        {
-          label: 'Probable In-Transit [Forecast]',
-          data: dataProbable,
-          backgroundColor: isDark ? 'rgba(56, 189, 248, 0.42)' : 'rgba(14, 165, 233, 0.5)',
-          borderColor: isDark ? 'rgba(56, 189, 248, 0.75)' : 'rgba(14, 165, 233, 0.8)',
-          borderWidth: 1,
-          borderRadius: 0,
-          borderSkipped: false,
-          stack: 'stack1'
-        },
-        {
-          label: 'At-Risk Clearing [Calculated]',
-          data: dataAtRisk,
-          backgroundColor: isDark ? 'rgba(245, 158, 11, 0.65)' : 'rgba(217, 119, 6, 0.75)',
-          borderColor: isDark ? 'rgba(245, 158, 11, 0.9)' : 'rgba(217, 119, 6, 0.95)',
-          borderWidth: 1,
-          borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
-          borderSkipped: false,
-          stack: 'stack1'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      barPercentage: 0.46,
-      categoryPercentage: 0.72,
-      animation: {
-        duration: 500,
-        easing: 'easeOutQuart'
-      },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          align: 'center',
-          labels: {
-            color: tickColor,
-            font: { family: FONT_SANS, size: 11.5, weight: '500' },
-            boxWidth: 9,
-            boxHeight: 9,
-            usePointStyle: true,
-            pointStyle: 'rectRounded',
-            padding: 20
-          }
-        },
-        tooltip: {
-          backgroundColor: tooltipBg,
-          titleColor: tooltipTitle,
-          bodyColor: tooltipBody,
-          borderColor: tooltipBorder,
-          borderWidth: 1,
-          padding: 12,
-          boxPadding: 6,
-          usePointStyle: true,
-          cornerRadius: 8,
-          titleFont: { family: FONT_SANS, size: 12, weight: '600' },
-          bodyFont: { family: FONT_MONO, size: 11 },
-          callbacks: {
-            title: function (items) {
-              const wNum = items[0].label.replace('W', '');
-              return `Week ${wNum} Cash Forecast & Provenance`;
-            },
-            label: function (context) {
-              const val = context.raw;
-              const total = context.chart.data.datasets.reduce((sum, d) => sum + (d.data[context.dataIndex] || 0), 0);
-              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-              const formattedVal = isLakhs ? `₹${val.toFixed(2)} Lakhs` : `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              return ` ${context.dataset.label}: ${formattedVal} (${pct}%)`;
-            },
-            footer: function (items) {
-              const total = items.reduce((sum, item) => sum + item.raw, 0);
-              const formattedTotal = isLakhs ? `₹${total.toFixed(2)} Lakhs` : `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              return `Total Verified Inflow: ${formattedTotal}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          stacked: true,
-          grid: { display: false },
-          border: { display: false },
-          ticks: {
-            color: tickColor,
-            font: { family: FONT_MONO, size: 11, weight: '500' },
-            padding: 8
-          }
-        },
-        y: {
-          stacked: true,
-          grid: {
-            color: gridColor,
-            borderDash: [4, 4]
-          },
-          border: { display: false },
-          ticks: {
-            color: tickColor,
-            font: { family: FONT_MONO, size: 11 },
-            padding: 10,
-            callback: function (val) {
-              if (isLakhs) return `₹${val}L`;
-              if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
-              return `₹${val}`;
-            }
-          }
-        }
-      }
-    }
-  });
+  return;
 }
 
 // ==============================================================================
@@ -3065,14 +2897,34 @@ function renderExceptionsQueue() {
       const type = e.exception_type || 'MANUAL_REVIEW';
       const humanType = type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
-      // Format proposal action
-      let proposal = 'Review transaction voucher';
-      if (e.proposal_action) {
-        proposal = e.proposal_action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      } else if (type.includes('CUTOFF')) proposal = 'Accrue to Acc 1290 (In-Transit)';
-      else if (type.includes('FEE') || type.includes('MDR')) proposal = 'Auto-post fee split to Acc 5010';
-      else if (type.includes('MISSING') || type.includes('TIMING')) proposal = 'Issue UTR trace inquiry to bank';
-      else if (type.includes('DUP')) proposal = 'Hold duplicate webhook and reverse';
+      // Format proposal action: Keep table view compact and small, show full detail in drawer
+      const fullAction = e.proposal_action || '';
+      let defaultFallback = 'Review transaction voucher';
+      if (type.includes('CUTOFF')) defaultFallback = 'Accrue to Acc 1290 (In-Transit)';
+      else if (type.includes('FEE') || type.includes('MDR')) defaultFallback = 'Auto-post fee split (Acc 5010)';
+      else if (type.includes('MISSING') || type.includes('TIMING')) defaultFallback = 'Issue UTR trace inquiry to bank';
+      else if (type.includes('DUP')) defaultFallback = 'Hold duplicate webhook and reverse';
+
+      let fullProposal = fullAction || defaultFallback;
+      let shortProposal = defaultFallback;
+
+      if (fullAction) {
+        if (/^[A-Z0-9_]+$/.test(fullAction.trim())) {
+          shortProposal = fullAction.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+          fullProposal = shortProposal;
+        } else {
+          // Natural language: extract concise summary (first sentence/clause up to ~36 chars)
+          const cleanText = fullAction.trim();
+          const firstSentence = cleanText.split(/[.\n;]/)[0].trim();
+          if (firstSentence.length <= 36) {
+            shortProposal = firstSentence;
+          } else {
+            shortProposal = firstSentence.substring(0, 34).trim() + '…';
+          }
+        }
+      }
+
+      const isLongAction = fullProposal.length > 38 || fullProposal !== shortProposal;
 
       const sev = e.severity || 'MEDIUM';
       const badgeCls = sev === 'CRITICAL' ? 'badge-coral' : (sev === 'HIGH' ? 'badge-amber' : 'badge-blue');
@@ -3090,15 +2942,28 @@ function renderExceptionsQueue() {
         statusBadge = `<span class="badge-min badge-coral">REJECTED</span>`;
       }
 
+      const shortBatch = rowBatch.length > 20 ? (rowBatch.substring(0, 11) + '…' + rowBatch.slice(-6)) : rowBatch;
+
       return `
         <tr id="row-${excId}">
           <td class="mono-text" style="font-weight: 600; white-space: nowrap; font-size: 0.78rem;">${escapeHtml(excId)}</td>
-          <td class="mono-text" style="color: var(--text-muted); font-size: 0.72rem; white-space: nowrap;">${escapeHtml(rowBatch)}</td>
-          <td style="white-space: nowrap; font-weight: 500;">${escapeHtml(humanType)}</td>
+          <td class="mono-text" style="color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; cursor: help;" title="${escapeHtml(rowBatch)}">${escapeHtml(shortBatch)}</td>
+          <td style="font-weight: 500; font-size: 0.8rem; max-width: 180px;">${escapeHtml(humanType)}</td>
           <td><span class="badge-min ${badgeCls}" style="white-space: nowrap;">${escapeHtml(sev)}</span></td>
           <td class="mono-text" style="font-weight: 700; white-space: nowrap;">${amt}</td>
           <td>${statusBadge}</td>
-          <td style="color: var(--text-secondary); font-size: 0.78rem;">${escapeHtml(proposal)}</td>
+          <td class="table-treatment-cell" style="white-space: nowrap;">
+            <div class="table-treatment-wrap">
+              <span class="table-treatment-text" title="Click to view detailed AI treatment & proof&#10;&#10;${escapeHtml(fullProposal)}" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')">
+                ${escapeHtml(shortProposal)}
+              </span>
+              ${isLongAction ? `
+                <button type="button" class="table-treatment-btn" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')" title="View detailed AI reasoning & proof">
+                  Details →
+                </button>
+              ` : ''}
+            </div>
+          </td>
           <td style="text-align: right; padding-right: 1.25rem;">
             <div style="display: inline-flex; align-items: center; gap: 0.45rem; white-space: nowrap;">
               <button class="btn btn-secondary btn-xs" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')" style="display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; height: 28px; padding: 0 0.65rem;">
@@ -3194,6 +3059,56 @@ window.approveProposal = async function (excId, propId = null, decisionNotes = n
 // AUDIT CHAIN INTEGRITY
 // ==============================================================================
 
+function formatAuditTimestamp(raw) {
+  if (!raw) return '<span style="color: var(--text-dim);">—</span>';
+
+  let str = String(raw).trim();
+  // Normalize space to T if needed
+  if (!str.includes('T') && str.includes(' ')) {
+    str = str.replace(' ', 'T');
+  }
+  // If no timezone offset present, append Z because backend timestamps are UTC
+  if (!str.endsWith('Z') && !str.includes('+') && !/-\d{2}:\d{2}$/.test(str)) {
+    str += 'Z';
+  }
+
+  const d = new Date(str);
+  if (isNaN(d.getTime())) {
+    return escapeHtml(String(raw).replace('T', ' ').substring(0, 19));
+  }
+
+  // Format to user's local timezone: YYYY-MM-DD HH:mm:ss
+  const pad = n => String(n).padStart(2, '0');
+  const y = d.getFullYear();
+  const m = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const h = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  const s = pad(d.getSeconds());
+  const localFormatted = `${y}-${m}-${day} ${h}:${min}:${s}`;
+
+  // Timezone identifier (e.g. IST, EDT, UTC)
+  let tzLabel = '';
+  try {
+    const tzPart = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' })
+      .formatToParts(d)
+      .find(p => p.type === 'timeZoneName')?.value;
+    if (tzPart) tzLabel = tzPart;
+  } catch (err) {}
+
+  if (!tzLabel) {
+    const offsetMin = -d.getTimezoneOffset();
+    const sign = offsetMin >= 0 ? '+' : '-';
+    const tzH = pad(Math.floor(Math.abs(offsetMin) / 60));
+    const tzM = pad(Math.abs(offsetMin) % 60);
+    tzLabel = `UTC${sign}${tzH}:${tzM}`;
+  }
+
+  const utcFormatted = d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+  return `<span class="mono-text" title="UTC: ${utcFormatted}" style="color: var(--text-secondary); cursor: default;">${localFormatted}</span> <span style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-sans); padding: 0.1rem 0.35rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 4px;" title="Local Timezone">${tzLabel}</span>`;
+}
+
 function renderAuditTrail() {
   const tbody = document.getElementById('audit-chain-tbody');
   const rootDisp = document.getElementById('audit-root-hash-display');
@@ -3271,7 +3186,7 @@ function renderAuditTrail() {
         <td style="white-space: nowrap;">${escapeHtml((e.event_type || 'INGESTION').toUpperCase())}</td>
         <td class="mono-text" style="color: var(--accent-cyan); white-space: nowrap; cursor: pointer;" title="Click to copy full SHA-256 hash" onclick="navigator.clipboard.writeText('${fullHash}'); showToast('Block Hash #${e.event_seq || idx + 1} copied ✓', 'success');">${escapeHtml(fullHash.substring(0, 16))}... <span style="font-size: 0.7rem; opacity: 0.6;">📋</span></td>
         <td class="mono-text" style="color: var(--text-muted); white-space: nowrap;">${escapeHtml((e.prev_hash || '').substring(0, 16))}...</td>
-        <td style="color: var(--text-muted); white-space: nowrap;">${(e.created_at || '').substring(0, 19).replace('T', ' ')}</td>
+        <td style="white-space: nowrap;">${formatAuditTimestamp(e.created_at)}</td>
         <td style="white-space: nowrap;"><span class="badge-min ${cls}">${label}</span></td>
       </tr>
     `;
@@ -3371,12 +3286,12 @@ function renderQAStarterChipsHtml() {
         </svg>
         <span>${escapeHtml(topExcLabel)}</span>
       </button>
-      <button class="prompt-chip" data-query="What is the 13-week cash runway and liquidity forecast for this batch?">
+      <button class="prompt-chip" data-query="Summarize all unverified exceptions and financial risk">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
           <polyline points="16 7 22 7 22 13" />
         </svg>
-        <span>13-week cash runway?</span>
+        <span>Risk & exceptions summary</span>
       </button>
     </div>
   `;
@@ -4607,6 +4522,20 @@ window.openExceptionInvestigationDrawer = async function(excId) {
           <div style="display: flex; justify-content: space-between;">
             <span style="font-size: 0.75rem; color: var(--text-muted);">Recommended Action</span>
             <span class="badge-min badge-green">${escapeHtml(data.recommended_action || 'not reported')}</span>
+          </div>
+        </div>
+
+        <!-- Detailed AI Proposed Treatment Plan -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="font-size: 0.825rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.45rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-cyan);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <span>Detailed AI Proposed Treatment Plan</span>
+            </div>
+            <span class="badge-min badge-green" style="font-size: 0.68rem;">Action Plan</span>
+          </div>
+          <div style="font-size: 0.78rem; line-height: 1.6; color: var(--text-primary); background: var(--bg-surface); padding: 0.9rem 1rem; border-radius: 6px; border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent-cyan);">
+            ${escapeHtml(exc.proposal_action || data.recommended_action || data.detailed_recommendation || data.likely_cause || 'Initiate standard manual investigation and verify transaction supporting documents.')}
           </div>
         </div>
 

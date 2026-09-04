@@ -10,7 +10,6 @@ period anchors:
     batches.py  STATE      "period_start": "2026-08-01", "period_end": "2026-08-31"
     context_builder.py     day in (28, 29, 30, 31) and hour >= 20
     normalizer.py          default_d: date = date(2026, 8, 20)
-    cash_forecaster.py     base_date = date(2026, 3, 31)
 
 Each one silently disagreed with the others, so "is this a period cut-off
 timing difference?" had a different answer depending on which module asked.

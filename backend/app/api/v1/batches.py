@@ -28,7 +28,6 @@ from app.services.normalizer import NormalizerService
 from app.services.ingestion import IngestionService
 from app.services.provenance import InputProvenanceService
 from app.services.graph_orchestrator import LangGraphBatchOrchestrator
-from app.services.cash_forecaster import SegmentedCashForecaster
 
 router = APIRouter(prefix="/batches", tags=["Windowed Reconciliation Batches"])
 
@@ -203,11 +202,7 @@ def execute_batch_reconciliation(
     orchestrator = LangGraphBatchOrchestrator(org_id=org_id, batch_id=b_id, window_size=window_size)
     summary = orchestrator.run_windowed_pipeline(canonical_txns)
 
-    # Step 4: Segmented 13-Week Cash Forecast & Liquidity Envelope
-    liquidity_envelope = SegmentedCashForecaster.generate_liquidity_envelope(canonical_txns, orchestrator.decisions)
-    forecast = liquidity_envelope.segments
-
-    # Step 5: Atomically Persist to Database
+    # Step 4: Atomically Persist to Database
     DatabaseService.save_batch_run(
         org_id=org_id,
         batch_id=b_id,
@@ -218,7 +213,6 @@ def execute_batch_reconciliation(
         proposals=orchestrator.proposals,
         audit_events=orchestrator.audit_events,
         summary=summary,
-        cash_forecast=[f.model_dump() for f in forecast],
         # Whoever triggered this run is the maker of the vouchers it raises.
         created_by=created_by,
         investigations=getattr(orchestrator, "verified_proposals", {})
@@ -246,7 +240,16 @@ def execute_batch_reconciliation(
         "execution_time_sec": summary["wall_clock_seconds"],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
-    STATE["transactions"] = [t.model_dump() for t in canonical_txns]
+    txns_dump = []
+    for t in canonical_txns:
+        d_dict = t.model_dump()
+        dec = orchestrator.decisions.get(t.id)
+        if dec and hasattr(dec.tier, "value"):
+            d_dict["match_status"] = dec.tier.value
+        elif getattr(t, "match_status", None):
+            d_dict["match_status"] = t.match_status.value if hasattr(t.match_status, "value") else str(t.match_status)
+        txns_dump.append(d_dict)
+    STATE["transactions"] = txns_dump
     STATE["matches"] = [m.model_dump() for m in orchestrator.matches]
     STATE["exceptions"] = [e.model_dump() for e in orchestrator.exceptions]
     STATE["decisions"] = {k: v.model_dump() for k, v in orchestrator.decisions.items()}
@@ -273,8 +276,6 @@ def execute_batch_reconciliation(
         "tier_breakdown": summary.get("tier_breakdown", {}),
         "match_rate": summary["match_rate"]
     }
-    STATE["cash_forecast"] = [f.model_dump() for f in forecast]
-    STATE["liquidity_forecast"] = liquidity_envelope.model_dump()
     STATE["provenance"] = manifest.model_dump()
 
     # Synchronize tenant-isolated state
@@ -326,7 +327,7 @@ def execute_batch_reconciliation(
         "node_6": {
             "name": "Finalize Batch",
             "status": "COMPLETED",
-            "forecast_weeks": 13,
+            "windows_sealed": len(summary.get("windows", [])),
             "audit_blocks_sealed": len(orchestrator.audit_events) if hasattr(orchestrator, "audit_events") else 1
         }
     }

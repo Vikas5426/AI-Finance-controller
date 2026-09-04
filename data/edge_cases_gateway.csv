@@ -1,8 +1,0 @@
-payment_id,order_id,amount,currency,fee,tax,status,method,captured_at,settlement_id,customer_email,description
-pay_EDGE_01,ord_8001,500000,INR,10000,1800,captured,upi,2026-03-25T10:00:00+05:30,setl_ED01,user1@edge.corp,Invoice INV-2026-8001 standard enterprise
-pay_EDGE_02,ord_8002,1000000,INR,20000,3600,captured,card,2026-03-25T14:30:00+05:30,setl_ED01,user2@edge.corp,Invoice INV-2026-8002 high-value tier
-pay_EDGE_03,ord_8003,236000,INR,4720,850,captured,netbanking,2026-03-31T23:45:00+05:30,setl_ED02,user3@edge.corp,Invoice INV-2026-8003 month-end cutoff T+2 lag
-pay_EDGE_04,ord_8004,99900,INR,1998,360,captured,upi,2026-03-26T11:00:00+05:30,setl_ED02,user4@edge.corp,Invoice INV-2026-8004 duplicate gateway webhook
-pay_EDGE_04,ord_8004,99900,INR,1998,360,captured,upi,2026-03-26T11:00:00+05:30,setl_ED02,user4@edge.corp,Invoice INV-2026-8004 duplicate gateway webhook
-pay_EDGE_05,ord_8005,750000,INR,15000,2700,captured,netbanking,2026-03-24T09:00:00+05:30,setl_UNSET,user5@edge.corp,Invoice INV-2026-8005 unsettled gateway wire
-pay_EDGE_08,ord_8008,300000,INR,6000,1080,captured,card,2026-03-27T16:00:00+05:30,setl_ED03,user8@edge.corp,Invoice INV-2026-8008 partial amount discrepancy

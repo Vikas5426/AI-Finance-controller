@@ -153,19 +153,13 @@ Once loaded on `http://127.0.0.1:8000/`, you can explore all modules via the top
 
 ## 6. Alternative Startup Methods
 
-### Option A: One-Click Demo Runner
-To initialize the database, execute a 240-record reconciliation batch, and launch the server in one command:
+### Option A: Direct Application Startup
+To run the server without reloading in production mode:
 ```powershell
-python run_demo.py
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir backend
 ```
 
-### Option B: External CSV Ingestion & Reconciliation
-To run reconciliation on external custom CSV datasets:
-```powershell
-python run_csv_reconciliation.py
-```
-
-### Option C: Docker Compose (Full Stack with PostgreSQL & Redis)
+### Option B: Docker Compose (Full Stack with PostgreSQL & Redis)
 To run the full stack containerized:
 ```bash
 docker-compose up --build

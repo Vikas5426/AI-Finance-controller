@@ -1,1 +1,0 @@
-{"detail":[{"type":"missing","loc":["body","email"],"msg":"Field required","input":{"username":"analyst","password":"password123"}}]}

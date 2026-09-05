@@ -65,6 +65,8 @@ htmlcov/
 logs/
 _*.json
 _*.py
+!__init__.py
+!__main__.py
 
 # Local Tooling, Backups & IDE Metadata
 .audit-out/

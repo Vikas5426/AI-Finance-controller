@@ -1,362 +1,758 @@
 [
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0001",
-    "target_id": "JE-5001_1",
-    "key": "INV-2026-1001"
+    "source_id": "GW-0001",
+    "target_id": "BANK001",
+    "gateway_payment_id": "PAY-0001",
+    "bank_reference": "BNK-0001",
+    "transaction_id": "TXN001",
+    "key": "TXN001"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0002",
-    "target_id": "JE-5002_1",
-    "key": "INV-2026-1002"
+    "source_id": "GW-0001",
+    "target_id": "GL-0001",
+    "gateway_payment_id": "PAY-0001",
+    "doc_ref": "INV-1001",
+    "transaction_id": "TXN001",
+    "key": "INV-1001"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0003",
-    "target_id": "JE-5003_1",
-    "key": "INV-2026-1003"
+    "source_id": "GW-0002",
+    "target_id": "BANK002",
+    "gateway_payment_id": "PAY-0002",
+    "bank_reference": "BNK-0002",
+    "transaction_id": "TXN002",
+    "key": "TXN002"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0004",
-    "target_id": "JE-5004_1",
-    "key": "INV-2026-1004"
+    "source_id": "GW-0002",
+    "target_id": "GL-0002",
+    "gateway_payment_id": "PAY-0002",
+    "doc_ref": "INV-1002",
+    "transaction_id": "TXN002",
+    "key": "INV-1002"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0005",
-    "target_id": "JE-5005_1",
-    "key": "INV-2026-1005"
+    "source_id": "GW-0003",
+    "target_id": "BANK003",
+    "gateway_payment_id": "PAY-0003",
+    "bank_reference": "BNK-0003",
+    "transaction_id": "TXN003",
+    "key": "TXN003"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0006",
-    "target_id": "JE-5006_1",
-    "key": "INV-2026-1006"
+    "source_id": "GW-0003",
+    "target_id": "GL-0003",
+    "gateway_payment_id": "PAY-0003",
+    "doc_ref": "INV-1003",
+    "transaction_id": "TXN003",
+    "key": "INV-1003"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0007",
-    "target_id": "JE-5007_1",
-    "key": "INV-2026-1007"
+    "source_id": "GW-0004",
+    "target_id": "BANK004",
+    "gateway_payment_id": "PAY-0004",
+    "bank_reference": "BNK-0004",
+    "transaction_id": "TXN004",
+    "key": "TXN004"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0008",
-    "target_id": "JE-5008_1",
-    "key": "INV-2026-1008"
+    "source_id": "GW-0004",
+    "target_id": "GL-0004",
+    "gateway_payment_id": "PAY-0004",
+    "doc_ref": "INV-1004",
+    "transaction_id": "TXN004",
+    "key": "INV-1004"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0009",
-    "target_id": "JE-5009_1",
-    "key": "INV-2026-1009"
+    "source_id": "GW-0005",
+    "target_id": "BANK005",
+    "gateway_payment_id": "PAY-0005",
+    "bank_reference": "BNK-0005",
+    "transaction_id": "TXN005",
+    "key": "TXN005"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0010",
-    "target_id": "JE-5010_1",
-    "key": "INV-2026-1010"
+    "source_id": "GW-0005",
+    "target_id": "GL-0005",
+    "gateway_payment_id": "PAY-0005",
+    "doc_ref": "INV-1005",
+    "transaction_id": "TXN005",
+    "key": "INV-1005"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0011",
-    "target_id": "JE-5011_1",
-    "key": "INV-2026-1011"
+    "source_id": "GW-0006",
+    "target_id": "BANK006",
+    "gateway_payment_id": "PAY-0006",
+    "bank_reference": "BNK-0006",
+    "transaction_id": "TXN006",
+    "key": "TXN006"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0012",
-    "target_id": "JE-5012_1",
-    "key": "INV-2026-1012"
+    "source_id": "GW-0006",
+    "target_id": "GL-0006",
+    "gateway_payment_id": "PAY-0006",
+    "doc_ref": "INV-1006",
+    "transaction_id": "TXN006",
+    "key": "INV-1006"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0013",
-    "target_id": "JE-5013_1",
-    "key": "INV-2026-1013"
+    "source_id": "GW-0007",
+    "target_id": "BANK007",
+    "gateway_payment_id": "PAY-0007",
+    "bank_reference": "BNK-0007",
+    "transaction_id": "TXN007",
+    "key": "TXN007"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0014",
-    "target_id": "JE-5014_1",
-    "key": "INV-2026-1014"
+    "source_id": "GW-0007",
+    "target_id": "GL-0007",
+    "gateway_payment_id": "PAY-0007",
+    "doc_ref": "INV-1007",
+    "transaction_id": "TXN007",
+    "key": "INV-1007"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0015",
-    "target_id": "JE-5015_1",
-    "key": "INV-2026-1015"
+    "source_id": "GW-0008",
+    "target_id": "BANK008",
+    "gateway_payment_id": "PAY-0008",
+    "bank_reference": "BNK-0008",
+    "transaction_id": "TXN008",
+    "key": "TXN008"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0016",
-    "target_id": "JE-5016_1",
-    "key": "INV-2026-1016"
+    "source_id": "GW-0008",
+    "target_id": "GL-0008",
+    "gateway_payment_id": "PAY-0008",
+    "doc_ref": "INV-1008",
+    "transaction_id": "TXN008",
+    "key": "INV-1008"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0017",
-    "target_id": "JE-5017_1",
-    "key": "INV-2026-1017"
+    "source_id": "GW-0009",
+    "target_id": "BANK009",
+    "gateway_payment_id": "PAY-0009",
+    "bank_reference": "BNK-0009",
+    "transaction_id": "TXN009",
+    "key": "TXN009"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0018",
-    "target_id": "JE-5018_1",
-    "key": "INV-2026-1018"
+    "source_id": "GW-0009",
+    "target_id": "GL-0009",
+    "gateway_payment_id": "PAY-0009",
+    "doc_ref": "INV-1009",
+    "transaction_id": "TXN009",
+    "key": "INV-1009"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0019",
-    "target_id": "JE-5019_1",
-    "key": "INV-2026-1019"
+    "source_id": "GW-0010",
+    "target_id": "BANK010",
+    "gateway_payment_id": "PAY-0010",
+    "bank_reference": "BNK-0010",
+    "transaction_id": "TXN010",
+    "key": "TXN010"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0020",
-    "target_id": "JE-5020_1",
-    "key": "INV-2026-1020"
+    "source_id": "GW-0010",
+    "target_id": "GL-0010",
+    "gateway_payment_id": "PAY-0010",
+    "doc_ref": "INV-1010",
+    "transaction_id": "TXN010",
+    "key": "INV-1010"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0021",
-    "target_id": "JE-5021_1",
-    "key": "INV-2026-1021"
+    "source_id": "GW-0012",
+    "target_id": "BANK012",
+    "gateway_payment_id": "PAY-0012",
+    "bank_reference": "BNK-0012",
+    "transaction_id": "TXN012",
+    "key": "TXN012"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0022",
-    "target_id": "JE-5022_1",
-    "key": "INV-2026-1022"
+    "source_id": "GW-0012",
+    "target_id": "GL-0012",
+    "gateway_payment_id": "PAY-0012",
+    "doc_ref": "INV-1012",
+    "transaction_id": "TXN012",
+    "key": "INV-1012"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0023",
-    "target_id": "JE-5023_1",
-    "key": "INV-2026-1023"
+    "source_id": "GW-0016",
+    "target_id": "BANK016",
+    "gateway_payment_id": "PAY-0016",
+    "bank_reference": "BNK-0016",
+    "transaction_id": "TXN016",
+    "key": "TXN016"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0024",
-    "target_id": "JE-5024_1",
-    "key": "INV-2026-1024"
+    "source_id": "GW-0016",
+    "target_id": "GL-0016",
+    "gateway_payment_id": "PAY-0016",
+    "doc_ref": "INV-1016",
+    "transaction_id": "TXN016",
+    "key": "INV-1016"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0025",
-    "target_id": "JE-5025_1",
-    "key": "INV-2026-1025"
+    "source_id": "GW-0018",
+    "target_id": "BANK018",
+    "gateway_payment_id": "PAY-0018",
+    "bank_reference": "BNK-0018",
+    "transaction_id": "TXN018",
+    "key": "TXN018"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0026",
-    "target_id": "JE-5026_1",
-    "key": "INV-2026-1026"
+    "source_id": "GW-0018",
+    "target_id": "GL-0018",
+    "gateway_payment_id": "PAY-0018",
+    "doc_ref": "INV-1018",
+    "transaction_id": "TXN018",
+    "key": "INV-1018"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0027",
-    "target_id": "JE-5027_1",
-    "key": "INV-2026-1027"
+    "source_id": "GW-0019",
+    "target_id": "BANK019",
+    "gateway_payment_id": "PAY-0019",
+    "bank_reference": "BNK-0019",
+    "transaction_id": "TXN019",
+    "key": "TXN019"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0028",
-    "target_id": "JE-5028_1",
-    "key": "INV-2026-1028"
+    "source_id": "GW-0019",
+    "target_id": "GL-0019",
+    "gateway_payment_id": "PAY-0019",
+    "doc_ref": "INV-1019",
+    "transaction_id": "TXN019",
+    "key": "INV-1019"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0029",
-    "target_id": "JE-5029_1",
-    "key": "INV-2026-1029"
+    "source_id": "GW-0020",
+    "target_id": "BANK020",
+    "gateway_payment_id": "PAY-0020",
+    "bank_reference": "BNK-0020",
+    "transaction_id": "TXN020",
+    "key": "TXN020"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0030",
-    "target_id": "JE-5030_1",
-    "key": "INV-2026-1030"
+    "source_id": "GW-0020",
+    "target_id": "GL-0020",
+    "gateway_payment_id": "PAY-0020",
+    "doc_ref": "INV-1020",
+    "transaction_id": "TXN020",
+    "key": "INV-1020"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0031",
-    "target_id": "JE-5031_1",
-    "key": "INV-2026-1031"
+    "source_id": "GW-0021",
+    "target_id": "BANK021",
+    "gateway_payment_id": "PAY-0021",
+    "bank_reference": "BNK-0021",
+    "transaction_id": "TXN021",
+    "key": "TXN021"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0032",
-    "target_id": "JE-5032_1",
-    "key": "INV-2026-1032"
+    "source_id": "GW-0021",
+    "target_id": "GL-0021",
+    "gateway_payment_id": "PAY-0021",
+    "doc_ref": "INV-1021",
+    "transaction_id": "TXN021",
+    "key": "INV-1021"
+  },
+  {
+    "type": "1:1_PARTIAL_GW_BANK",
+    "source_id": "GW-0022",
+    "target_id": "BANK022",
+    "gateway_payment_id": "PAY-0022",
+    "bank_reference": "BNK-0022",
+    "transaction_id": "TXN022",
+    "key": "TXN022"
+  },
+  {
+    "type": "1:1_PARTIAL_GW_BANK",
+    "source_id": "GW-0023",
+    "target_id": "BANK023",
+    "gateway_payment_id": "PAY-0023",
+    "bank_reference": "BNK-0023",
+    "transaction_id": "TXN023",
+    "key": "TXN023"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0033",
-    "target_id": "JE-5033_1",
-    "key": "INV-2026-1033"
+    "source_id": "GW-0024",
+    "target_id": "BANK024",
+    "gateway_payment_id": "PAY-0024",
+    "bank_reference": "BNK-0024",
+    "transaction_id": "TXN024",
+    "key": "TXN024"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0034",
-    "target_id": "JE-5034_1",
-    "key": "INV-2026-1034"
+    "source_id": "GW-0024",
+    "target_id": "GL-0024",
+    "gateway_payment_id": "PAY-0024",
+    "doc_ref": "INV-1024",
+    "transaction_id": "TXN024",
+    "key": "INV-1024"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0035",
-    "target_id": "JE-5035_1",
-    "key": "INV-2026-1035"
+    "source_id": "GW-0025",
+    "target_id": "BANK025",
+    "gateway_payment_id": "PAY-0025",
+    "bank_reference": "BNK-0025",
+    "transaction_id": "TXN025",
+    "key": "TXN025"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0036",
-    "target_id": "JE-5036_1",
-    "key": "INV-2026-1036"
+    "source_id": "GW-0025",
+    "target_id": "GL-0025",
+    "gateway_payment_id": "PAY-0025",
+    "doc_ref": "INV-1025",
+    "transaction_id": "TXN025",
+    "key": "INV-1025"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0037",
-    "target_id": "JE-5037_1",
-    "key": "INV-2026-1037"
+    "source_id": "GW-0027",
+    "target_id": "BANK027",
+    "gateway_payment_id": "PAY-0027",
+    "bank_reference": "BNK-0027",
+    "transaction_id": "TXN027",
+    "key": "TXN027"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0038",
-    "target_id": "JE-5038_1",
-    "key": "INV-2026-1038"
+    "source_id": "GW-0027",
+    "target_id": "GL-0027",
+    "gateway_payment_id": "PAY-0027",
+    "doc_ref": "INV-1027",
+    "transaction_id": "TXN027",
+    "key": "INV-1027"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0039",
-    "target_id": "JE-5039_1",
-    "key": "INV-2026-1039"
+    "source_id": "GW-0028",
+    "target_id": "BANK028",
+    "gateway_payment_id": "PAY-0028",
+    "bank_reference": "BNK-0028",
+    "transaction_id": "TXN028",
+    "key": "TXN028"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0040",
-    "target_id": "JE-5040_1",
-    "key": "INV-2026-1040"
+    "source_id": "GW-0028",
+    "target_id": "GL-0028",
+    "gateway_payment_id": "PAY-0028",
+    "doc_ref": "INV-1028",
+    "transaction_id": "TXN028",
+    "key": "INV-1028"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0041",
-    "target_id": "JE-5041_1",
-    "key": "INV-2026-1041"
+    "source_id": "GW-0029",
+    "target_id": "BANK029",
+    "gateway_payment_id": "PAY-0029",
+    "bank_reference": "BNK-0029",
+    "transaction_id": "TXN029",
+    "key": "TXN029"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0042",
-    "target_id": "JE-5042_1",
-    "key": "INV-2026-1042"
+    "source_id": "GW-0029",
+    "target_id": "GL-0029",
+    "gateway_payment_id": "PAY-0029",
+    "doc_ref": "INV-1029",
+    "transaction_id": "TXN029",
+    "key": "INV-1029"
+  },
+  {
+    "type": "1:1_PARTIAL_GW_BANK",
+    "source_id": "GW-0030",
+    "target_id": "BANK030",
+    "gateway_payment_id": "PAY-0030",
+    "bank_reference": "BNK-0030",
+    "transaction_id": "TXN030",
+    "key": "TXN030"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0043",
-    "target_id": "JE-5043_1",
-    "key": "INV-2026-1043"
+    "source_id": "GW-0031",
+    "target_id": "BANK031",
+    "gateway_payment_id": "PAY-0031",
+    "bank_reference": "BNK-0031",
+    "transaction_id": "TXN031",
+    "key": "TXN031"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0044",
-    "target_id": "JE-5044_1",
-    "key": "INV-2026-1044"
+    "source_id": "GW-0031",
+    "target_id": "GL-0031",
+    "gateway_payment_id": "PAY-0031",
+    "doc_ref": "INV-1031",
+    "transaction_id": "TXN031",
+    "key": "INV-1031"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0045",
-    "target_id": "JE-5045_1",
-    "key": "INV-2026-1045"
+    "source_id": "GW-0032",
+    "target_id": "BANK032",
+    "gateway_payment_id": "PAY-0032",
+    "bank_reference": "BNK-0032",
+    "transaction_id": "TXN032",
+    "key": "TXN032"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0046",
-    "target_id": "JE-5046_1",
-    "key": "INV-2026-1046"
+    "source_id": "GW-0032",
+    "target_id": "GL-0032",
+    "gateway_payment_id": "PAY-0032",
+    "doc_ref": "INV-1032",
+    "transaction_id": "TXN032",
+    "key": "INV-1032"
+  },
+  {
+    "type": "1:1_PARTIAL_GW_BANK",
+    "source_id": "GW-0033",
+    "target_id": "BANK033",
+    "gateway_payment_id": "PAY-0033",
+    "bank_reference": "BNK-0033",
+    "transaction_id": "TXN033",
+    "key": "TXN033"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0047",
-    "target_id": "JE-5047_1",
-    "key": "INV-2026-1047"
+    "source_id": "GW-0034",
+    "target_id": "BANK034",
+    "gateway_payment_id": "PAY-0034",
+    "bank_reference": "BNK-0034",
+    "transaction_id": "TXN034",
+    "key": "TXN034"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0048",
-    "target_id": "JE-5048_1",
-    "key": "INV-2026-1048"
+    "source_id": "GW-0034",
+    "target_id": "GL-0034",
+    "gateway_payment_id": "PAY-0034",
+    "doc_ref": "INV-1034",
+    "transaction_id": "TXN034",
+    "key": "INV-1034"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0049",
-    "target_id": "JE-5049_1",
-    "key": "INV-2026-1049"
+    "source_id": "GW-0035",
+    "target_id": "BANK035",
+    "gateway_payment_id": "PAY-0035",
+    "bank_reference": "BNK-0035",
+    "transaction_id": "TXN035",
+    "key": "TXN035"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0050",
-    "target_id": "JE-5050_1",
-    "key": "INV-2026-1050"
+    "source_id": "GW-0035",
+    "target_id": "GL-0035",
+    "gateway_payment_id": "PAY-0035",
+    "doc_ref": "INV-1035",
+    "transaction_id": "TXN035",
+    "key": "INV-1035"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0051",
-    "target_id": "JE-5051_1",
-    "key": "INV-2026-1051"
+    "source_id": "GW-0036",
+    "target_id": "BANK036",
+    "gateway_payment_id": "PAY-0036",
+    "bank_reference": "BNK-0036",
+    "transaction_id": "TXN036",
+    "key": "TXN036"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0052",
-    "target_id": "JE-5052_1",
-    "key": "INV-2026-1052"
+    "source_id": "GW-0036",
+    "target_id": "GL-0036",
+    "gateway_payment_id": "PAY-0036",
+    "doc_ref": "INV-1036",
+    "transaction_id": "TXN036",
+    "key": "INV-1036"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0053",
-    "target_id": "JE-5053_1",
-    "key": "INV-2026-1053"
+    "source_id": "GW-0037",
+    "target_id": "BANK037",
+    "gateway_payment_id": "PAY-0037",
+    "bank_reference": "BNK-0037",
+    "transaction_id": "TXN037",
+    "key": "TXN037"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0054",
-    "target_id": "JE-5054_1",
-    "key": "INV-2026-1054"
+    "source_id": "GW-0037",
+    "target_id": "GL-0037",
+    "gateway_payment_id": "PAY-0037",
+    "doc_ref": "INV-1037",
+    "transaction_id": "TXN037",
+    "key": "INV-1037"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0055",
-    "target_id": "JE-5055_1",
-    "key": "INV-2026-1055"
+    "source_id": "GW-0038",
+    "target_id": "BANK038",
+    "gateway_payment_id": "PAY-0038",
+    "bank_reference": "BNK-0038",
+    "transaction_id": "TXN038",
+    "key": "TXN038"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0056",
-    "target_id": "JE-5056_1",
-    "key": "INV-2026-1056"
+    "source_id": "GW-0038",
+    "target_id": "GL-0038",
+    "gateway_payment_id": "PAY-0038",
+    "doc_ref": "INV-1038",
+    "transaction_id": "TXN038",
+    "key": "INV-1038"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0057",
-    "target_id": "JE-5057_1",
-    "key": "INV-2026-1057"
+    "source_id": "GW-0039",
+    "target_id": "BANK039",
+    "gateway_payment_id": "PAY-0039",
+    "bank_reference": "BNK-0039",
+    "transaction_id": "TXN039",
+    "key": "TXN039"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0058",
-    "target_id": "JE-5058_1",
-    "key": "INV-2026-1058"
+    "source_id": "GW-0039",
+    "target_id": "GL-0039",
+    "gateway_payment_id": "PAY-0039",
+    "doc_ref": "INV-1039",
+    "transaction_id": "TXN039",
+    "key": "INV-1039"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0059",
-    "target_id": "JE-5059_1",
-    "key": "INV-2026-1059"
+    "source_id": "GW-0040",
+    "target_id": "BANK040",
+    "gateway_payment_id": "PAY-0040",
+    "bank_reference": "BNK-0040",
+    "transaction_id": "TXN040",
+    "key": "TXN040"
   },
   {
     "type": "1:1_CLEAN",
-    "source_id": "pay_G8x0060",
-    "target_id": "JE-5060_1",
-    "key": "INV-2026-1060"
+    "source_id": "GW-0040",
+    "target_id": "GL-0040",
+    "gateway_payment_id": "PAY-0040",
+    "doc_ref": "INV-1040",
+    "transaction_id": "TXN040",
+    "key": "INV-1040"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0041",
+    "target_id": "BANK041",
+    "gateway_payment_id": "PAY-0041",
+    "bank_reference": "BNK-0041",
+    "transaction_id": "TXN041",
+    "key": "TXN041"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0041",
+    "target_id": "GL-0041",
+    "gateway_payment_id": "PAY-0041",
+    "doc_ref": "INV-1041",
+    "transaction_id": "TXN041",
+    "key": "INV-1041"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0042",
+    "target_id": "BANK042",
+    "gateway_payment_id": "PAY-0042",
+    "bank_reference": "BNK-0042",
+    "transaction_id": "TXN042",
+    "key": "TXN042"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0042",
+    "target_id": "GL-0042",
+    "gateway_payment_id": "PAY-0042",
+    "doc_ref": "INV-1042",
+    "transaction_id": "TXN042",
+    "key": "INV-1042"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0043",
+    "target_id": "BANK043",
+    "gateway_payment_id": "PAY-0043",
+    "bank_reference": "BNK-0043",
+    "transaction_id": "TXN043",
+    "key": "TXN043"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0043",
+    "target_id": "GL-0043",
+    "gateway_payment_id": "PAY-0043",
+    "doc_ref": "INV-1043",
+    "transaction_id": "TXN043",
+    "key": "INV-1043"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0044",
+    "target_id": "BANK044",
+    "gateway_payment_id": "PAY-0044",
+    "bank_reference": "BNK-0044",
+    "transaction_id": "TXN044",
+    "key": "TXN044"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0044",
+    "target_id": "GL-0044",
+    "gateway_payment_id": "PAY-0044",
+    "doc_ref": "INV-1044",
+    "transaction_id": "TXN044",
+    "key": "INV-1044"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0045",
+    "target_id": "BANK045",
+    "gateway_payment_id": "PAY-0045",
+    "bank_reference": "BNK-0045",
+    "transaction_id": "TXN045",
+    "key": "TXN045"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0045",
+    "target_id": "GL-0045",
+    "gateway_payment_id": "PAY-0045",
+    "doc_ref": "INV-1045",
+    "transaction_id": "TXN045",
+    "key": "INV-1045"
+  },
+  {
+    "type": "1:1_REFUND",
+    "source_id": "GW-0046",
+    "target_id": "BANK046",
+    "gateway_payment_id": "PAY-0046",
+    "bank_reference": "BNK-0046",
+    "transaction_id": "TXN046",
+    "key": "TXN046"
+  },
+  {
+    "type": "1:1_REFUND",
+    "source_id": "GW-0046",
+    "target_id": "GL-0046",
+    "gateway_payment_id": "PAY-0046",
+    "doc_ref": "INV-1046",
+    "transaction_id": "TXN046",
+    "key": "INV-1046"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0047",
+    "target_id": "BANK047",
+    "gateway_payment_id": "PAY-0047",
+    "bank_reference": "BNK-0047",
+    "transaction_id": "TXN047",
+    "key": "TXN047"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0047",
+    "target_id": "GL-0047",
+    "gateway_payment_id": "PAY-0047",
+    "doc_ref": "INV-1047",
+    "transaction_id": "TXN047",
+    "key": "INV-1047"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0048",
+    "target_id": "BANK048",
+    "gateway_payment_id": "PAY-0048",
+    "bank_reference": "BNK-0048",
+    "transaction_id": "TXN048",
+    "key": "TXN048"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0048",
+    "target_id": "GL-0048",
+    "gateway_payment_id": "PAY-0048",
+    "doc_ref": "INV-1048",
+    "transaction_id": "TXN048",
+    "key": "INV-1048"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0049",
+    "target_id": "BANK049",
+    "gateway_payment_id": "PAY-0049",
+    "bank_reference": "BNK-0049",
+    "transaction_id": "TXN049",
+    "key": "TXN049"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0049",
+    "target_id": "GL-0049",
+    "gateway_payment_id": "PAY-0049",
+    "doc_ref": "INV-1049",
+    "transaction_id": "TXN049",
+    "key": "INV-1049"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0050",
+    "target_id": "BANK050",
+    "gateway_payment_id": "PAY-0050",
+    "bank_reference": "BNK-0050",
+    "transaction_id": "TXN050",
+    "key": "TXN050"
+  },
+  {
+    "type": "1:1_CLEAN",
+    "source_id": "GW-0050",
+    "target_id": "GL-0050",
+    "gateway_payment_id": "PAY-0050",
+    "doc_ref": "INV-1050",
+    "transaction_id": "TXN050",
+    "key": "INV-1050"
   }
 ]

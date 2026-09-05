@@ -146,6 +146,13 @@ class CanonicalTransaction(BaseModel):
     total_credit_minor: Optional[int] = None
     has_explicit_direction: bool = False
 
+    # Financial & Accounting Semantics
+    status: Optional[str] = None
+    settlement_status: Optional[str] = None
+    gl_memo: Optional[str] = None
+    is_material: bool = False
+    declared_net_minor: Optional[int] = None
+
 class ToolEvidence(BaseModel):
     tool: str
     rule_id: Optional[str] = None

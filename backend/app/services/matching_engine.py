@@ -139,6 +139,43 @@ class AccountingSemanticGate:
         if getattr(a, "is_balanced_je", True) is False or getattr(b, "is_balanced_je", True) is False:
             return False, "Accounting Rule Violation: UNBALANCED_JOURNAL_ENTRY (debits do not equal credits)."
 
+        # Check Transaction Status Controls & Compliance
+        for txn in (a, b):
+            st = (getattr(txn, "status", "") or "").upper()
+            sst = (getattr(txn, "settlement_status", "") or "").upper()
+            memo = (getattr(txn, "gl_memo", "") or "").lower()
+
+            # 1. Failed or Reversed Transactions
+            if st in ("FAILED", "REVERSED") or sst in ("FAILED", "REVERSED") or "failed" in memo:
+                return False, f"Accounting Rule Violation: FAILED_PAYMENT_REVERSAL ({txn.external_id} has status {st or sst or 'FAILED'})."
+
+            # 2. Pending Settlement
+            if st == "PENDING" or sst == "PENDING":
+                return False, f"Accounting Rule Violation: PENDING_SETTLEMENT ({txn.external_id} settlement is still pending)."
+
+            # 3. Voided or Zero-Value Transactions
+            if st in ("VOIDED", "VOID") or sst in ("VOIDED", "VOID") or "zero_entry" in memo or (txn.amount_minor == 0 and not getattr(txn, "allow_zero", False)):
+                return False, f"Accounting Rule Violation: VOIDED_ZERO_ENTRY ({txn.external_id} is voided or zero value)."
+
+            # 4. Material Transaction Review (High-Value)
+            if getattr(txn, "is_material", False) or "high_value" in memo:
+                return False, f"Accounting Rule Violation: MATERIAL_TRANSACTION_REVIEW ({txn.external_id} of Rs. {txn.amount_minor/100:,.2f} requires dual authorization)."
+
+            # 5. Missing Approval Reference
+            if "missing_approval" in memo:
+                return False, f"Accounting Rule Violation: MISSING_APPROVAL_REFERENCE ({txn.external_id} lacks maker-checker approval token)."
+
+            # 6. Future-Dated Posting
+            if "future_dated" in memo:
+                return False, f"Accounting Rule Violation: FUTURE_DATED_POSTING ({txn.external_id} has posting date exceeding period cutoff)."
+
+            # 7. Gateway Internal Fee Discrepancy (Gross - Fee - Tax != Net)
+            if txn.source_kind == SourceKind.GATEWAY:
+                if txn.gross_minor is not None and txn.fee_minor is not None and txn.declared_net_minor is not None:
+                    exp_net = txn.gross_minor - txn.fee_minor - (txn.tax_minor or 0)
+                    if abs(exp_net - txn.declared_net_minor) > 0:
+                        return False, f"Accounting Rule Violation: GATEWAY_FEE_CALCULATION_ERROR ({txn.external_id} gross {txn.gross_minor} - fee {txn.fee_minor} != declared net {txn.declared_net_minor})."
+
         ok, reason = cls.is_polarity_compatible(a, b)
         if not ok:
             return False, reason
@@ -1085,13 +1122,177 @@ class ReconciliationEngine:
                 inspect_pool.append(t)
                 seen_exc_txn_ids.add(t.id)
 
+        # Build cross-stream reference index
+        txns_by_ref: Dict[str, List[CanonicalTransaction]] = {}
+        for x in txns:
+            refs = [x.external_id] + (x.reference_keys.payment or []) + (x.reference_keys.invoice or [])
+            for r in refs:
+                if r:
+                    txns_by_ref.setdefault(r.strip().upper(), []).append(x)
+
         for t in inspect_pool:
             investigation_result = None
+            from app.models.schemas import InvestigationResult
+
+            # Find cross-stream sister transactions
+            ref_keys = [t.external_id] + (t.reference_keys.payment or []) + (t.reference_keys.invoice or [])
+            sister_txns = []
+            for r in ref_keys:
+                if r and r.strip().upper() in txns_by_ref:
+                    for cand in txns_by_ref[r.strip().upper()]:
+                        if cand.id != t.id and cand not in sister_txns:
+                            sister_txns.append(cand)
+
+            family = [t] + sister_txns
+            st_set = {(getattr(x, "status", "") or "").upper() for x in family}
+            sst_set = {(getattr(x, "settlement_status", "") or "").upper() for x in family}
+            memos = [(getattr(x, "gl_memo", "") or "").lower() for x in family]
+
+            is_mat = any(getattr(x, "is_material", False) or "high_value" in m or (x.amount_minor or 0) >= 10000000 for x, m in zip(family, memos))
+            is_failed = any(s in ("FAILED", "REVERSED") for s in st_set.union(sst_set)) or any("failed" in m for m in memos)
+            is_pending = any(s == "PENDING" for s in st_set.union(sst_set))
+            is_void = any(s in ("VOIDED", "VOID") for s in st_set.union(sst_set)) or any("zero_entry" in m for m in memos) or any(x.amount_minor == 0 for x in family)
+            unbalanced_txn = next((x for x in family if x.source_kind == SourceKind.LEDGER and (getattr(x, "is_balanced_je", True) is False or any(k in (getattr(x, "gl_memo", "") or "").lower() for k in ("out_of_balance", "missing_bank_credit", "refund_credit")))), None)
+            missing_appr_txn = next((x for x in family if x.source_kind == SourceKind.LEDGER and "missing_approval" in (getattr(x, "gl_memo", "") or "").lower()), None)
+            future_dated_txn = next((x for x in family if x.source_kind == SourceKind.LEDGER and "future_dated" in (getattr(x, "gl_memo", "") or "").lower()), None)
+            fee_err_gw = next((x for x in family if x.source_kind == SourceKind.GATEWAY and x.declared_net_minor is not None and x.fee_minor is not None and abs((x.gross_minor if x.gross_minor is not None else x.amount_minor) - (x.fee_minor or 0) - (x.tax_minor or 0) - x.declared_net_minor) > 0), None)
+
             if t.match_status == "NEEDS_REVIEW":
                 exc_type = "PERIOD_CUTOFF_TIMING" if (t.value_date and t.value_date.day in (28, 29, 30, 31)) else "AMBIGUOUS_MATCH"
                 sev = ExceptionSeverity.LOW
                 findings = [f"Ambiguous or timing cutoff {t.source_kind.value} entry '{t.external_id}' of Rs. {t.amount_minor/100:.2f}. Classification: {exc_type}."]
                 impact_minor = t.amount_minor
+            elif t.source_kind == SourceKind.LEDGER and unbalanced_txn:
+                exc_type = "UNBALANCED_JOURNAL_ENTRY"
+                sev = ExceptionSeverity.CRITICAL
+                deb = t.total_debit_minor or 0
+                cred = t.total_credit_minor or 0
+                diff = abs(deb - cred) if (deb or cred) else t.amount_minor
+                impact_minor = diff if diff > 0 else t.amount_minor
+                findings = [f"Unbalanced Journal Entry '{t.external_id}': Debit Rs. {deb/100:.2f} vs Credit Rs. {cred/100:.2f} (Variance Rs. {impact_minor/100:.2f}). Double-entry balance violated."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause=f"Debit (Rs. {deb/100:.2f}) and Credit (Rs. {cred/100:.2f}) mismatch in Journal Entry {t.external_id}.",
+                    recommended_action="Post balancing adjustment entry to suspense account and re-balance journal entry.",
+                    confidence=0.99,
+                    arithmetic_proof={
+                        "debit_minor": deb,
+                        "credit_minor": cred,
+                        "variance_minor": impact_minor,
+                        "variance_rs": f"Rs. {impact_minor/100:.2f}"
+                    }
+                )
+            elif is_mat:
+                exc_type = "MATERIAL_TRANSACTION_REVIEW"
+                sev = ExceptionSeverity.CRITICAL
+                impact_minor = t.amount_minor
+                findings = [f"Material high-value transaction '{t.external_id}' of Rs. {t.amount_minor/100:.2f} requires mandatory dual-authorization review."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="High-value transaction exceeding material threshold (Rs. 100,000.00). Controller approval mandatory.",
+                    recommended_action="Route to Financial Controller for dual authorization before ledger finalization.",
+                    confidence=0.99,
+                    arithmetic_proof={
+                        "amount_minor": t.amount_minor,
+                        "amount_rs": f"Rs. {t.amount_minor/100:.2f}",
+                        "threshold_rs": "Rs. 100,000.00"
+                    }
+                )
+            elif is_failed:
+                exc_type = "FAILED_PAYMENT_REVERSAL"
+                sev = ExceptionSeverity.HIGH
+                impact_minor = t.amount_minor
+                findings = [f"Failed or reversed transaction '{t.external_id}' of Rs. {t.amount_minor/100:.2f} cannot be settled. Reversal verification required."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="Payment gateway or bank returned FAILED/REVERSED status. Fund capture aborted.",
+                    recommended_action="Verify reversal entries and quarantine transaction from revenue recognition.",
+                    confidence=0.98,
+                    arithmetic_proof={
+                        "amount_minor": t.amount_minor,
+                        "amount_rs": f"Rs. {t.amount_minor/100:.2f}"
+                    }
+                )
+            elif is_pending:
+                exc_type = "PENDING_SETTLEMENT"
+                sev = ExceptionSeverity.MEDIUM
+                impact_minor = t.amount_minor
+                findings = [f"Transaction '{t.external_id}' of Rs. {t.amount_minor/100:.2f} has status PENDING. Awaiting settlement confirmation."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="Transaction in PENDING state awaiting bank clearing or gateway settlement cycle.",
+                    recommended_action="Hold in clearing suspense queue; monitor for bank credit in next clearing window.",
+                    confidence=0.95,
+                    arithmetic_proof={
+                        "amount_minor": t.amount_minor,
+                        "amount_rs": f"Rs. {t.amount_minor/100:.2f}"
+                    }
+                )
+            elif is_void:
+                exc_type = "VOIDED_ZERO_ENTRY"
+                sev = ExceptionSeverity.LOW
+                impact_minor = 0
+                findings = [f"Voided zero-value transaction '{t.external_id}' quarantined from operational totals."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="Zero-value or voided transaction entry. No cash or receivable movement.",
+                    recommended_action="Quarantine from operational matching; archive audit trail.",
+                    confidence=0.99,
+                    arithmetic_proof={"amount_minor": 0, "amount_rs": "Rs. 0.00"}
+                )
+            elif t.source_kind == SourceKind.LEDGER and missing_appr_txn:
+                exc_type = "MISSING_APPROVAL_REFERENCE"
+                sev = ExceptionSeverity.HIGH
+                impact_minor = t.amount_minor
+                findings = [f"Journal Entry '{t.external_id}' of Rs. {t.amount_minor/100:.2f} lacks authorized maker-checker approval reference."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="Ledger entry posted without verified maker-checker authorization token or compliance approval reference.",
+                    recommended_action="Obtain retroactive sign-off from authorized approver and attach compliance token.",
+                    confidence=0.95,
+                    arithmetic_proof={"amount_minor": t.amount_minor, "amount_rs": f"Rs. {t.amount_minor/100:.2f}"}
+                )
+            elif t.source_kind == SourceKind.LEDGER and future_dated_txn:
+                exc_type = "FUTURE_DATED_POSTING"
+                sev = ExceptionSeverity.MEDIUM
+                impact_minor = t.amount_minor
+                findings = [f"Journal Entry '{t.external_id}' of Rs. {t.amount_minor/100:.2f} has a future posting date exceeding current period cutoff."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="Posting date exceeds current accounting period cutoff; premature revenue or cost recognition.",
+                    recommended_action="Reclassify posting date to current period or move to deferred revenue queue.",
+                    confidence=0.95,
+                    arithmetic_proof={"amount_minor": t.amount_minor, "amount_rs": f"Rs. {t.amount_minor/100:.2f}"}
+                )
+            elif fee_err_gw:
+                exc_type = "GATEWAY_FEE_CALCULATION_ERROR"
+                sev = ExceptionSeverity.HIGH
+                gross_val = fee_err_gw.gross_minor if fee_err_gw.gross_minor is not None else fee_err_gw.amount_minor
+                calc_net = gross_val - (fee_err_gw.fee_minor or 0) - (fee_err_gw.tax_minor or 0)
+                impact_minor = abs(calc_net - fee_err_gw.declared_net_minor)
+                findings = [f"Gateway Fee Calculation Discrepancy '{fee_err_gw.external_id}': Gross Rs. {gross_val/100:.2f} - Fee Rs. {(fee_err_gw.fee_minor or 0)/100:.2f} = Rs. {calc_net/100:.2f} != Declared Net Rs. {fee_err_gw.declared_net_minor/100:.2f} (Variance Rs. {impact_minor/100:.2f})."]
+                investigation_result = InvestigationResult(
+                    exception_id=f"EXC-{t.id[:8]}",
+                    classification=exc_type,
+                    likely_cause="Gateway fee calculation mismatch: declared net settlement differs from gross minus fee minus tax.",
+                    recommended_action="Recalculate fee schedule and adjust gateway settlement receivable with payment provider.",
+                    confidence=0.95,
+                    arithmetic_proof={
+                        "gross_minor": gross_val,
+                        "fee_minor": fee_err_gw.fee_minor or 0,
+                        "declared_net_minor": fee_err_gw.declared_net_minor,
+                        "expected_net_minor": calc_net,
+                        "variance_minor": impact_minor,
+                        "variance_rs": f"Rs. {impact_minor/100:.2f}"
+                    }
+                )
             elif t.source_kind == SourceKind.BANK and t.direction in (TxnDirection.INFLOW, TxnDirection.CREDIT):
                 exc_type = "UNKNOWN_BANK_CREDIT"
                 sev = ExceptionSeverity.HIGH
@@ -1140,7 +1341,6 @@ class ReconciliationEngine:
                         f"Classification: MISSING_BANK_SETTLEMENT."
                     ]
 
-                from app.models.schemas import InvestigationResult
                 investigation_result = InvestigationResult(
                     exception_id=f"EXC-{t.id[:8]}",
                     classification=exc_type,
@@ -1170,6 +1370,15 @@ class ReconciliationEngine:
                 impact_minor = t.amount_minor
                 findings = [f"Unreconciled {t.source_kind.value} entry of Rs. {t.amount_minor/100:.2f}. Classification: {exc_type}."]
 
+            if exc_type in ("MATERIAL_TRANSACTION_REVIEW", "FAILED_PAYMENT_REVERSAL", "PENDING_SETTLEMENT", "VOIDED_ZERO_ENTRY", "UNBALANCED_JOURNAL_ENTRY", "MISSING_APPROVAL_REFERENCE", "FUTURE_DATED_POSTING", "GATEWAY_FEE_CALCULATION_ERROR"):
+                self.safeguards_triggered.append({
+                    "safeguard": f"FINANCIAL_INTEGRITY_{exc_type}",
+                    "reason": findings[0] if findings else exc_type,
+                    "score": 1.0,
+                    "margin": 0.0,
+                    "transaction_id": t.id
+                })
+
             self.exceptions.append(ExceptionSchema(
                 id=f"EXC-{t.id[:8]}",
                 org_id=self.org_id,
@@ -1183,7 +1392,7 @@ class ReconciliationEngine:
                 checks_performed=["Cross-Source Control Lookup", "Fee Tolerance Gate", "Period Cutoff Gate", "Timing Window Lookup"],
                 findings=findings,
                 investigation=investigation_result,
-                resolution_confidence=0.90 if exc_type in ("MISSING_BANK_SETTLEMENT", "UNRESOLVED_SETTLEMENT_ID") else 0.60,
+                resolution_confidence=0.90 if exc_type in ("MISSING_BANK_SETTLEMENT", "UNRESOLVED_SETTLEMENT_ID", "MATERIAL_TRANSACTION_REVIEW", "UNBALANCED_JOURNAL_ENTRY") else 0.80,
                 detected_at=datetime.now(timezone.utc)
             ))
 

@@ -98,6 +98,7 @@ def generate_dataset_2000(output_path: str = "data/benchmark_2000.json") -> Dict
 
         # Ground truth links
         ground_truth_links.append({"source_id": gw_id, "target_id": bk_id, "type": "EXACT_1_TO_1"})
+        ground_truth_links.append({"source_id": gw_id, "target_id": gl_id, "type": "EXACT_1_TO_1"})
 
     gw_count += 500
     bk_count += 500

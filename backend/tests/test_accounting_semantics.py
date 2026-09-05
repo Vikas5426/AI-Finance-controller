@@ -39,7 +39,8 @@ class TestAccountingSemantics(unittest.TestCase):
             description_raw=f"Test {source_kind.value} {direction.value}",
             description_norm=f"test {source_kind.value.lower()} {direction.value.lower()}",
             account_code=account_code,
-            reference_keys=ReferenceKeys(payment=[external_id], invoice=[external_id])
+            reference_keys=ReferenceKeys(payment=[external_id], invoice=[external_id]),
+            has_explicit_direction=True
         )
 
     def test_gateway_inflow_matches_bank_credit(self):

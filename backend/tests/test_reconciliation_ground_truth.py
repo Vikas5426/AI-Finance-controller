@@ -29,9 +29,10 @@ from app.services.normalizer import NormalizerService
 from app.services.matching_engine import ReconciliationEngine, AccountingSemanticGate
 from app.services.fee_policy import FeePolicyRegistry
 
-GATEWAY_CSV = "data/gateway.csv"
-BANK_CSV = "data/bank.csv"
-GL_CSV = "data/general_ledger.csv"
+FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "ground_truth")
+GATEWAY_CSV = os.path.join(FIXTURES_DIR, "gateway.csv")
+BANK_CSV = os.path.join(FIXTURES_DIR, "bank.csv")
+GL_CSV = os.path.join(FIXTURES_DIR, "general_ledger.csv")
 ORG_ID_A = "00000000-0000-0000-0000-000000000001"
 ORG_ID_B = "00000000-0000-0000-0000-000000000002"
 BATCH_ID = "BATCH-TEST-GROUND-TRUTH"

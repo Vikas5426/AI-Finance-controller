@@ -1,0 +1,8 @@
+payment_id,order_id,amount,currency,fee,tax,status,method,captured_at,settlement_id,customer_email,description
+pay_TEST_001,ord_001,49900,INR,998,180,captured,upi,2026-03-25T10:00:00+05:30,setl_01,user1@acme.co,Invoice INV-2026-001 subscription
+pay_TEST_002,ord_002,1000000,INR,20000,3600,captured,card,2026-03-25T14:30:00+05:30,setl_01,user2@acme.co,Invoice INV-2026-002 annual plan
+pay_TEST_003,ord_003,118000,INR,2360,425,captured,card,2026-03-26T11:15:00+05:30,setl_01,user3@acme.co,Invoice INV-2026-003 pro tier
+pay_TEST_004,ord_004,236000,INR,4720,850,captured,netbanking,2026-03-31T23:55:00+05:30,setl_02,user4@acme.co,Invoice INV-2026-004 T+2 period cutoff
+pay_TEST_005,ord_005,99900,INR,1998,360,captured,upi,2026-03-28T12:00:00+05:30,setl_02,user5@acme.co,Invoice INV-2026-005 duplicate webhook
+pay_TEST_005,ord_005,99900,INR,1998,360,captured,upi,2026-03-28T12:00:00+05:30,setl_02,user5@acme.co,Invoice INV-2026-005 duplicate webhook
+pay_TEST_006,ord_006,500000,INR,10000,1800,captured,netbanking,2026-03-29T16:00:00+05:30,setl_UNSET,user6@acme.co,Invoice INV-2026-006 missing bank settlement

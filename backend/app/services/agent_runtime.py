@@ -238,7 +238,15 @@ class AIAgentRuntime:
             "TIMING_DIFFERENCE_PERIOD_CUTOFF",
             "FEE_AND_TAX_BOOKED_NET",
             "MDR_FEE_VARIANCE",
-            "MDR_FEE_MISMATCH"
+            "MDR_FEE_MISMATCH",
+            "UNBALANCED_JOURNAL_ENTRY",
+            "MATERIAL_TRANSACTION_REVIEW",
+            "FAILED_PAYMENT_REVERSAL",
+            "PENDING_SETTLEMENT",
+            "VOIDED_ZERO_ENTRY",
+            "MISSING_APPROVAL_REFERENCE",
+            "FUTURE_DATED_POSTING",
+            "GATEWAY_FEE_CALCULATION_ERROR"
         }
 
         if has_deterministic_rule or exception_type in deterministic_types:
@@ -1105,6 +1113,190 @@ class AIAgentRuntime:
                 evidence=[ToolEvidence(tool="ledger_lookup_engine", record_id=p_id, field="missing_entry", value={"amount_minor": impact_minor})],
                 requires_human_review=True,
                 citations=["SOP-01 §2: General Ledger Ingestion & Booking Protocol"]
+            )
+
+        elif exception_type == "UNBALANCED_JOURNAL_ENTRY":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Double-entry bookkeeping imbalance detected in Journal Entry {p_ext}: debits do not equal credits (variance: {amt_inr}).",
+                facts=[
+                    f"Journal Entry ID: {p_id} (Ref: {p_ext})",
+                    f"Imbalance Variance: {amt_inr}",
+                    "Source: General Ledger (general_ledger.csv)"
+                ],
+                observations=[
+                    "Fundamental accounting identity (Total Debits == Total Credits) is violated for this voucher."
+                ],
+                possible_cause="One-sided posting, omitted balancing line item, or data entry error during ERP sync.",
+                recommendation="Post automated balancing adjustment entry to suspense account (GL-9999) and re-balance journal entry.",
+                candidate_match_ids=[],
+                recommended_action="POST_BALANCING_ADJUSTMENT",
+                confidence=0.99,
+                evidence=[ToolEvidence(tool="general_ledger_validator", record_id=p_id, field="balance_variance_minor", value=impact_minor)],
+                requires_human_review=True,
+                citations=["GAAP §102: Double-Entry Balancing Axioms", "SOP-01: General Ledger Journal Controls"]
+            )
+
+        elif exception_type == "MATERIAL_TRANSACTION_REVIEW":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"High-value transaction {p_ext} of {amt_inr} exceeds mandatory materiality threshold (₹100,000.00).",
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    f"Gross Value: {amt_inr}",
+                    "Materiality Threshold: ₹100,000.00"
+                ],
+                observations=[
+                    "Transaction value exceeds single-signoff limits under internal accounting governance policies."
+                ],
+                possible_cause="Large institutional payment, enterprise contract settlement, or high-value customer invoice.",
+                recommendation="Route to Financial Controller for dual authorization before unblocking settlement.",
+                candidate_match_ids=[],
+                recommended_action="CONTROLLER_DUAL_AUTHORIZATION",
+                confidence=0.99,
+                evidence=[ToolEvidence(tool="materiality_gate", record_id=p_id, field="materiality_threshold_exceeded", value=True)],
+                requires_human_review=True,
+                citations=["SOP-08: Material Transaction Review & Dual-Signoff", "SOX 404: Internal Controls"]
+            )
+
+        elif exception_type == "FAILED_PAYMENT_REVERSAL":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Payment capture for transaction {p_ext} ({amt_inr}) returned FAILED/REVERSED status from payment gateway/bank.",
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    f"Amount: {amt_inr}",
+                    "Status: FAILED / REVERSED"
+                ],
+                observations=[
+                    "Transaction funds were aborted or reversed by the issuing bank; zero net cash was captured."
+                ],
+                possible_cause="Customer bank decline, insufficient funds, or gateway payment reversal.",
+                recommendation="Quarantine failed transaction from earned revenue and verify refund ledger balance.",
+                candidate_match_ids=[],
+                recommended_action="QUARANTINE_FAILED_TRANSACTION",
+                confidence=0.98,
+                evidence=[ToolEvidence(tool="gateway_status_gate", record_id=p_id, field="status", value="FAILED")],
+                requires_human_review=True,
+                citations=["SOP-07: Payment Failure & Settlement Reversals"]
+            )
+
+        elif exception_type == "PENDING_SETTLEMENT":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Transaction {p_ext} of {amt_inr} is in PENDING settlement status awaiting bank clearing cycle.",
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    f"Amount: {amt_inr}",
+                    "Status: PENDING"
+                ],
+                observations=[
+                    "Transaction was initiated and captured but clearing settlement to bank account is in-flight."
+                ],
+                possible_cause="Standard T+1 / T+2 payment gateway settlement cycle or weekend bank clearing cutoff.",
+                recommendation="Hold in clearing suspense queue; monitor for bank settlement credit in subsequent batch.",
+                candidate_match_ids=[],
+                recommended_action="HOLD_IN_CLEARING_SUSPENSE",
+                confidence=0.95,
+                evidence=[ToolEvidence(tool="settlement_cycle_tracker", record_id=p_id, field="status", value="PENDING")],
+                requires_human_review=False,
+                citations=["SOP-02: In-Transit Funds & Settlement Clearing Cycles"]
+            )
+
+        elif exception_type == "VOIDED_ZERO_ENTRY":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Transaction entry {p_ext} is voided or recorded with ₹0.00 nominal value.",
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    "Amount: ₹0.00",
+                    "Status: VOIDED / ZERO"
+                ],
+                observations=[
+                    "Entry represents an aborted order or zero-value test transaction with zero financial impact."
+                ],
+                possible_cause="Voided transaction, canceled order, or zero-amount authorization ping.",
+                recommendation="Quarantine from operational matching and archive in voided audit log.",
+                candidate_match_ids=[],
+                recommended_action="ARCHIVE_VOIDED_ENTRY",
+                confidence=0.99,
+                evidence=[ToolEvidence(tool="transaction_filter", record_id=p_id, field="nominal_amount", value=0)],
+                requires_human_review=False,
+                citations=["SOP-01: Zero-Value & Voided Transaction Handling"]
+            )
+
+        elif exception_type == "MISSING_APPROVAL_REFERENCE":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Journal Entry {p_ext} of {amt_inr} lacks verified maker-checker approval reference or authorization token.",
+                facts=[
+                    f"Journal Entry ID: {p_id} (Ref: {p_ext})",
+                    f"Amount: {amt_inr}",
+                    "Approval Status: MISSING_APPROVAL_TOKEN"
+                ],
+                observations=[
+                    "Entry was posted to the general ledger without compliance token demonstrating independent verification."
+                ],
+                possible_cause="Manual journal voucher posted directly without passing workflow approval gateway.",
+                recommendation="Route to authorized controller for retroactive maker-checker approval token sign-off.",
+                candidate_match_ids=[],
+                recommended_action="REQUEST_RETROACTIVE_APPROVAL",
+                confidence=0.95,
+                evidence=[ToolEvidence(tool="compliance_token_validator", record_id=p_id, field="approval_token_present", value=False)],
+                requires_human_review=True,
+                citations=["SOP-09: Segregation of Duties & Journal Approval Tokens"]
+            )
+
+        elif exception_type == "FUTURE_DATED_POSTING":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Journal Entry {p_ext} of {amt_inr} has posting date exceeding current accounting period cutoff.",
+                facts=[
+                    f"Journal Entry ID: {p_id} (Ref: {p_ext})",
+                    f"Amount: {amt_inr}",
+                    "Posting Boundary: Exceeds Current Period"
+                ],
+                observations=[
+                    "Posting date falls in future accounting period; premature recognition in current batch."
+                ],
+                possible_cause="Advance invoice booking, forward-dated payment accrual, or date field entry mistake.",
+                recommendation="Reclassify posting date to current period or move to deferred revenue/expense schedule.",
+                candidate_match_ids=[],
+                recommended_action="RECLASSIFY_POSTING_DATE",
+                confidence=0.95,
+                evidence=[ToolEvidence(tool="period_boundary_gate", record_id=p_id, field="is_future_dated", value=True)],
+                requires_human_review=True,
+                citations=["GAAP §204: Period Cutoff & Matching Principles"]
+            )
+
+        elif exception_type == "GATEWAY_FEE_CALCULATION_ERROR":
+            return InvestigationResult(
+                exception_id=exception_id,
+                classification=exception_type,
+                likely_cause=f"Payment gateway declared net settlement for {p_ext} differs from gross minus fee schedule (variance: {amt_inr}).",
+                facts=[
+                    f"Transaction ID: {p_id} (Ref: {p_ext})",
+                    f"Discrepancy: {amt_inr}",
+                    "Source: Payment Gateway (gateway.csv)"
+                ],
+                observations=[
+                    "Declared net settlement does not match arithmetic calculation: Net != (Gross - Fee - Tax)."
+                ],
+                possible_cause="Gateway pricing tier mismatch, unexpected processor surcharge, or settlement batch rounding error.",
+                recommendation="Recalculate fee schedule, verify processor invoice, and request merchant fee adjustment.",
+                candidate_match_ids=[],
+                recommended_action="RECALCULATE_GATEWAY_FEE",
+                confidence=0.95,
+                evidence=[ToolEvidence(tool="fee_calculator", record_id=p_id, field="net_settlement_variance_minor", value=impact_minor)],
+                requires_human_review=True,
+                citations=["SOP-04: Merchant Discount Rate Accounting & GST Audit"]
             )
 
         else:

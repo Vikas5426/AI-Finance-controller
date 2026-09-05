@@ -1643,13 +1643,14 @@ async function fetchProcessedData() {
     const batchParam = `&batch_id=${encodeURIComponent(appState.batchId)}`;
     const batchParamSolo = `?batch_id=${encodeURIComponent(appState.batchId)}`;
 
-    const [txRes, repRes, excRes, audRes, appRes, actRes] = await Promise.all([
+    const [txRes, repRes, excRes, audRes, appRes, actRes, aiIssuesRes] = await Promise.all([
       authFetch(`${API_BASE}/transactions/?limit=500${batchParam}`),
       authFetch(`${API_BASE}/reports/summary${batchParamSolo}`),
       authFetch(`${API_BASE}/exceptions/${batchParamSolo}`),
       authFetch(`${API_BASE}/audit/events${batchParamSolo}`),
       authFetch(`${API_BASE}/approvals/pending${batchParamSolo}`),
-      authFetch(`${API_BASE}/batches/active`)
+      authFetch(`${API_BASE}/batches/active`),
+      authFetch(`${API_BASE}/ai-issues/report${batchParamSolo}`)
     ]);
 
     let txTotal = 0;
@@ -1672,6 +1673,18 @@ async function fetchProcessedData() {
     if (audRes.ok) {
       const audData = await audRes.json();
       appState.auditEvents = audData.items || [];
+    }
+
+    if (aiIssuesRes && aiIssuesRes.ok) {
+      try {
+        const aiData = await aiIssuesRes.json();
+        appState.aiIssuesReport = aiData;
+        if (typeof updateAIIssuesUI === 'function') {
+          updateAIIssuesUI(aiData);
+        }
+      } catch (e) {
+        console.warn('Failed to parse AI Issues report:', e);
+      }
     }
 
     let activeSummary = {};
@@ -2975,7 +2988,12 @@ function renderExceptionsQueue() {
       const type = e.exception_type || 'MANUAL_REVIEW';
       const humanType = type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
-      // Format proposal action: Keep table view compact and small, show full detail in drawer
+      const primTxn = (appState.allTransactions || []).find(t => t.id === e.primary_txn_id || t.external_id === e.reference_id || t.id === e.reference_id);
+      const txnRef = primTxn?.external_id || e.reference_id || '';
+      const txnDesc = primTxn?.description_raw || primTxn?.narrative || primTxn?.description || '';
+      const txnDate = primTxn?.date || primTxn?.timestamp ? String(primTxn.date || primTxn.timestamp).split('T')[0] : '';
+
+      // Format proposal action: Keep table view compact and informative, show full detail in drawer
       const fullAction = e.proposal_action || '';
       let defaultFallback = 'Review transaction voucher';
       if (type.includes('CUTOFF')) defaultFallback = 'Accrue to Acc 1290 (In-Transit)';
@@ -2986,7 +3004,7 @@ function renderExceptionsQueue() {
       let fullProposal = fullAction || defaultFallback;
       let shortProposal = defaultFallback;
 
-      if (fullAction) {
+      if (fullAction && !/^(INVESTIGATE_MISSING_WIRE|MANUAL_REVIEW)$/i.test(fullAction.trim())) {
         if (/^[A-Z0-9_]+$/.test(fullAction.trim())) {
           shortProposal = fullAction.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
           fullProposal = shortProposal;
@@ -3000,9 +3018,25 @@ function renderExceptionsQueue() {
             shortProposal = firstSentence.substring(0, 34).trim() + '…';
           }
         }
+      } else {
+        // Contextualize generic actions based on transaction memo and findings:
+        if (txnDesc && txnDesc.toLowerCase().includes('out_of_balance')) {
+          fullProposal = `Unbalanced GL Entry: Review debit/credit variance for ${txnRef || 'record'}`;
+          shortProposal = `Unbalanced GL Entry (${txnRef || 'Review'})`;
+        } else if (txnDesc && txnDesc.toLowerCase().includes('missing_bank_credit')) {
+          fullProposal = `Missing Ledger Credit: Record counterpart deposit for ${txnRef || 'record'}`;
+          shortProposal = `Missing Ledger Credit (${txnRef || 'Review'})`;
+        } else if (txnDesc && txnDesc.toLowerCase().includes('refund_credit')) {
+          fullProposal = `Refund Credit Mismatch: Post counterpart debit for ${txnRef || 'refund'}`;
+          shortProposal = `Refund Credit Mismatch (${txnRef || 'Review'})`;
+        } else if (e.findings && e.findings.length > 0) {
+          fullProposal = e.findings[0];
+          shortProposal = e.findings[0].length > 34 ? (e.findings[0].substring(0, 32) + '…') : e.findings[0];
+        } else if (txnRef) {
+          fullProposal = `Investigate unallocated deposit ${txnRef} in General Ledger`;
+          shortProposal = `Investigate ${txnRef}`;
+        }
       }
-
-      const isLongAction = fullProposal.length > 38 || fullProposal !== shortProposal;
 
       const sev = e.severity || 'MEDIUM';
       const badgeCls = sev === 'CRITICAL' ? 'badge-coral' : (sev === 'HIGH' ? 'badge-amber' : 'badge-blue');
@@ -3024,7 +3058,14 @@ function renderExceptionsQueue() {
 
       return `
         <tr id="row-${excId}">
-          <td class="mono-text" style="font-weight: 600; white-space: nowrap; font-size: 0.78rem;">${escapeHtml(excId)}</td>
+          <td class="mono-text" style="font-weight: 600; white-space: nowrap; font-size: 0.78rem;">
+            <div>${escapeHtml(excId)}</div>
+            ${txnRef ? `<div style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 600; margin-top: 2px; display: inline-flex; align-items: center; gap: 4px;">
+              <span>${escapeHtml(txnRef)}</span>
+              ${txnDate ? `<span style="color: var(--text-muted); font-weight: 400;">(${escapeHtml(txnDate)})</span>` : ''}
+            </div>` : ''}
+            ${txnDesc && txnDesc !== txnRef ? `<div style="font-size: 0.68rem; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(txnDesc)}">${escapeHtml(txnDesc)}</div>` : ''}
+          </td>
           <td class="mono-text" style="color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; cursor: help;" title="${escapeHtml(rowBatch)}">${escapeHtml(shortBatch)}</td>
           <td style="font-weight: 500; font-size: 0.8rem; max-width: 180px;">${escapeHtml(humanType)}</td>
           <td><span class="badge-min ${badgeCls}" style="white-space: nowrap;">${escapeHtml(sev)}</span></td>
@@ -3035,11 +3076,9 @@ function renderExceptionsQueue() {
               <span class="table-treatment-text" title="Click to view detailed AI treatment & proof&#10;&#10;${escapeHtml(fullProposal)}" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')">
                 ${escapeHtml(shortProposal)}
               </span>
-              ${isLongAction ? `
-                <button type="button" class="table-treatment-btn" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')" title="View detailed AI reasoning & proof">
-                  Details →
-                </button>
-              ` : ''}
+              <button type="button" class="table-treatment-btn" onclick="openExceptionInvestigationDrawer('${escapeHtml(excId)}')" title="View detailed AI reasoning & proof">
+                Details →
+              </button>
             </div>
           </td>
           <td style="text-align: right; padding-right: 1.25rem;">

@@ -242,6 +242,11 @@ class NormalizerService:
         source_ref_str = None
         lines_list: List[JournalLine] = []
         has_explicit_dir = True
+        txn_status = None
+        settle_status = None
+        gl_memo_field = None
+        is_material_field = False
+        declared_net_minor_field = None
 
         # Source-specific field normalization
         if source_kind == SourceKind.GATEWAY:
@@ -257,6 +262,22 @@ class NormalizerService:
             fee_paise = cls._to_paise(fee_val, default_zero=True, amount_scale=scale)
             tax_paise = cls._to_paise(tax_val, default_zero=True, amount_scale=scale)
             
+            # Status & Settlement Status
+            p_status = cls._first_present(raw_row, "payment_status", "status", "Payment Status")
+            if p_status:
+                txn_status = str(p_status).strip().upper()
+            s_status = cls._first_present(raw_row, "settlement_status", "Settlement Status")
+            if s_status:
+                settle_status = str(s_status).strip().upper()
+            
+            # Net settlement
+            net_val = cls._first_present(raw_row, "net_settlement", "net_amount", "net")
+            if net_val is not None and str(net_val).strip() != "":
+                declared_net_minor_field = cls._to_paise(net_val, default_zero=True, amount_scale=scale)
+
+            if amount_paise >= 10000000:
+                is_material_field = True
+
             date_val = cls._first_present(
                 raw_row, "transaction_date", "captured_at", "created_at",
                 "txn_date", "value_date", "date", "Date"
@@ -342,6 +363,12 @@ class NormalizerService:
             gross_paise = None
             fee_paise = None
             tax_paise = None
+
+            b_status = cls._first_present(raw_row, "status", "Status", "txn_status")
+            if b_status:
+                txn_status = str(b_status).strip().upper()
+            if amount_paise >= 10000000:
+                is_material_field = True
             
             date_val = cls._first_present(
                 raw_row, "transaction_date", "txn_date", "value_date",
@@ -400,6 +427,15 @@ class NormalizerService:
             gross_paise = None
             fee_paise = None
             tax_paise = None
+
+            l_status = cls._first_present(raw_row, "posting_status", "status", "Status")
+            if l_status:
+                txn_status = str(l_status).strip().upper()
+            gl_memo_val = cls._first_present(raw_row, "control_note", "memo", "description")
+            if gl_memo_val:
+                gl_memo_field = str(gl_memo_val).strip()
+            if amount_paise >= 10000000 or (gl_memo_field and "high_value" in gl_memo_field.lower()):
+                is_material_field = True
             
             date_val = cls._first_present(
                 raw_row, "posting_date", "entry_date", "posted_at",
@@ -505,7 +541,12 @@ class NormalizerService:
             normalized_date=val_date,
             source_reference=source_ref_str,
             lines=lines_list,
-            has_explicit_direction=has_explicit_dir
+            has_explicit_direction=has_explicit_dir,
+            status=txn_status,
+            settlement_status=settle_status,
+            gl_memo=gl_memo_field,
+            is_material=is_material_field,
+            declared_net_minor=declared_net_minor_field
         )
 
     @classmethod
@@ -540,6 +581,8 @@ class NormalizerService:
         ar_account_code = "1210 Accounts Receivable"
         all_doc_refs: List[str] = []
         all_memos: List[str] = []
+        all_control_notes: List[str] = []
+        statuses: List[str] = []
         dates: List[Any] = []
 
         for r in raw_rows:
@@ -556,6 +599,13 @@ class NormalizerService:
                 all_doc_refs.append(doc_ref)
             if memo:
                 all_memos.append(memo)
+
+            c_note = cls._first_present(r, "control_note", "memo")
+            if c_note and str(c_note).strip():
+                all_control_notes.append(str(c_note).strip())
+            p_stat = cls._first_present(r, "posting_status", "status", "Status")
+            if p_stat and str(p_stat).strip():
+                statuses.append(str(p_stat).strip().upper())
 
             d_val = cls._first_present(r, "debit", "debit_amount")
             c_val = cls._first_present(r, "credit", "credit_amount")
@@ -620,6 +670,18 @@ class NormalizerService:
             elif d not in ref_keys.invoice:
                 ref_keys.invoice.append(d)
 
+        # Determine semantic status and memo
+        je_status = "REVERSED" if "REVERSED" in statuses else (statuses[0] if statuses else "POSTED")
+        defect_notes = [n for n in all_control_notes if n.lower() not in ("balanced", "")]
+        if defect_notes:
+            je_memo = defect_notes[0]
+        elif all_memos:
+            je_memo = all_memos[0]
+        else:
+            je_memo = "balanced"
+
+        is_material_je = (primary_amount_minor >= 10000000 or total_debit >= 10000000 or (je_memo and "high_value" in str(je_memo).lower()))
+
         primary_memo = all_memos[0] if all_memos else f"Journal Entry {je_id}"
         norm_desc = cls.normalize_text(primary_memo)
 
@@ -651,7 +713,11 @@ class NormalizerService:
             lines=lines,
             is_balanced_je=is_balanced,
             total_debit_minor=total_debit,
-            total_credit_minor=total_credit
+            total_credit_minor=total_credit,
+            status=je_status,
+            gl_memo=je_memo,
+            is_material=is_material_je,
+            declared_net_minor=None
         )
 
     @staticmethod

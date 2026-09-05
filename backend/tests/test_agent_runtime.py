@@ -3,7 +3,7 @@ import sys
 from dotenv import load_dotenv
 
 # Add backend to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from app.services.agent_runtime import AIAgentRuntime

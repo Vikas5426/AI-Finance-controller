@@ -164,7 +164,7 @@ class IngestionService:
             for row in raw_rows:
                 if not any(str(v).strip() for k, v in row.items() if v is not None and not k.startswith("__")):
                     continue
-                je_id = str(NormalizerService._first_present(row, "je_id", "journal_id", "entry_id", "id") or f"JE-{len(je_groups)+1:04d}")
+                je_id = str(NormalizerService._first_present(row, "transaction_id", "je_id", "journal_id", "entry_id", "journal_line_id", "document_id", "id") or f"JE-{len(je_groups)+1:04d}")
                 je_groups.setdefault(je_id, []).append(row)
 
             for je_id, group in je_groups.items():

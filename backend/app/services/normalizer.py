@@ -133,7 +133,16 @@ class NormalizerService:
         try:
             val_cleaned = str(val).strip().replace(",", "")
             d = Decimal(val_cleaned)
-            return int((d * Decimal(amount_scale)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+            # Auto-Scale Intelligence:
+            # If the raw value contains a decimal point (e.g. "1200.00", "430.25", "99.99"),
+            # it represents major currency units (Rupees/Dollars). Minor units (paise) are integers.
+            # If amount_scale is 1 but val has decimal fractions/places, scale up by 100 to avoid 100x truncation.
+            effective_scale = amount_scale
+            if amount_scale == 1 and "." in val_cleaned:
+                parts = val_cleaned.split(".")
+                if len(parts) == 2 and len(parts[1]) > 0:
+                    effective_scale = 100
+            return int((d * Decimal(effective_scale)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
         except (InvalidOperation, ValueError, TypeError) as e:
             if default_zero:
                 return 0
@@ -232,13 +241,14 @@ class NormalizerService:
         orig_date_str = None
         source_ref_str = None
         lines_list: List[JournalLine] = []
+        has_explicit_dir = True
 
         # Source-specific field normalization
         if source_kind == SourceKind.GATEWAY:
-            ext_id = str(cls._first_present(raw_row, "payment_id", "Payment ID", "id", "txn_id") or txn_id)
+            ext_id = str(cls._first_present(raw_row, "transaction_id", "gateway_payment_id", "payment_id", "Payment ID", "gateway_record_id", "id", "txn_id") or txn_id)
             payment_id_field = ext_id
             gross_val = cls._first_present(raw_row, "gross_amount", "amount", "Gross Amount", "gross", "total")
-            fee_val = cls._first_present(raw_row, "fee_amount", "fee", "Fee", "fees")
+            fee_val = cls._first_present(raw_row, "gateway_fee", "fee_amount", "fee", "Fee", "fees")
             tax_val = cls._first_present(raw_row, "tax_amount", "tax", "Tax", "tax_on_fees")
             
             orig_amount_str = str(gross_val or "")
@@ -254,13 +264,38 @@ class NormalizerService:
             orig_date_str = str(date_val or "")
             occurred_at, val_date = cls._parse_datetime(date_val)
             
-            direction = TxnDirection.INFLOW
-            cp_raw = cls._first_present(raw_row, "customer_email", "Customer Email", "customer", "customer_name") or "CUSTOMER_DIRECT"
+            dir_col = cls._first_present(raw_row, "direction", "type", "txn_type", "payment_type", "dr_cr")
+            if dir_col:
+                has_explicit_dir = True
+                d_str = str(dir_col).strip().upper()
+                if d_str in ("DEBIT", "OUTFLOW", "PAYOUT", "REFUND", "DR", "WITHDRAWAL", "EXPENSE"):
+                    direction = TxnDirection.OUTFLOW
+                else:
+                    direction = TxnDirection.INFLOW
+            else:
+                has_explicit_dir = False
+                direction = TxnDirection.INFLOW
+            cp_raw = cls._first_present(raw_row, "customer_email", "Customer Email", "customer", "customer_name", "merchant_account") or "CUSTOMER_DIRECT"
             cp_norm = cp_raw.split("@")[0].lower() if "@" in cp_raw else cp_raw.lower()
             acct_code = "1210 Accounts Receivable"
 
             if ext_id and ext_id not in ref_keys.payment:
                 ref_keys.payment.append(ext_id)
+
+            # Explicit transaction_id and gateway_payment_id cross-stream keys
+            txn_id_val = cls._first_present(raw_row, "transaction_id", "txn_id")
+            if txn_id_val:
+                t_str = str(txn_id_val).strip()
+                if t_str not in ref_keys.payment:
+                    ref_keys.payment.append(t_str)
+                if t_str not in ref_keys.order:
+                    ref_keys.order.append(t_str)
+
+            gw_pay_val = cls._first_present(raw_row, "gateway_payment_id", "payment_id")
+            if gw_pay_val:
+                p_str = str(gw_pay_val).strip()
+                if p_str not in ref_keys.payment:
+                    ref_keys.payment.append(p_str)
             
             merch_ref = cls._first_present(raw_row, "merchant_reference", "order_id", "reference", "invoice_id")
             if merch_ref:
@@ -271,22 +306,22 @@ class NormalizerService:
                 elif m_str not in ref_keys.order:
                     ref_keys.order.append(m_str)
 
-            settle_val = cls._first_present(raw_row, "settlement_id")
-            if settle_val:
+            settle_val = cls._first_present(raw_row, "settlement_id", "settlement_status")
+            if settle_val and "SETTLED" not in str(settle_val).upper():
                 s_id = str(settle_val).upper().replace("_", "")
                 settlement_id_field = s_id
                 if s_id not in ref_keys.settlement:
                     ref_keys.settlement.append(s_id)
             
-            source_ref_str = str(cls._first_present(raw_row, "merchant_reference", "order_id", "reference", "payment_id") or "")
+            source_ref_str = str(cls._first_present(raw_row, "transaction_id", "gateway_payment_id", "merchant_reference", "order_id", "reference", "payment_id") or "")
 
         elif source_kind == SourceKind.BANK:
-            ext_id = str(cls._first_present(raw_row, "bank_transaction_id", "Ref No", "ref_no", "utr", "id", "txn_id") or txn_id)
+            ext_id = str(cls._first_present(raw_row, "transaction_id", "bank_reference", "bank_transaction_id", "bank_record_id", "Ref No", "ref_no", "utr", "id", "txn_id") or txn_id)
             source_ref_str = ext_id
             amt_val = cls._first_present(raw_row, "amount", "Amount", "net_amount", "Net Amount")
             credit_val = cls._first_present(raw_row, "Credit", "credit")
             debit_val = cls._first_present(raw_row, "Debit", "debit")
-            type_str = str(cls._first_present(raw_row, "type", "Type") or "").upper()
+            type_str = str(cls._first_present(raw_row, "direction", "type", "Type") or "").upper()
             
             if amt_val is not None and str(amt_val).strip() != "":
                 orig_amount_str = str(amt_val)
@@ -322,7 +357,16 @@ class NormalizerService:
             if ext_id and ext_id not in ref_keys.utr:
                 ref_keys.utr.append(ext_id)
 
-            pay_ref = cls._first_present(raw_row, "payment_id", "reference", "ref_no", "doc_ref")
+            # Explicit transaction_id and bank_reference cross-stream keys
+            txn_id_val = cls._first_present(raw_row, "transaction_id", "txn_id")
+            if txn_id_val:
+                t_str = str(txn_id_val).strip()
+                if t_str not in ref_keys.payment:
+                    ref_keys.payment.append(t_str)
+                if t_str not in ref_keys.utr:
+                    ref_keys.utr.append(t_str)
+
+            pay_ref = cls._first_present(raw_row, "payment_id", "bank_reference", "reference", "ref_no", "doc_ref")
             if pay_ref:
                 p_str = str(pay_ref).strip()
                 p_cleaned = re.sub(r"[-_](?:CR|DR|cr|dr)$", "", p_str)
@@ -330,9 +374,11 @@ class NormalizerService:
                     ref_keys.payment.append(p_cleaned)
                 elif "INV" in p_str.upper() and p_str not in ref_keys.invoice:
                     ref_keys.invoice.append(p_str)
+                elif p_cleaned not in ref_keys.utr:
+                    ref_keys.utr.append(p_cleaned)
 
         elif source_kind == SourceKind.LEDGER:
-            je_id = str(cls._first_present(raw_row, "journal_id", "je_id", "entry_id", "id") or "JE-000")
+            je_id = str(cls._first_present(raw_row, "transaction_id", "journal_id", "je_id", "entry_id", "journal_line_id", "document_id", "id") or "JE-000")
             line_no = str(cls._first_present(raw_row, "line_no", "line") or "1")
             journal_id_field = je_id
             journal_line_no_field = int(line_no) if line_no.isdigit() else 1
@@ -356,7 +402,7 @@ class NormalizerService:
             tax_paise = None
             
             date_val = cls._first_present(
-                raw_row, "entry_date", "posted_at", "posting_date",
+                raw_row, "posting_date", "entry_date", "posted_at",
                 "txn_date", "value_date", "date", "Date"
             )
             orig_date_str = str(date_val or "")
@@ -364,15 +410,30 @@ class NormalizerService:
             
             cp_raw = cls._first_present(raw_row, "counterparty", "account_name", "customer", "vendor")
             cp_norm = cls.normalize_text(str(cp_raw)).split(" ")[0].lower() if cp_raw else None
-            acct_code = str(cls._first_present(raw_row, "account", "account_code", "account_name") or "1210 Accounts Receivable")
+            acct_code = str(cls._first_present(raw_row, "gl_account", "account", "account_code", "account_name") or "1210 Accounts Receivable")
 
             if je_id and je_id not in ref_keys.je:
                 ref_keys.je.append(je_id)
 
-            doc_ref = cls._first_present(raw_row, "reference", "doc_ref", "ref_no")
+            # Explicit transaction_id link
+            txn_id_val = cls._first_present(raw_row, "transaction_id", "txn_id")
+            if txn_id_val:
+                t_str = str(txn_id_val).strip()
+                if t_str not in ref_keys.payment:
+                    ref_keys.payment.append(t_str)
+                if t_str not in ref_keys.je:
+                    ref_keys.je.append(t_str)
+
+            doc_ref = cls._first_present(raw_row, "doc_ref", "document_id", "reference", "ref_no")
             if doc_ref:
                 d_str = str(doc_ref).strip()
                 source_ref_str = d_str
+                if "INV" in d_str.upper() and d_str not in ref_keys.invoice:
+                    ref_keys.invoice.append(d_str)
+                elif "PAY" in d_str.upper() and d_str not in ref_keys.payment:
+                    ref_keys.payment.append(d_str)
+                elif d_str not in ref_keys.invoice:
+                    ref_keys.invoice.append(d_str)
                 if "INV" in d_str.upper() and d_str not in ref_keys.invoice:
                     ref_keys.invoice.append(d_str)
                 elif "PAY" in d_str.upper() and d_str not in ref_keys.payment:
@@ -443,7 +504,8 @@ class NormalizerService:
             original_date=orig_date_str,
             normalized_date=val_date,
             source_reference=source_ref_str,
-            lines=lines_list
+            lines=lines_list,
+            has_explicit_direction=has_explicit_dir
         )
 
     @classmethod
@@ -467,7 +529,7 @@ class NormalizerService:
         txn_id = str(uuid.uuid4())
         
         first_row = raw_rows[0]
-        je_id = str(cls._first_present(first_row, "je_id", "journal_id", "entry_id", "id") or "JE-000")
+        je_id = str(cls._first_present(first_row, "transaction_id", "je_id", "journal_id", "entry_id", "document_id", "id") or "JE-000")
         row_num = cls._first_present(first_row, "__row_num__")
         source_row_id = f"general_ledger.csv:row_{row_num}" if row_num else None
 
@@ -482,10 +544,13 @@ class NormalizerService:
 
         for r in raw_rows:
             l_no = int(cls._first_present(r, "line_no", "line") or len(lines) + 1)
-            acct_code = str(cls._first_present(r, "account_code", "account") or "")
+            acct_code = str(cls._first_present(r, "gl_account", "account_code", "account") or "")
             acct_name = str(cls._first_present(r, "account_name") or "")
             memo = str(cls._first_present(r, "memo", "description") or "")
-            doc_ref = str(cls._first_present(r, "doc_ref", "reference", "ref_no") or "")
+            doc_ref = str(cls._first_present(r, "doc_ref", "document_id", "reference", "ref_no") or "")
+            txn_id_col = str(cls._first_present(r, "transaction_id", "txn_id") or "")
+            if txn_id_col and txn_id_col not in all_doc_refs:
+                all_doc_refs.append(txn_id_col)
             
             if doc_ref:
                 all_doc_refs.append(doc_ref)
@@ -513,7 +578,7 @@ class NormalizerService:
                 direction = TxnDirection.DEBIT
                 orig_amt = "0"
 
-            dt_val = cls._first_present(r, "posted_at", "entry_date", "date", "txn_date", "value_date")
+            dt_val = cls._first_present(r, "posted_at", "posting_date", "entry_date", "date", "txn_date", "value_date")
             if dt_val:
                 dates.append(dt_val)
 
@@ -543,10 +608,14 @@ class NormalizerService:
         ref_keys = cls.extract_reference_keys(combined_text)
         if je_id not in ref_keys.je:
             ref_keys.je.append(je_id)
+        if "TXN" in je_id.upper() and je_id not in ref_keys.payment:
+            ref_keys.payment.append(je_id)
         for d in all_doc_refs:
             if "INV" in d.upper() and d not in ref_keys.invoice:
                 ref_keys.invoice.append(d)
             elif "PAY" in d.upper() and d not in ref_keys.payment:
+                ref_keys.payment.append(d)
+            elif "TXN" in d.upper() and d not in ref_keys.payment:
                 ref_keys.payment.append(d)
             elif d not in ref_keys.invoice:
                 ref_keys.invoice.append(d)

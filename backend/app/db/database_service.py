@@ -515,6 +515,32 @@ class DatabaseService:
             rep_json = (report.report_json if report and report.report_json else {}) or {}
             summary = rep_json.get("summary", {}) or {}
 
+            # Authoritative Gross Flow resolution for reporting context
+            if "gross_flow_minor" not in summary or not summary.get("gross_flow_minor"):
+                gw_sum = db.query(func.sum(schema.Transaction.gross_minor)).filter(
+                    schema.Transaction.org_id == org_id,
+                    schema.Transaction.batch_id == b_id,
+                    schema.Transaction.source_kind == "GATEWAY"
+                ).scalar()
+                if not gw_sum:
+                    gw_sum = db.query(func.sum(schema.Transaction.amount_minor)).filter(
+                        schema.Transaction.org_id == org_id,
+                        schema.Transaction.batch_id == b_id,
+                        schema.Transaction.source_kind == "GATEWAY"
+                    ).scalar()
+                if gw_sum and gw_sum > 0:
+                    summary["gross_flow_minor"] = int(gw_sum)
+                else:
+                    bk_sum = db.query(func.sum(schema.Transaction.amount_minor)).filter(
+                        schema.Transaction.org_id == org_id,
+                        schema.Transaction.batch_id == b_id,
+                        schema.Transaction.source_kind == "BANK",
+                        schema.Transaction.direction.in_(["INFLOW", "CREDIT"])
+                    ).scalar()
+                    summary["gross_flow_minor"] = int(bk_sum or 0)
+                summary["total_gross_inr"] = round(summary["gross_flow_minor"] / 100.0, 2)
+                summary["gross_flow_volume"] = f"₹{summary['total_gross_inr']:,.2f}"
+
             def _sev(sev: str) -> int:
                 return db.query(func.count(schema.ExceptionRecord.id)).filter_by(
                     org_id=org_id, batch_id=b_id, severity=sev
@@ -551,6 +577,9 @@ class DatabaseService:
                 "total_records": b.total_records or total_txns,
                 "matched_records": b.matched_records or 0,
                 "match_rate": match_rate,
+                "gross_flow_minor": summary.get("gross_flow_minor", 0),
+                "gross_flow_volume": summary.get("gross_flow_volume", f"₹{(summary.get('gross_flow_minor', 0) / 100):,.2f}"),
+                "total_gross_inr": summary.get("total_gross_inr", round(summary.get("gross_flow_minor", 0) / 100.0, 2)),
                 "execution_time_sec": summary.get("wall_clock_seconds", 0.0),
                 "created_at": b.created_at.isoformat() if b.created_at else None,
             }
@@ -593,6 +622,9 @@ class DatabaseService:
                     "safeguards_triggered_count": quality_metrics["safeguards_triggered_count"],
                     "pending_approvals": pending,
                     "audit_blocks_count": audit_count,
+                    "gross_flow_minor": summary.get("gross_flow_minor", 0),
+                    "gross_flow_volume": summary.get("gross_flow_volume", f"₹{(summary.get('gross_flow_minor', 0) / 100):,.2f}"),
+                    "total_gross_inr": summary.get("total_gross_inr", round(summary.get("gross_flow_minor", 0) / 100.0, 2)),
                 },
             }
 

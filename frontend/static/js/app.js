@@ -22,6 +22,8 @@ function setElemText(id, txt) {
   if (el) el.textContent = (txt !== null && txt !== undefined) ? txt : '';
 }
 
+var _activeAIIssuesPromise = null;
+
 // UX-10: Standardized State Helpers (Empty, Loading, Error with Retry)
 function renderEmpty(el, msg, cta) {
   if (!el) return;
@@ -1796,27 +1798,47 @@ async function fetchProcessedData() {
       if (elWfAcc) elWfAcc.textContent = total > 0 ? `${verifiedAccuracy.toFixed(1)}%` : '—';
 
       // Gross Flow Value: Unique Economic Transaction Flow (Primary Gateway Volume)
-      const uniqueGwFlow = {};
-      (appState.allTransactions || []).forEach(t => {
-        if (t.source_kind === 'GATEWAY') {
-          if (!uniqueGwFlow[t.external_id]) {
-            uniqueGwFlow[t.external_id] = (t.gross_minor !== undefined && t.gross_minor !== null) ? t.gross_minor : (t.amount_minor || 0);
+      let grossFlowMinor = 0;
+      if (rep && rep.summary && typeof rep.summary.gross_flow_minor === 'number' && rep.summary.gross_flow_minor > 0) {
+        grossFlowMinor = rep.summary.gross_flow_minor;
+      } else if (op && typeof op.gross_flow_minor === 'number' && op.gross_flow_minor > 0) {
+        grossFlowMinor = op.gross_flow_minor;
+      } else if (rep && typeof rep.gross_flow_minor === 'number' && rep.gross_flow_minor > 0) {
+        grossFlowMinor = rep.gross_flow_minor;
+      } else {
+        const uniqueGwFlow = {};
+        let hasGw = false;
+        (appState.allTransactions || []).forEach(t => {
+          if (t.source_kind === 'GATEWAY') {
+            hasGw = true;
+            const extId = t.external_id || t.id;
+            if (!uniqueGwFlow[extId]) {
+              uniqueGwFlow[extId] = (t.gross_minor !== undefined && t.gross_minor !== null) ? t.gross_minor : (t.amount_minor || 0);
+            }
+          }
+        });
+        if (hasGw) {
+          grossFlowMinor = Object.values(uniqueGwFlow).reduce((a, b) => a + b, 0);
+        } else {
+          // Fallback to bank deposits/credits if no gateway file
+          const bankTxns = (appState.allTransactions || []).filter(t => t.source_kind === 'BANK');
+          if (bankTxns.length > 0) {
+            grossFlowMinor = bankTxns.filter(t => ['INFLOW', 'CREDIT'].includes(String(t.direction || '').toUpperCase()) || (t.amount_minor || 0) > 0)
+              .reduce((acc, t) => acc + (t.amount_minor || 0), 0);
+          } else {
+            grossFlowMinor = (appState.allTransactions || []).filter(t => ['INFLOW', 'CREDIT'].includes(String(t.direction || '').toUpperCase()) || (t.amount_minor || 0) > 0)
+              .reduce((acc, t) => acc + (t.amount_minor || 0), 0);
           }
         }
-      });
-      const grossFlowMinor = Object.values(uniqueGwFlow).reduce((a, b) => a + b, 0);
+      }
+
       appState.grossFlowMinor = grossFlowMinor;
+      const exactGrossFormatted = '₹' + (grossFlowMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      appState.grossFlowVolume = exactGrossFormatted;
       const elGross = document.getElementById('ov-val-gross-flow');
       if (elGross) {
-        if (grossFlowMinor >= 1000000000) {
-          elGross.textContent = `₹${(grossFlowMinor / 1000000000).toFixed(2)}Cr`;
-        } else if (grossFlowMinor >= 10000000) {
-          elGross.textContent = `₹${(grossFlowMinor / 10000000).toFixed(2)}L`;
-        } else if (grossFlowMinor > 0) {
-          elGross.textContent = `₹${(grossFlowMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        } else {
-          elGross.textContent = '₹0.00';
-        }
+        elGross.textContent = exactGrossFormatted;
+        elGross.title = `Gross Economic Flow: ${exactGrossFormatted} (${grossFlowMinor.toLocaleString()} paise)`;
       }
 
       const elNavBadge = document.getElementById('nav-badge-excs-count');
@@ -3489,15 +3511,20 @@ async function sendQAMessage() {
 
     let liveGrossMinor = appState.grossFlowMinor;
     if (typeof liveGrossMinor !== 'number' || liveGrossMinor === 0) {
-      const gwMap = {};
-      (appState.allTransactions || []).forEach(t => {
-        if (t.source_kind === 'GATEWAY') {
-          if (!gwMap[t.external_id]) {
-            gwMap[t.external_id] = (t.gross_minor !== undefined && t.gross_minor !== null) ? t.gross_minor : (t.amount_minor || 0);
+      if (appState.batchReport && appState.batchReport.summary && typeof appState.batchReport.summary.gross_flow_minor === 'number') {
+        liveGrossMinor = appState.batchReport.summary.gross_flow_minor;
+      } else {
+        const gwMap = {};
+        (appState.allTransactions || []).forEach(t => {
+          if (t.source_kind === 'GATEWAY') {
+            const extId = t.external_id || t.id;
+            if (!gwMap[extId]) {
+              gwMap[extId] = (t.gross_minor !== undefined && t.gross_minor !== null) ? t.gross_minor : (t.amount_minor || 0);
+            }
           }
-        }
-      });
-      liveGrossMinor = Object.values(gwMap).reduce((a, b) => a + b, 0);
+        });
+        liveGrossMinor = Object.values(gwMap).reduce((a, b) => a + b, 0);
+      }
     }
 
     const liveDashboardMetrics = {
@@ -4810,8 +4837,6 @@ window.confirmResetWorkspace = resetWorkspace;
 // VIEW 6: AI ISSUES CENTER CONTROLLER & UNIFIED REPORT ENGINE
 // ==============================================================================
 
-let _activeAIIssuesPromise = null;
-
 async function loadAIIssuesReport(batchId, showProgress = true, forceRefresh = false) {
   const container = document.getElementById('ai-issues-cards-container');
   const systemicContainer = document.getElementById('ai-issues-systemic-container');
@@ -4921,6 +4946,25 @@ function renderAIIssuesReport(report) {
   setElemText('filter-badge-high', high.toLocaleString());
   setElemText('filter-badge-medium', medium.toLocaleString());
   setElemText('filter-badge-low', low.toLocaleString());
+
+  // Synchronize Active Filter Pill
+  const filterCounts = {
+    'ALL': total,
+    'CRITICAL': critical,
+    'HIGH': high,
+    'MEDIUM': medium,
+    'LOW': low
+  };
+  if (appState.aiIssuesFilter && filterCounts[appState.aiIssuesFilter] === 0 && total > 0) {
+    appState.aiIssuesFilter = 'ALL';
+  }
+  document.querySelectorAll('#ai-issues-filter-pills .filter-pill').forEach(pill => {
+    if (pill.getAttribute('data-filter') === (appState.aiIssuesFilter || 'ALL')) {
+      pill.classList.add('active');
+    } else {
+      pill.classList.remove('active');
+    }
+  });
 
   // 2. Update Overall Situation Callout
   const situationText = document.getElementById('ai-issues-situation-text');

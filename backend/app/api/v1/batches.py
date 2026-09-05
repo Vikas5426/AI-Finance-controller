@@ -108,6 +108,7 @@ def execute_batch_reconciliation(
         resolved_files: Dict[str, str] = {}
         file_hashes_to_verify: Dict[str, str] = expected_hashes or {}
 
+        source_scales: Dict[str, int] = {}
         # 1. Resolve from database upload_ids if provided
         if upload_ids:
             with get_db_context() as db:
@@ -128,6 +129,8 @@ def execute_batch_reconciliation(
                     prof = db.query(schema.SourceProfile).filter_by(id=u.source_profile_id).first()
                     if prof:
                         s_kind_str = prof.source_kind
+                        if prof.amount_scale:
+                            source_scales[s_kind_str] = prof.amount_scale
                     elif "bank" in (u.source_profile_id or "").lower() or "bank" in (u.file_name or "").lower():
                         s_kind_str = "BANK"
                     elif "ledger" in (u.source_profile_id or "").lower() or "gl" in (u.source_profile_id or "").lower() or "ledger" in (u.file_name or "").lower():
@@ -155,7 +158,8 @@ def execute_batch_reconciliation(
         for source_key, f_path in resolved_files.items():
             abs_path = InputProvenanceService.assert_user_upload_file_exists(f_path)
             s_kind = SourceKind(source_key.upper())
-            txns, parsed_count = IngestionService.ingest_and_normalize(abs_path, s_kind, org_id, b_id)
+            scale_ovr = source_scales.get(source_key.upper())
+            txns, parsed_count = IngestionService.ingest_and_normalize(abs_path, s_kind, org_id, b_id, amount_scale=scale_ovr)
             canonical_txns.extend(txns)
 
             prov = InputProvenanceService.track_file_provenance(
@@ -193,6 +197,21 @@ def execute_batch_reconciliation(
                 parsed_count=parsed_count
             )
             source_provenances.append(prov)
+
+    # Auto-Heal Unit Scale Mismatch across streams (e.g. if one source reports major units and another minor units)
+    mismatch = NormalizerService.detect_scale_mismatch(canonical_txns)
+    if mismatch and mismatch.get("ratio", 0) >= 20:
+        lo_src = min(mismatch["median_minor_by_source"].items(), key=lambda kv: kv[1])[0]
+        for t in canonical_txns:
+            if getattr(t.source_kind, "value", str(t.source_kind)) == lo_src:
+                t.amount_minor = t.amount_minor * 100
+                if t.gross_minor is not None:
+                    t.gross_minor = t.gross_minor * 100
+                if t.fee_minor is not None:
+                    t.fee_minor = t.fee_minor * 100
+                if t.tax_minor is not None:
+                    t.tax_minor = t.tax_minor * 100
+                t.normalized_amount = t.amount_minor
 
     # Build provenance manifest and log to console
     manifest = InputProvenanceService.build_batch_manifest(b_id, actual_source_type, source_provenances, mode)
@@ -237,6 +256,9 @@ def execute_batch_reconciliation(
         "total_records": len(canonical_txns),
         "matched_records": summary.get("matched_records", (summary["exact_matches"] * 2) + (summary["contextual_matches"] * 2)),
         "match_rate": summary["match_rate"],
+        "gross_flow_minor": summary.get("gross_flow_minor", 0),
+        "gross_flow_volume": summary.get("gross_flow_volume", f"₹{(summary.get('gross_flow_minor', 0) / 100):,.2f}"),
+        "total_gross_inr": summary.get("total_gross_inr", round(summary.get("gross_flow_minor", 0) / 100.0, 2)),
         "execution_time_sec": summary["wall_clock_seconds"],
         "created_at": datetime.now(timezone.utc).isoformat()
     }

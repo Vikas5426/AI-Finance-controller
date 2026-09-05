@@ -61,10 +61,12 @@ class AccountingSemanticGate:
             gw_outflow = gw.direction in (TxnDirection.OUTFLOW, TxnDirection.DEBIT)
             bk_debit = bk.direction in (TxnDirection.DEBIT, TxnDirection.OUTFLOW)
 
-            if gw_inflow and not bk_credit:
-                return False, f"Polarity Mismatch: Gateway Inflow payment '{gw.external_id}' cannot balance against Bank Debit/Withdrawal '{bk.external_id}'."
-            if gw_outflow and not bk_debit:
-                return False, f"Polarity Mismatch: Gateway Outflow/Refund '{gw.external_id}' cannot balance against Bank Credit/Deposit '{bk.external_id}'."
+            has_explicit_dir = getattr(gw, "has_explicit_direction", False)
+            if has_explicit_dir:
+                if gw_inflow and not bk_credit:
+                    return False, f"Polarity Mismatch: Gateway Inflow payment '{gw.external_id}' cannot balance against Bank Debit/Withdrawal '{bk.external_id}'."
+                if gw_outflow and not bk_debit:
+                    return False, f"Polarity Mismatch: Gateway Outflow/Refund '{gw.external_id}' cannot balance against Bank Credit/Deposit '{bk.external_id}'."
 
         # 2. Bank <-> Ledger
         elif (a.source_kind == SourceKind.BANK and b.source_kind == SourceKind.LEDGER) or \
@@ -84,17 +86,17 @@ class AccountingSemanticGate:
             if gl_acc.startswith("4") or ("REVENUE" in desc_upper and not gl_acc.startswith("121")) or ("SALES" in desc_upper and not gl_acc.startswith("121")):
                 return False, f"Accounting Rule Violation: Bank entry cannot match directly to GL Revenue account '{gl_acc}'. Bank deposits must settle through Cash/Bank (1010 DEBIT) or Clearing/AR (1290/1210 CREDIT)."
 
-            # Cash/Bank Asset Account (1010/1020):
+            # Cash/Bank Asset Account (1010/1020/1100):
             # Bank Deposit Credit -> GL Cash/Bank Asset DEBIT (Asset increase)
             # Bank Withdrawal Debit -> GL Cash/Bank Asset CREDIT (Asset decrease)
-            if gl_acc.startswith("101") or gl_acc.startswith("102") or (re.search(r"\b(?:CASH|BANK\s+CONTROL|BANK\s+ASSET)\b", desc_upper) and not gl_acc.startswith("121")):
+            if gl_acc.startswith("101") or gl_acc.startswith("102") or gl_acc.startswith("11") or (re.search(r"\b(?:CASH|BANK\s+CONTROL|BANK\s+ASSET)\b", desc_upper) and not gl_acc.startswith("121")):
                 if bk_credit and not gl_debit:
                     return False, f"Accounting Rule Violation: Bank Deposit Credit requires GL Cash/Bank Asset Debit, found {gl.direction.value}."
                 if not bk_credit and not gl_credit:
                     return False, f"Accounting Rule Violation: Bank Withdrawal Debit requires GL Cash/Bank Asset Credit, found {gl.direction.value}."
 
             # Clearing & Receivable Accounts (1210 AR, 1290 In-Transit Clearing):
-            elif gl_acc.startswith("121") or gl_acc.startswith("129") or "CLEARING" in desc_upper or "RECEIVABLE" in desc_upper or "IN-TRANSIT" in desc_upper:
+            elif gl_acc.startswith("121") or gl_acc.startswith("129") or gl_acc.startswith("11") or "CLEARING" in desc_upper or "RECEIVABLE" in desc_upper or "IN-TRANSIT" in desc_upper:
                 if bk_credit and not (gl_credit or gl_debit):
                     return False, f"Accounting Rule Violation: Bank Deposit cannot balance against GL Clearing {gl.direction.value}."
 
@@ -115,8 +117,9 @@ class AccountingSemanticGate:
             gl_credit = gl.direction in (TxnDirection.CREDIT, TxnDirection.INFLOW)
             gl_debit = gl.direction in (TxnDirection.DEBIT, TxnDirection.OUTFLOW)
 
-            if gw_inflow:
-                if (gl_acc.startswith("101") or gl_acc.startswith("102") or re.search(r"\b(?:BANK\s+CONTROL|BANK\s+ASSET)\b", desc_upper)) and not gl_acc.startswith("121"):
+            has_explicit_dir = getattr(gw, "has_explicit_direction", False)
+            if has_explicit_dir and gw_inflow:
+                if (gl_acc.startswith("101") or gl_acc.startswith("102") or gl_acc.startswith("11") or re.search(r"\b(?:BANK\s+CONTROL|BANK\s+ASSET)\b", desc_upper)) and not gl_acc.startswith("121"):
                     return False, f"Accounting Rule Violation: Gateway Inflow cannot match directly to GL Bank Asset account '{gl_acc}'."
                 if (gl_acc.startswith("5") or "EXPENSE" in desc_upper or "FEE" in desc_upper) and not gl_acc.startswith("121"):
                     return False, f"Accounting Rule Violation: Gateway Inflow cannot match GL Expense/Fee account '{gl_acc}'."

@@ -144,6 +144,7 @@ class CanonicalTransaction(BaseModel):
     is_balanced_je: Optional[bool] = None
     total_debit_minor: Optional[int] = None
     total_credit_minor: Optional[int] = None
+    has_explicit_direction: bool = False
 
 class ToolEvidence(BaseModel):
     tool: str

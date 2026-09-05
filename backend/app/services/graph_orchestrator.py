@@ -560,6 +560,38 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
     avg_confidence = round(sum(confidences) / len(confidences), 4) if confidences else 0.0
     false_risk = round(sum(max(0.0, 1.0 - c) for c in confidences) / len(confidences), 4) if confidences else 0.0
 
+    # Calculate authoritative gross flow volume (primary gateway volume with bank inflow fallback)
+    all_txns = state.get("canonical_transactions", [])
+    gw_txns = [t for t in all_txns if getattr(t.source_kind, "value", str(t.source_kind)).upper() == "GATEWAY"]
+    unique_gw = {}
+    for t in gw_txns:
+        ext_id = t.external_id or str(t.id)
+        if ext_id not in unique_gw:
+            amt = t.gross_minor if t.gross_minor is not None else t.amount_minor
+            unique_gw[ext_id] = amt or 0
+    gross_flow_minor = sum(unique_gw.values())
+
+    if gross_flow_minor == 0:
+        bank_txns = [t for t in all_txns if getattr(t.source_kind, "value", str(t.source_kind)).upper() == "BANK"]
+        if bank_txns:
+            gross_flow_minor = sum(
+                t.amount_minor for t in bank_txns
+                if str(getattr(t.direction, "value", str(t.direction))).upper() in ("INFLOW", "CREDIT") or t.amount_minor > 0
+            )
+        else:
+            gross_flow_minor = sum(
+                t.amount_minor for t in all_txns
+                if str(getattr(t.direction, "value", str(t.direction))).upper() in ("INFLOW", "CREDIT") or t.amount_minor > 0
+            )
+
+    total_gross_inr = round(gross_flow_minor / 100.0, 2)
+    gross_flow_formatted = f"₹{total_gross_inr:,.2f}"
+
+    total_fee_minor = sum(t.fee_minor or 0 for t in gw_txns)
+    total_tax_minor = sum(t.tax_minor or 0 for t in gw_txns)
+    net_volume_minor = gross_flow_minor - total_fee_minor - total_tax_minor
+    total_net_inr = round(net_volume_minor / 100.0, 2)
+
     engine_res = state.get("engine_summary", {})
 
     summary = {
@@ -576,6 +608,14 @@ def finalize_batch_node(state: ReconciliationState) -> Dict[str, Any]:
         "total_exceptions": total_exceptions_count,
         "ai_investigations_performed": ai_inv_performed,
         "match_rate": round(match_rate, 4),
+        "gross_flow_minor": gross_flow_minor,
+        "gross_flow_volume": gross_flow_formatted,
+        "total_gross_inr": total_gross_inr,
+        "total_fee_minor": total_fee_minor,
+        "total_tax_minor": total_tax_minor,
+        "net_volume_minor": net_volume_minor,
+        "net_volume_inr": total_net_inr,
+        "net_volume": f"₹{total_net_inr:,.2f}",
         "reconciliation_graph": engine_res.get("reconciliation_graph", {}),
         "three_way_matches_count": engine_res.get("three_way_matches_count", 0),
         "three_way_records_count": engine_res.get("three_way_records_count", 0),

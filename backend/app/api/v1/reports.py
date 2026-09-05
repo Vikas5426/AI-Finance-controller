@@ -90,8 +90,26 @@ async def get_executive_summary(
         fc_status = "COMPLETE"
         fc_missing = None
 
+    summary_dict = ctx.get("summary") or {}
+    gross_flow_minor = summary_dict.get("gross_flow_minor", ctx["batch"].get("gross_flow_minor", 0))
+    total_gross_inr = summary_dict.get("total_gross_inr", round(gross_flow_minor / 100.0, 2))
+    gross_flow_vol = summary_dict.get("gross_flow_volume", f"₹{total_gross_inr:,.2f}")
+    net_vol = summary_dict.get("net_volume", f"₹{summary_dict.get('net_volume_inr', total_gross_inr):,.2f}")
+
     resp_payload: Dict[str, Any] = {
         "batch": ctx["batch"],
+        "summary": {
+            **summary_dict,
+            "gross_flow_minor": gross_flow_minor,
+            "gross_flow_volume": gross_flow_vol,
+            "total_gross_inr": total_gross_inr,
+            "net_volume": net_vol,
+            "match_rate": ctx["batch"].get("match_rate", 0.0),
+        },
+        "gross_flow_volume": gross_flow_vol,
+        "gross_flow_minor": gross_flow_minor,
+        "total_gross_inr": total_gross_inr,
+        "net_volume": net_vol,
         "quality_metrics": qm,
         "windows": ctx["windows"],
         "cash_forecast": forecast_segments,
@@ -115,6 +133,10 @@ async def get_executive_summary(
             "exceptions_count": ctx["stats"]["total_exceptions"],
             "manual_review_required": ctx["stats"]["pending_approvals"],
             "processing_time_seconds": ctx["batch"]["execution_time_sec"],
+            "gross_flow_volume": gross_flow_vol,
+            "gross_flow_minor": gross_flow_minor,
+            "total_gross_inr": total_gross_inr,
+            "net_volume": net_vol,
             "false_positive_safeguards_triggered": qm["safeguards_triggered_count"],
             "confidence_breakdown": {
                 "high_confidence_matches": len([m for m in matches if _conf(m) >= 0.95]),

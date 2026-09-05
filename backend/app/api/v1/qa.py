@@ -253,6 +253,17 @@ def assemble_live_batch_context(query: str, org_id: str, active_context: Optiona
         match_rate = persisted_rate
     match_rate = max(0.0, min(1.0, match_rate))
 
+    # 1. Check authoritative gross flow from batch summary or batch record first
+    persisted_gross_minor = 0
+    if isinstance(active_batch, dict) and active_batch.get("gross_flow_minor"):
+        persisted_gross_minor = int(active_batch["gross_flow_minor"])
+    elif isinstance(db_ctx, dict) and isinstance(db_ctx.get("summary"), dict) and db_ctx["summary"].get("gross_flow_minor"):
+        persisted_gross_minor = int(db_ctx["summary"]["gross_flow_minor"])
+    elif isinstance(db_ctx, dict) and isinstance(db_ctx.get("batch"), dict) and db_ctx["batch"].get("gross_flow_minor"):
+        persisted_gross_minor = int(db_ctx["batch"]["gross_flow_minor"])
+    elif isinstance(db_ctx, dict) and isinstance(db_ctx.get("stats"), dict) and db_ctx["stats"].get("gross_flow_minor"):
+        persisted_gross_minor = int(db_ctx["stats"]["gross_flow_minor"])
+
     # Calculate actual unique gross flow volume (matching dashboard logic: primary economic inflow)
     unique_gw_flow = {}
     for t in txns:
@@ -271,16 +282,31 @@ def assemble_live_batch_context(query: str, org_id: str, active_context: Optiona
         else:
             gross_flow_minor = sum(t.get("amount_minor", 0) for t in txns if str(t.get("direction", "")).upper() in ("INFLOW", "CREDIT") or t.get("amount_minor", 0) > 0)
 
+    if gross_flow_minor == 0 and persisted_gross_minor > 0:
+        gross_flow_minor = persisted_gross_minor
+
     # Cross-verify with client-supplied dashboard metric if provided
     if active_context and isinstance(active_context.get("dashboard_metrics"), dict):
         client_metrics = active_context["dashboard_metrics"]
-        if client_metrics.get("gross_flow_minor"):
-            gross_flow_minor = client_metrics["gross_flow_minor"]
+        if client_metrics.get("gross_flow_minor") and int(client_metrics["gross_flow_minor"]) > 0:
+            gross_flow_minor = int(client_metrics["gross_flow_minor"])
         elif client_metrics.get("gross_flow_volume"):
-            raw_str = re.sub(r'[^\d.]', '', str(client_metrics["gross_flow_volume"]))
+            raw_vol_str = str(client_metrics["gross_flow_volume"]).strip()
+            raw_str = re.sub(r'[^\d.]', '', raw_vol_str)
             if raw_str:
                 try:
-                    gross_flow_minor = int(round(float(raw_str) * 100))
+                    val_float = float(raw_str)
+                    s_lower = raw_vol_str.lower()
+                    if 'cr' in s_lower:
+                        parsed_minor = int(round(val_float * 1000000000))
+                    elif 'l' in s_lower or 'lakh' in s_lower:
+                        parsed_minor = int(round(val_float * 10000000))
+                    else:
+                        parsed_minor = int(round(val_float * 100))
+                    
+                    # Only override if parsed is reasonable and not a severe unit mismatch truncation
+                    if parsed_minor > 0 and not (gross_flow_minor >= 100000 and parsed_minor < 1000):
+                        gross_flow_minor = parsed_minor
                 except Exception:
                     pass
 

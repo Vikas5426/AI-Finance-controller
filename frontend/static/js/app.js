@@ -3628,6 +3628,10 @@ async function sendQAMessage() {
 }
 
 // Expose globally
+function toggleQAExpand() {
+  const modal = document.getElementById('qa-modal');
+  if (modal) modal.classList.toggle('qa-modal-expanded');
+}
 window.toggleQAModal = toggleQAModal;
 window.closeQAModal = closeQAModal;
 window.toggleQAExpand = toggleQAExpand;

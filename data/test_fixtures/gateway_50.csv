@@ -1,0 +1,51 @@
+payment_id,order_id,amount,currency,fee,tax,status,method,captured_at,settlement_id,customer_email,description
+pay_STD_001,ord_STD_001,50000,INR,1000,180,captured,upi,2026-03-21T10:05:00+05:30,SETL_STD_001,corp_client_1@example.com,Standard B2B subscription INV-2026-STD001 via pay_STD_001
+pay_STD_002,ord_STD_002,100000,INR,2000,360,captured,card,2026-03-22T10:10:00+05:30,SETL_STD_002,corp_client_2@example.com,Standard B2B subscription INV-2026-STD002 via pay_STD_002
+pay_STD_003,ord_STD_003,250000,INR,5000,900,captured,upi,2026-03-23T10:15:00+05:30,SETL_STD_003,corp_client_3@example.com,Standard B2B subscription INV-2026-STD003 via pay_STD_003
+pay_STD_004,ord_STD_004,500000,INR,10000,1800,captured,card,2026-03-24T10:20:00+05:30,SETL_STD_004,corp_client_4@example.com,Standard B2B subscription INV-2026-STD004 via pay_STD_004
+pay_STD_005,ord_STD_005,750000,INR,15000,2700,captured,upi,2026-03-20T10:25:00+05:30,SETL_STD_005,corp_client_5@example.com,Standard B2B subscription INV-2026-STD005 via pay_STD_005
+pay_STD_006,ord_STD_006,1000000,INR,20000,3600,captured,card,2026-03-21T10:30:00+05:30,SETL_STD_006,corp_client_6@example.com,Standard B2B subscription INV-2026-STD006 via pay_STD_006
+pay_STD_007,ord_STD_007,1200000,INR,24000,4320,captured,upi,2026-03-22T10:35:00+05:30,SETL_STD_007,corp_client_7@example.com,Standard B2B subscription INV-2026-STD007 via pay_STD_007
+pay_ENT_008,ord_ENT_008,2000000,INR,30000,5400,captured,netbanking,2026-03-22T12:08:00+05:30,SETL_ENT_008,ent_client_8@acme.com,Enterprise invoice INV-2026-ENT008 via pay_ENT_008
+pay_ENT_009,ord_ENT_009,3500000,INR,52500,9450,captured,netbanking,2026-03-22T12:09:00+05:30,SETL_ENT_009,ent_client_9@acme.com,Enterprise invoice INV-2026-ENT009 via pay_ENT_009
+pay_ENT_010,ord_ENT_010,5000000,INR,75000,13500,captured,netbanking,2026-03-22T12:10:00+05:30,SETL_ENT_010,ent_client_10@acme.com,Enterprise invoice INV-2026-ENT010 via pay_ENT_010
+pay_TAX_011,ord_TAX_011,1000000,INR,20000,2400,captured,card,2026-03-23T14:11:00+05:30,SETL_TAX_011,tax_test_11@acme.co,Tax discrepancy test INV-2026-TAX011 (Gateway applied 12% GST instead of mandatory 18%) via pay_TAX_011
+pay_TAX_012,ord_TAX_012,500000,INR,10000,0,captured,card,2026-03-23T14:12:00+05:30,SETL_TAX_012,tax_test_12@acme.co,Tax discrepancy test INV-2026-TAX012 (Zero tax charged on taxable MDR fee) via pay_TAX_012
+pay_TAX_013,ord_TAX_013,1500000,INR,30000,5400,captured,card,2026-03-23T14:13:00+05:30,SETL_TAX_013,tax_test_13@acme.co,Tax discrepancy test INV-2026-TAX013 (28% luxury rate charged on standard payment processing) via pay_TAX_013
+pay_TAX_014,ord_TAX_014,850000,INR,17000,3060,captured,card,2026-03-23T14:14:00+05:30,SETL_TAX_014,tax_test_14@acme.co,Tax discrepancy test INV-2026-TAX014 (Non-standard truncate rounding creating 85 paise variance) via pay_TAX_014
+pay_TAX_015,ord_TAX_015,600000,INR,12000,600,captured,card,2026-03-23T14:15:00+05:30,SETL_TAX_015,tax_test_15@acme.co,Tax discrepancy test INV-2026-TAX015 (VAT 5% erroneously billed to Indian GST merchant) via pay_TAX_015
+pay_TAX_016,ord_TAX_016,1200000,INR,24000,4560,captured,card,2026-03-23T14:16:00+05:30,SETL_TAX_016,tax_test_16@acme.co,Tax discrepancy test INV-2026-TAX016 (Unauthorized 1% infrastructure cess added to 18% GST) via pay_TAX_016
+pay_TAX_017,ord_TAX_017,700000,INR,14000,0,captured,card,2026-03-23T14:17:00+05:30,SETL_TAX_017,tax_test_17@acme.co,Tax discrepancy test INV-2026-TAX017 (Reverse charge flag caused gateway to drop tax line) via pay_TAX_017
+pay_TAX_018,ord_TAX_018,400000,INR,8000,1440,captured,card,2026-03-23T14:18:00+05:30,SETL_TAX_018,tax_test_18@acme.co,Tax discrepancy test INV-2026-TAX018 (Tax applied on exempt micro-transaction) via pay_TAX_018
+pay_FEE_019,ord_FEE_019,1000000,INR,20000,3600,captured,card,2026-03-24T15:19:00+05:30,SETL_FEE_019,fee_client_19@acme.org,Fee audit capture INV-2026-FEE019 (Charged 2.5% MDR instead of agreed 2.0% schedule) via pay_FEE_019
+pay_FEE_020,ord_FEE_020,1500000,INR,30000,5400,captured,card,2026-03-24T15:20:00+05:30,SETL_FEE_020,fee_client_20@acme.org,Fee audit capture INV-2026-FEE020 (International 3.0% rate applied to domestic card) via pay_FEE_020
+pay_FEE_021,ord_FEE_021,800000,INR,8000,1440,captured,card,2026-03-24T15:21:00+05:30,SETL_FEE_021,fee_client_21@acme.org,Fee audit capture INV-2026-FEE021 (Promo 1.0% rate applied instead of 2.0%) via pay_FEE_021
+pay_FEE_022,ord_FEE_022,1200000,INR,26500,4770,captured,card,2026-03-24T15:22:00+05:30,SETL_FEE_022,fee_client_22@acme.org,Fee audit capture INV-2026-FEE022 (Flat ₹25 surcharge added to processing fee) via pay_FEE_022
+pay_FEE_023,ord_FEE_023,2500000,INR,65000,9000,captured,card,2026-03-24T15:23:00+05:30,SETL_FEE_023,fee_client_23@acme.org,Fee audit capture INV-2026-FEE023 (Unannounced ₹150 dispute administrative fee deducted) via pay_FEE_023
+pay_FEE_024,ord_FEE_024,20000,INR,500,90,captured,card,2026-03-24T15:24:00+05:30,SETL_FEE_024,fee_client_24@acme.org,Fee audit capture INV-2026-FEE024 (Gateway applied ₹5.00 min fee floor on ₹200 micro-payment) via pay_FEE_024
+pay_CLEAN_025,ord_CLN_025,150000,INR,0,0,captured,bank_transfer,2026-03-25T09:25:00+05:30,SETL_CLN_025,direct_25@client.com,Direct gross payment INV-2026-CLN025 via pay_CLEAN_025
+pay_CLEAN_026,ord_CLN_026,320000,INR,0,0,captured,bank_transfer,2026-03-25T09:26:00+05:30,SETL_CLN_026,direct_26@client.com,Direct gross payment INV-2026-CLN026 via pay_CLEAN_026
+pay_CLEAN_027,ord_CLN_027,480000,INR,0,0,captured,bank_transfer,2026-03-25T09:27:00+05:30,SETL_CLN_027,direct_27@client.com,Direct gross payment INV-2026-CLN027 via pay_CLEAN_027
+pay_CLEAN_028,ord_CLN_028,650000,INR,0,0,captured,bank_transfer,2026-03-25T09:28:00+05:30,SETL_CLN_028,direct_28@client.com,Direct gross payment INV-2026-CLN028 via pay_CLEAN_028
+pay_CLEAN_029,ord_CLN_029,890000,INR,0,0,captured,bank_transfer,2026-03-25T09:29:00+05:30,SETL_CLN_029,direct_29@client.com,Direct gross payment INV-2026-CLN029 via pay_CLEAN_029
+pay_CLEAN_030,ord_CLN_030,1150000,INR,0,0,captured,bank_transfer,2026-03-25T09:30:00+05:30,SETL_CLN_030,direct_30@client.com,Direct gross payment INV-2026-CLN030 via pay_CLEAN_030
+pay_CLEAN_031,ord_CLN_031,1420000,INR,0,0,captured,bank_transfer,2026-03-25T09:31:00+05:30,SETL_CLN_031,direct_31@client.com,Direct gross payment INV-2026-CLN031 via pay_CLEAN_031
+pay_CLEAN_032,ord_CLN_032,1800000,INR,0,0,captured,bank_transfer,2026-03-25T09:32:00+05:30,SETL_CLN_032,direct_32@client.com,Direct gross payment INV-2026-CLN032 via pay_CLEAN_032
+pay_CUT_033,ord_CUT_033,236000,INR,4720,849,captured,netbanking,2026-03-31T23:55:00+05:30,SETL_CUT_033,quarter_end_33@corp.in,Quarter-end cutoff payment INV-2026-CUT033 via pay_CUT_033
+pay_CUT_034,ord_CUT_034,472000,INR,9440,1699,captured,netbanking,2026-03-31T23:55:00+05:30,SETL_CUT_034,quarter_end_34@corp.in,Quarter-end cutoff payment INV-2026-CUT034 via pay_CUT_034
+pay_CUT_035,ord_CUT_035,708000,INR,14160,2548,captured,netbanking,2026-03-31T23:55:00+05:30,SETL_CUT_035,quarter_end_35@corp.in,Quarter-end cutoff payment INV-2026-CUT035 via pay_CUT_035
+pay_CUT_036,ord_CUT_036,944000,INR,18880,3398,captured,netbanking,2026-03-31T23:55:00+05:30,SETL_CUT_036,quarter_end_36@corp.in,Quarter-end cutoff payment INV-2026-CUT036 via pay_CUT_036
+pay_CUT_037,ord_CUT_037,1180000,INR,23600,4248,captured,netbanking,2026-03-31T23:55:00+05:30,SETL_CUT_037,quarter_end_37@corp.in,Quarter-end cutoff payment INV-2026-CUT037 via pay_CUT_037
+pay_DUP_WEBHOOK_38,ord_DUP_WEBHOOK_38,99900,INR,1998,360,captured,upi,2026-03-26T16:00:00+05:30,SETL_DUP_38,dup_webhook@user.org,Duplicate webhook capture INV-2026-DUP38
+pay_DUP_WEBHOOK_38,ord_DUP_WEBHOOK_38,99900,INR,1998,360,captured,upi,2026-03-26T16:00:00+05:30,SETL_DUP_38,dup_webhook@user.org,Duplicate webhook capture INV-2026-DUP38
+pay_DUP_BANK_40,ord_DUP_BANK_40,500000,INR,10000,1800,captured,card,2026-03-26T17:30:00+05:30,SETL_DUP_40,dup_bank@client.co,Gateway transaction for double bank credit INV-2026-DUP40
+pay_UNSETTLED_042,ord_UNSET_042,500000,INR,10000,1800,captured,card,2026-03-27T11:42:00+05:30,SETL_UNSET,unsettled_42@lostfunds.in,Customer payment captured but never deposited INV-2026-UNSET42
+pay_UNSETTLED_043,ord_UNSET_043,1000000,INR,20000,3600,captured,card,2026-03-27T11:43:00+05:30,SETL_UNSET,unsettled_43@lostfunds.in,Customer payment captured but never deposited INV-2026-UNSET43
+pay_NO_LEDGER_046,ord_NO_LEDGER_046,1500000,INR,30000,5400,captured,upi,2026-03-27T13:00:00+05:30,SETL_NOL_046,unbooked_client@acme.com,Payment cleared bank but ERP entry unposted INV-2026-NOL046
+pay_BUNDLE_047,ord_BDL_047,400000,INR,8000,1440,captured,upi,2026-03-28T10:47:00+05:30,SETL_BATCH_BUNDLE_88,bundle_47@client.co,Batch capture INV-2026-BDL047 in payout SETL_BATCH_BUNDLE_88
+pay_BUNDLE_048,ord_BDL_048,600000,INR,12000,2160,captured,upi,2026-03-28T10:48:00+05:30,SETL_BATCH_BUNDLE_88,bundle_48@client.co,Batch capture INV-2026-BDL048 in payout SETL_BATCH_BUNDLE_88
+pay_BUNDLE_049,ord_BDL_049,1000000,INR,20000,3600,captured,upi,2026-03-28T10:49:00+05:30,SETL_BATCH_BUNDLE_88,bundle_49@client.co,Batch capture INV-2026-BDL049 in payout SETL_BATCH_BUNDLE_88
+pay_INSTANT_048,ord_INSTANT_048,2500000,INR,55000,9900,captured,upi,2026-03-28T18:15:00+05:30,SETL_INSTANT_048,instant_merchant@acme.co,Instant T+0 settlement payout with fast-transfer surcharge INV-2026-INST48
+pay_REFUND_PARTIAL_049,ord_REF_049,1000000,INR,20000,3600,captured,card,2026-03-28T18:30:00+05:30,SETL_REF_049,refunded_buyer@store.org,Capture with partial refund deduction INV-2026-REF49
+pay_INTL_CROSSBORDER_050,ord_INTL_050,850000,INR,29750,5355,captured,international_card,2026-03-28T19:15:00+05:30,SETL_INTL_050,global_buyer@overseas.com,Cross-border payment with international processing surcharge INV-2026-INTL50
+pay_UNBAL_GL_050,ord_UNBAL_GL_050,500000,INR,10000,1800,captured,card,2026-03-28T19:00:00+05:30,SETL_UNBAL_050,accounting_flaw@corp.com,Transaction with unbalanced double-entry ledger entry INV-2026-UNB050

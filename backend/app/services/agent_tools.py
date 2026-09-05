@@ -78,23 +78,36 @@ class TransactionLookupIndex:
                     else:
                         candidates[cand.id][1].append(f"Shared reference key: {k}")
 
-        # 2. Amount & Date Proximity matching (Score 50-80)
+        # 2. Amount & Date Proximity matching (including net-of-fee projections)
         p_amt = primary_txn.amount_minor
-        p_bucket = p_amt // 1000
-        adjacent_buckets = [p_bucket - 1, p_bucket, p_bucket + 1]
+        target_amts = {p_amt}
 
-        for b in adjacent_buckets:
-            for cand in self.by_amount_bucket.get(b, []):
-                if cand.id != primary_txn.id and cand.source_kind != primary_txn.source_kind:
-                    diff_amt = abs(cand.amount_minor - p_amt)
-                    if diff_amt <= amount_tolerance_minor:
-                        diff_days = abs((cand.value_date - primary_txn.value_date).days)
-                        if diff_days <= date_window_days:
-                            reason = f"Amount delta ₹{diff_amt/100:.2f} within {diff_days}d window"
-                            if cand.id not in candidates:
-                                candidates[cand.id] = (cand, [reason], 60 - diff_days * 2)
-                            else:
-                                candidates[cand.id][1].append(reason)
+        # If primary is gateway, check expected net bank deposits under active policies
+        if primary_txn.source_kind == SourceKind.GATEWAY:
+            for pol in FeePolicyRegistry.list_active_policies():
+                bd = pol.calculate(p_amt)
+                target_amts.add(bd.expected_net_minor)
+        elif primary_txn.source_kind == SourceKind.BANK:
+            # If primary is bank, check estimated gross gateway captures
+            for est_rate in (0.015, 0.020, 0.0236, 0.030):
+                est_gross = int(p_amt / (1.0 - est_rate))
+                target_amts.add(est_gross)
+
+        for target in target_amts:
+            p_bucket = target // 1000
+            adjacent_buckets = [p_bucket - 1, p_bucket, p_bucket + 1]
+            for b in adjacent_buckets:
+                for cand in self.by_amount_bucket.get(b, []):
+                    if cand.id != primary_txn.id and cand.source_kind != primary_txn.source_kind:
+                        diff_amt = abs(cand.amount_minor - target)
+                        if diff_amt <= amount_tolerance_minor:
+                            diff_days = abs((cand.value_date - primary_txn.value_date).days)
+                            if diff_days <= date_window_days:
+                                reason = f"Amount proximity: delta ₹{diff_amt/100:.2f} to target ₹{target/100:.2f} within {diff_days}d window"
+                                if cand.id not in candidates:
+                                    candidates[cand.id] = (cand, [reason], 70 - diff_days * 2)
+                                else:
+                                    candidates[cand.id][1].append(reason)
 
         # Format candidate output
         sorted_cands = sorted(candidates.values(), key=lambda x: x[2], reverse=True)[:limit]

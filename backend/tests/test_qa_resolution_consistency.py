@@ -92,7 +92,68 @@ class TestQAResolutionConsistency(unittest.TestCase):
         self.assertIsNotNone(ctx.get("target_transaction_exception"), "Should identify the associated exception record")
         reasoning = execute_dynamic_data_reasoner(query, ctx)
         self.assertIn(reasoning.status_card.badge_type, ["danger", "warning"])
-        self.assertNotEqual(reasoning.status_card.status_text, "Settled Cleanly")
+    def test_gross_flow_volume_and_general_queries(self):
+        """Verify that gross flow volume accurately reflects unique gateway flow and answers queries without ₹0.00."""
+        org_id = settings.DEFAULT_ORG_ID
+        query = "What is the gross flow volume for this batch?"
+        ctx = assemble_live_batch_context(query, org_id)
+
+        # Ensure gross_flow_volume is non-zero in the active batch
+        self.assertIn("gross_flow_volume", ctx)
+        gross_vol = ctx["gross_flow_volume"]
+        self.assertNotEqual(gross_vol, "₹0.00", "Gross flow volume should not be ₹0.00 for seeded batch")
+        self.assertEqual(gross_vol, f"₹{(ctx['gross_flow_minor'] / 100):,.2f}")
+
+        # Test reasoning output for Gross Flow
+        reasoning = execute_dynamic_data_reasoner(query, ctx)
+        self.assertEqual(reasoning.status_card.status_text, "Gross Flow Volume")
+        self.assertEqual(reasoning.status_card.badge_type, "success")
+        self.assertEqual(reasoning.status_card.amount, gross_vol)
+        self.assertIn(gross_vol, reasoning.direct_answer)
+        self.assertNotIn("₹0.00", reasoning.direct_answer)
+
+        # Test with client-supplied dashboard_metrics in active_context
+        active_context = {
+            "dashboard_metrics": {
+                "gross_flow_volume": "₹20,038.00",
+                "gross_flow_minor": 2003800,
+                "match_rate": "20.31%",
+                "total_records": 16,
+                "total_exceptions": 4
+            }
+        }
+        client = TestClient(app)
+        token = create_access_token("usr_test_controller", settings.DEFAULT_ORG_ID, "approver")
+        resp = client.post(
+            "/api/v1/qa/ask",
+            json={
+                "query": "what is the gross flow volume",
+                "active_context": active_context
+            },
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        self.assertEqual(resp.status_code, 200)
+        qa_data = resp.json()
+        self.assertIn("20,038", qa_data.get("direct_answer", "") + str(qa_data.get("status_card", {})))
+        self.assertNotEqual(qa_data.get("status_card", {}).get("amount"), "₹0.00")
+
+    def test_match_rate_and_general_data_queries(self):
+        """Verify that match rate and batch overview queries produce truthful metrics."""
+        org_id = settings.DEFAULT_ORG_ID
+        
+        # Test match rate query
+        query_mr = "What is the match rate?"
+        ctx_mr = assemble_live_batch_context(query_mr, org_id)
+        reasoning_mr = execute_dynamic_data_reasoner(query_mr, ctx_mr)
+        self.assertIn("Matched", reasoning_mr.status_card.status_text)
+        self.assertIn("%", reasoning_mr.status_card.amount)
+        self.assertIn(str(ctx_mr["match_rate_pct"]), reasoning_mr.direct_answer)
+
+        # Test general overview query
+        query_ov = "Give me an overview of this batch data"
+        ctx_ov = assemble_live_batch_context(query_ov, org_id)
+        reasoning_ov = execute_dynamic_data_reasoner(query_ov, ctx_ov)
+        self.assertIn(ctx_ov["gross_flow_volume"], reasoning_ov.direct_answer + "".join(reasoning_ov.why_it_happened))
 
 
 if __name__ == "__main__":

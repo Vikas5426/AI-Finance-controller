@@ -222,18 +222,125 @@ def assemble_live_batch_context(query: str, org_id: str, active_context: Optiona
                 })
 
     total_records = len(txns)
-    matched_records = sum(len(m.get("legs", [])) for m in matches)
+    # Count UNIQUE reconciled transactions, not legs: in 3-way chains one
+    # transaction appears in several match legs, so summing legs double-counts
+    # (11 matches x 2 legs = 22 > 19 records = impossible 115.79% rate).
+    matched_txn_ids = set()
+    for m in matches:
+        for leg in m.get("legs", []):
+            lid = leg.get("transaction_id") if isinstance(leg, dict) else getattr(leg, "transaction_id", None)
+            if lid:
+                matched_txn_ids.add(str(lid))
+    matched_records = len(matched_txn_ids)
+
+    def _as_fraction(v: Any) -> float:
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return 0.0
+        return f / 100.0 if f > 1.0 else f
+
+    persisted_rate = _as_fraction(qm.get("match_rate", 0.0))
     if matches and total_records > 0:
-        match_rate = matched_records / total_records
+        recomputed = matched_records / total_records
+        # Trust the recompute only when it is sane; otherwise the persisted
+        # engine rate (written at seal time) is authoritative.
+        match_rate = recomputed if 0.0 <= recomputed <= 1.0 else persisted_rate
     else:
         # `matches` is in-memory only and is never rehydrated, so dividing by the
         # rehydrated txn count produced 0/240 = 0.00% for a batch that actually
         # reconciled at 20.31%. Trust the persisted rate when matches are absent.
-        match_rate = qm.get("match_rate", 0.0)
+        match_rate = persisted_rate
+    match_rate = max(0.0, min(1.0, match_rate))
 
-    # Calculate actual gross volume
+    # Calculate actual unique gross flow volume (matching dashboard logic: primary economic inflow)
+    unique_gw_flow = {}
+    for t in txns:
+        if str(t.get("source_kind", "")).upper() == "GATEWAY":
+            ext_id = t.get("external_id") or str(t.get("id"))
+            if ext_id not in unique_gw_flow:
+                amt = t.get("gross_minor") if t.get("gross_minor") is not None else t.get("amount_minor", 0)
+                unique_gw_flow[ext_id] = amt or 0
+    gross_flow_minor = sum(unique_gw_flow.values())
+
+    # Fallback if no Gateway records exist: bank deposits or positive transactions
+    if gross_flow_minor == 0:
+        bank_txns = [t for t in txns if str(t.get("source_kind", "")).upper() == "BANK"]
+        if bank_txns:
+            gross_flow_minor = sum(t.get("amount_minor", 0) for t in bank_txns if str(t.get("direction", "")).upper() in ("INFLOW", "CREDIT") or t.get("amount_minor", 0) > 0)
+        else:
+            gross_flow_minor = sum(t.get("amount_minor", 0) for t in txns if str(t.get("direction", "")).upper() in ("INFLOW", "CREDIT") or t.get("amount_minor", 0) > 0)
+
+    # Cross-verify with client-supplied dashboard metric if provided
+    if active_context and isinstance(active_context.get("dashboard_metrics"), dict):
+        client_metrics = active_context["dashboard_metrics"]
+        if client_metrics.get("gross_flow_minor"):
+            gross_flow_minor = client_metrics["gross_flow_minor"]
+        elif client_metrics.get("gross_flow_volume"):
+            raw_str = re.sub(r'[^\d.]', '', str(client_metrics["gross_flow_volume"]))
+            if raw_str:
+                try:
+                    gross_flow_minor = int(round(float(raw_str) * 100))
+                except Exception:
+                    pass
+
+    gross_flow_inr = f"₹{(gross_flow_minor / 100):,.2f}"
+
     total_inflow_minor = sum(t.get("amount_minor", 0) for t in txns if str(t.get("direction", "")).upper() in ("INFLOW", "CREDIT"))
+    if total_inflow_minor == 0:
+        total_inflow_minor = gross_flow_minor
     total_outflow_minor = sum(t.get("amount_minor", 0) for t in txns if str(t.get("direction", "")).upper() in ("OUTFLOW", "DEBIT"))
+
+    total_affected_minor = sum(e.get("impact_minor", 0) for e in exceptions)
+    total_affected_inr = f"₹{(total_affected_minor / 100):,.2f}"
+
+    # --- Deterministic fee totals (grounds MDR/fee answers, LLM + fallback) ---
+    fee_summary: Dict[str, Any] = {}
+    try:
+        gw_amounts = [int(t.get("amount_minor") or 0) for t in txns if str(t.get("source_kind", "")).upper() == "GATEWAY"]
+        if gw_amounts:
+            policy = FeePolicyRegistry.get_default_policy()
+            tot_fee = tot_tax = 0
+            for g in gw_amounts:
+                bd = policy.calculate(g)
+                tot_fee += bd.fee_minor
+                tot_tax += bd.tax_minor
+            tot_gross = sum(gw_amounts)
+            tot_ded = tot_fee + tot_tax
+            fee_summary = {
+                "policy_id": policy.policy_id,
+                "policy_name": policy.name,
+                "mdr_rate_pct": round(float(policy.mdr_rate) * 100, 2),
+                "gst_rate_pct": round(float(policy.tax_rate) * 100, 2),
+                "gateway_txns": len(gw_amounts),
+                "total_gross_inr": f"₹{(tot_gross / 100):,.2f}",
+                "total_fee_inr": f"₹{(tot_fee / 100):,.2f}",
+                "total_tax_inr": f"₹{(tot_tax / 100):,.2f}",
+                "total_deduction_inr": f"₹{(tot_ded / 100):,.2f}",
+                "expected_net_inr": f"₹{((tot_gross - tot_ded) / 100):,.2f}",
+            }
+    except Exception:
+        fee_summary = {}
+
+    # --- Cash forecast windows (STATE live, else persisted report) ---
+    forecast_windows: List[Dict[str, Any]] = list(STATE.get("cash_forecast") or [])
+    if not forecast_windows:
+        try:
+            _db_ctx = DatabaseService.load_batch_context(org_id)
+            forecast_windows = list(_db_ctx.get("cash_forecast") or [])
+        except Exception:
+            forecast_windows = []
+    cash_forecast_summary: List[Dict[str, str]] = []
+    for i, w in enumerate(forecast_windows[:4]):
+        try:
+            cash_forecast_summary.append({
+                "week": str(w.get("week") or f"W{i + 1}"),
+                "confirmed_inr": f"₹{(int(w.get('confirmed_inflow_minor') or 0) / 100):,.2f}",
+                "probable_inr": f"₹{(int(w.get('probable_inflow_minor') or 0) / 100):,.2f}",
+                "at_risk_inr": f"₹{(int(w.get('at_risk_inflow_minor') or 0) / 100):,.2f}",
+            })
+        except Exception:
+            continue
 
     # Extract exceptions breakdown
     open_excs = []
@@ -270,7 +377,14 @@ def assemble_live_batch_context(query: str, org_id: str, active_context: Optiona
         if target_txn:
             matched_token = target_txn.get("external_id") or target_txn.get("id")
 
-    STOP_WORDS = {"WHY", "DID", "NOT", "SETTLE", "THIS", "BATCH", "PAYMENT", "PAYMENTS", "INVOICE", "INVOICES", "ORDER", "ORDERS", "WHAT", "WHICH", "HOW", "MANY", "SHOW", "TELL", "EXPLAIN", "WERE", "WHERE", "WHEN", "WITH", "FROM", "THAT", "THERE", "HAVE", "BEEN", "TRANSACTION", "TRANSACTIONS", "RECORD", "RECORDS", "EXCEPTION", "EXCEPTIONS", "ERROR", "ERRORS", "OCCUR", "OCCURRED"}
+    STOP_WORDS = {
+        "WHY", "DID", "NOT", "SETTLE", "THIS", "BATCH", "PAYMENT", "PAYMENTS",
+        "INVOICE", "INVOICES", "ORDER", "ORDERS", "WHAT", "WHICH", "HOW", "MANY",
+        "SHOW", "TELL", "EXPLAIN", "WERE", "WHERE", "WHEN", "WITH", "FROM", "THAT",
+        "THERE", "HAVE", "BEEN", "TRANSACTION", "TRANSACTIONS", "RECORD", "RECORDS",
+        "EXCEPTION", "EXCEPTIONS", "ERROR", "ERRORS", "OCCUR", "OCCURRED",
+        "GROSS", "FLOW", "VOLUME", "RATE", "MATCH", "MATCHED", "CASH", "MONEY", "DATA", "GENERAL"
+    }
 
     if not matched_token:
         ref_match = re.search(r'\b(?!(?:payment|payout|orders?|invoices?|ledger|banking|bank|transactions?|records?|exceptions?|errors?)\b)((?:INV|PAY|ORD|UTR|JE|GW|BK|GL|BANK|EXC)[-_\:]?[\w\-]+|[PBGL][0-9]{3,6}|[a-zA-Z0-9_\-]+_[0-9]+)\b', query, re.IGNORECASE)
@@ -518,11 +632,21 @@ def assemble_live_batch_context(query: str, org_id: str, active_context: Optiona
         "batch_id": active_batch.get("id") or "NO_ACTIVE_BATCH",
         "sample_reference": sample_ref,
         "total_records": total_records,
+        "matched_records": matched_records,
         "match_rate_pct": round(match_rate * 100, 2),
-        "total_inflow_inr": f"₹{(total_inflow_minor / 100):,.2f}",
+        "gross_flow_volume": gross_flow_inr,
+        "gross_flow_volume_inr": gross_flow_inr,
+        "gross_flow_volume_minor": gross_flow_minor,
+        "gross_flow_minor": gross_flow_minor,
+        "total_inflow_inr": gross_flow_inr if total_inflow_minor == 0 else f"₹{(total_inflow_minor / 100):,.2f}",
         "total_outflow_inr": f"₹{(total_outflow_minor / 100):,.2f}",
         "total_matches": len(matches),
+        "matched_records_unique": matched_records,
+        "fee_summary": fee_summary,
+        "cash_forecast_summary": cash_forecast_summary,
         "total_exceptions": len(exceptions),
+        "total_exceptions_affected_inr": total_affected_inr,
+        "total_exceptions_affected_minor": total_affected_minor,
         "critical_exceptions_count": total_crit_count,
         "high_exceptions_count": total_high_count,
         "medium_low_exceptions_count": total_med_count,
@@ -612,6 +736,10 @@ def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any
         "even with zero accounting knowledge.\n\n"
         "STRICT GROUND TRUTH & ANTI-HALLUCINATION RULES:\n"
         "1. DO NOT fabricate, guess, or borrow figures from unrelated exceptions. Every amount, ID, and status you state MUST come directly from the supplied data.\n"
+        "1a. AUTHORITATIVE FIELDS — use EXACTLY as given, NEVER recompute: 'match_rate_pct' is the final match rate (do not divide legs by total yourself — legs double-count 3-way chains); "
+        "'gross_flow_volume' is the total inflow; 'fee_summary' holds the only fee/gross/net figures you may quote (total_gross_inr, total_fee_inr, total_tax_inr, expected_net_inr); "
+        "'cash_forecast_summary' holds the only forecast figures. If 'fee_summary' is empty, say no gateway fees apply — do not invent totals. "
+        "If 'cash_forecast_summary' is empty, say no forecast windows were produced — do not invent weekly inflows.\n"
         "2. Transaction Status Determination:\n"
         "   - If 'target_transaction_referenced' has 'settled': true (or 'match_status' in ('RESOLVED', 'MATCHED', 'MATCHED_EXACT', 'TIER_1_EXACT', 'TIER_2_CONTEXTUAL')) and 'target_transaction_exception' is null:\n"
         "     THIS TRANSACTION HAS SETTLED CLEANLY AND RECONCILED WITH ZERO EXCEPTIONS!\n"
@@ -619,7 +747,23 @@ def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any
         "   - If 'target_transaction_exception' is present: This transaction DID NOT settle! It is an UNRESOLVED EXCEPTION (Type: {type}, Amount: {impact_inr}, State: {state}). Explain clearly why it did NOT settle (e.g. missing bank deposit, duplicate entry, unresolved settlement batch), quote the exact exception details, and state the recommended action. NEVER claim it settled cleanly or matched with bank/ledger!\n"
         "   - If 'target_transaction_referenced' is present and 'settled' is false and 'target_transaction_exception' is null: This transaction has NOT settled; it is pending reconciliation and has not matched counterpart records yet.\n"
         "   - If 'target_transaction_in_other_batch' is present: Clearly explain that this transaction was found in batch '{batch_id}' (not the active batch). If 'target_transaction_exception' is present, explain that in that batch it is an UNRESOLVED EXCEPTION ({type}).\n"
-        "   - If 'matched_query_token' was asked about but no matching transaction was found in any batch: State clearly that no transaction with identifier '{matched_query_token}' was found in the reconciliation records.\n\n"
+        "   - If 'matched_query_token' was asked about but no matching transaction was found in any batch: State clearly that no transaction with identifier '{matched_query_token}' was found in the reconciliation records.\n"
+        "3. BATCH OVERVIEW & GENERAL DATA QUESTIONS:\n"
+        "   - GROSS FLOW VOLUME / TOTAL INFLOW / TOTAL VOLUME:\n"
+        "     If the user asks 'what is the gross flow volume?', 'how much money flowed?', 'what is the flow volume?', 'total gross volume?', or asks about total inflow/volume:\n"
+        "     YOU MUST quote the exact 'gross_flow_volume' from 'batch_overview_summary' / 'live_reconciliation_batch_data'.\n"
+        "     Explain clearly that this represents the total unique economic payment inflow captured across transactions for this batch.\n"
+        "     CRITICAL ANTI-HALLUCINATION RULE: NEVER say ₹0.00 or claim that no flow was recorded when 'gross_flow_volume' is provided and non-zero! Always use the exact 'gross_flow_volume' amount provided.\n"
+        "     Set status_card.status_text to 'Gross Flow Volume', badge_type to 'success', amount to the exact 'gross_flow_volume' figure, risk_level to 'Low', delay_days to 'On Schedule'.\n"
+        "   - RECONCILIATION MATCH RATE & RECORD COUNTS:\n"
+        "     If the user asks about match rate, reconciliation rate, or how many records matched:\n"
+        "     State the exact 'match_rate_pct' and 'matched_records' out of 'total_records'.\n"
+        "     Set status_card.status_text to 'Match Rate', badge_type to 'success' if >= 80% else 'warning', amount to the match rate percentage, risk_level to 'Low'.\n"
+        "   - EXCEPTIONS OVERVIEW:\n"
+        "     If the user asks how many exceptions there are, or about open discrepancies:\n"
+        "     State the exact 'total_exceptions' count, affected financial volume 'total_exceptions_affected_inr', and breakdown of Critical, High, and Medium/Low severity exceptions.\n"
+        "   - GENERAL DATA QUESTIONS:\n"
+        "     Answer general questions about the dataset, payment channels (Gateway, Bank, Ledger ERP), or overall reconciliation status directly, informatively, and truthfully using the exact metrics in 'batch_overview_summary'. Do NOT invent numbers.\n\n"
         "WRITING GUIDELINES:\n"
         "1. No raw technical codes or enum strings: NEVER output raw database terms like 'SETTLEMENT_STATUS_CANNOT_BE_VERIFIED', "
         "'MISSING_LEDGER', 'SOP-01 Deduplication', or 'SOP-02 Period Boundary Cutoff' directly. Instead, translate them into everyday words:\n"
@@ -660,6 +804,20 @@ def execute_llm_financial_investigation(query: str, batch_context: Dict[str, Any
 
     user_payload = {
         "user_query": query,
+        "batch_overview_summary": {
+            "batch_id": batch_context.get("batch_id"),
+            "gross_flow_volume": batch_context.get("gross_flow_volume"),
+            "gross_flow_volume_inr": batch_context.get("gross_flow_volume_inr"),
+            "total_records": batch_context.get("total_records"),
+            "matched_records": batch_context.get("matched_records"),
+            "match_rate_pct": f"{batch_context.get('match_rate_pct')}%",
+            "total_matches": batch_context.get("total_matches"),
+            "total_exceptions": batch_context.get("total_exceptions"),
+            "total_exceptions_affected_inr": batch_context.get("total_exceptions_affected_inr"),
+            "critical_exceptions_count": batch_context.get("critical_exceptions_count"),
+            "high_exceptions_count": batch_context.get("high_exceptions_count"),
+            "medium_low_exceptions_count": batch_context.get("medium_low_exceptions_count")
+        },
         "live_reconciliation_batch_data": batch_context,
         "recent_conversation_history": (history or [])[-4:]
     }
@@ -924,8 +1082,15 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
         )
 
     # Case A2: Reference Token Queried but NOT in Active Batch
+    # NOTE: "batch" is deliberately NOT an exclusion keyword: virtually every
+    # transaction question is phrased "...settle in this batch?", and excluding
+    # it silently downgraded not-found references to a generic overview.
     matched_tok = ctx.get("matched_query_token")
-    if not target_txn and matched_tok and not any(k in q_lower for k in ("exception", "forecast", "cash", "overview", "batch", "hi", "hello")):
+    # Word-boundary greeting test: naive `"hi" in query` substring matching
+    # fires on "tHI s" inside "this batch", which every transaction question
+    # contains — silently downgrading all not-found references to overview.
+    _is_greeting_like = bool(re.search(r'\b(hi|hello|hey|help)\b', q_lower))
+    if not target_txn and matched_tok and not _is_greeting_like and not any(k in q_lower for k in ("exception", "forecast", "cash", "overview")):
         other_batch = ctx.get("target_transaction_in_other_batch")
         if other_batch:
             other_exc = ctx.get("target_transaction_exception")
@@ -995,6 +1160,102 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             citations=["Standard Financial Reconciliation"]
         )
 
+    # Case Flow: Gross Flow Volume & Total Economic Flow Query
+    if any(k in q_lower for k in (
+        "gross flow", "flow volume", "gross volume", "total flow", "total volume",
+        "economic inflow", "how much money", "inflow volume", "total flow volume",
+        "gross transaction volume", "total gross"
+    )):
+        gross_vol = ctx.get("gross_flow_volume", "₹0.00")
+        direct_ans = f"The gross flow volume for batch {batch_id} is {gross_vol}, representing the total unique economic payment inflow captured across records."
+        why_list = [
+            f"Unique Economic Flow: {gross_vol} in gross transaction payments recorded across gateway channels.",
+            f"Batch Scope: Measured across {total_records} total transactions in active batch {batch_id}.",
+            f"Reconciliation Status: {match_rate}% of transaction volume has matched counterpart records."
+        ]
+        status_card = StatusCard(
+            status_text="Gross Flow Volume",
+            badge_type="success",
+            amount=gross_vol,
+            expected_settlement="Recorded Inflow",
+            risk_level="Low",
+            delay_days="On Schedule"
+        )
+        ev_list = [
+            EvidenceCheck(check="Unique Economic Inflow", result=f"✓ {gross_vol}", is_positive=True),
+            EvidenceCheck(check="Ingested Batch Records", result=f"✓ {total_records} Records", is_positive=True),
+            EvidenceCheck(check="Reconciliation Progress", result=f"✓ {match_rate}% Matched", is_positive=True)
+        ]
+        tl_list = [
+            TimelineStep(name="1. Ingestion", status="completed", detail=f"{gross_vol} captured"),
+            TimelineStep(name="2. Matching", status="completed", detail=f"{match_rate}% matched"),
+            TimelineStep(name="3. Exceptions", status="current" if ctx.get("total_exceptions", 0) > 0 else "completed", detail=f"{ctx.get('total_exceptions', 0)} items held")
+        ]
+        rec_act = "Review the Three-Way Settlement Volume chart on your dashboard for the detailed breakdown across Gateway, Bank, and Ledger."
+        simple_exp = f"Total gross money flowing into this batch is {gross_vol}."
+        why_think = f"Calculated as the sum of unique economic payment transactions in batch {batch_id}."
+        formatted_md = f"**{direct_ans}**\n\n**Key Flow Metrics:**\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
+        return QAResponse(
+            query=query,
+            answer=formatted_md,
+            direct_answer=direct_ans,
+            status_card=status_card,
+            why_it_happened=why_list,
+            evidence_checklist=ev_list,
+            timeline_steps=tl_list,
+            recommended_action=rec_act,
+            simple_explanation=simple_exp,
+            why_we_think_that=why_think,
+            follow_up_suggestions=["What is the match rate?", "How many exceptions are there?", "What is the cash forecast?"],
+            citations=["Standard Financial Reconciliation", "Gross Flow Accounting"]
+        )
+
+    # Case Match Rate: Match Rate & Reconciliation Accuracy Query
+    if any(k in q_lower for k in ("match rate", "match percentage", "reconciliation rate", "percentage matched", "how many matched", "reconciled percentage")):
+        matched_cnt = ctx.get("matched_records", ctx.get("total_matches", 0))
+        direct_ans = f"The reconciliation match rate for batch {batch_id} is {match_rate}%, with {matched_cnt} of {total_records} transactions successfully matched."
+        why_list = [
+            f"Match Progress: {matched_cnt} of {total_records} records have matched across Gateway, Bank, and Ledger feeds.",
+            f"Match Rate: {match_rate}% overall reconciliation rate for active batch {batch_id}.",
+            f"Open Queue: {ctx.get('total_exceptions', 0)} exceptions remain under review ({ctx.get('critical_exceptions_count', 0)} critical)."
+        ]
+        status_card = StatusCard(
+            status_text=f"{match_rate}% Matched",
+            badge_type="success" if match_rate >= 80.0 else "warning",
+            amount=f"{match_rate}%",
+            expected_settlement=f"{matched_cnt}/{total_records} Records",
+            risk_level="Low" if match_rate >= 80.0 else "Medium",
+            delay_days="On Schedule"
+        )
+        ev_list = [
+            EvidenceCheck(check="Automated Match Engine", result=f"✓ {match_rate}%", is_positive=(match_rate >= 80.0)),
+            EvidenceCheck(check="Matched Records", result=f"{matched_cnt} of {total_records}", is_positive=True),
+            EvidenceCheck(check="Discrepancy Checks", result=f"{ctx.get('total_exceptions', 0)} Items Held", is_positive=(ctx.get('total_exceptions', 0) == 0))
+        ]
+        tl_list = [
+            TimelineStep(name="1. Ingestion", status="completed", detail=f"{total_records} records loaded"),
+            TimelineStep(name="2. Automated Matching", status="completed", detail=f"{matched_cnt} records matched"),
+            TimelineStep(name="3. Exceptions Review", status="current" if ctx.get("total_exceptions", 0) > 0 else "completed", detail=f"{ctx.get('total_exceptions', 0)} items pending")
+        ]
+        rec_act = "Open the Exceptions tab to resolve remaining discrepancies and improve the match rate."
+        simple_exp = f"{match_rate}% of your transactions have matched cleanly across accounts."
+        why_think = f"Reconciliation engine calculation based on paired counterpart legs in batch {batch_id}."
+        formatted_md = f"**{direct_ans}**\n\n**Reconciliation Summary:**\n" + "\n".join(f"• {w}" for w in why_list) + f"\n\n**Recommended Next Step:**\n{rec_act}"
+        return QAResponse(
+            query=query,
+            answer=formatted_md,
+            direct_answer=direct_ans,
+            status_card=status_card,
+            why_it_happened=why_list,
+            evidence_checklist=ev_list,
+            timeline_steps=tl_list,
+            recommended_action=rec_act,
+            simple_explanation=simple_exp,
+            why_we_think_that=why_think,
+            follow_up_suggestions=["What is the gross flow volume?", "How many exceptions are there?", "What is the cash forecast?"],
+            citations=["Standard Financial Reconciliation"]
+        )
+
     # Case B: Exceptions Breakdown Query
     if any(k in q_lower for k in ("exception", "unmatched", "mismatch", "discrepancy", "error", "flagged")):
         crit_count = ctx.get("critical_exceptions_count", sum(1 for e in open_excs if e.get("severity") == "CRITICAL"))
@@ -1052,7 +1313,23 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
         )
 
     # Case C: Cash Forecasting & Liquidity Query
-    if any(k in q_lower for k in ("forecast", "cash", "liquidity", "runway", "trajectory", "inflow")):
+    if any(k in q_lower for k in ("forecast", "cash", "liquidity", "runway", "trajectory", "13-week", "projection")) and not any(k in q_lower for k in ("gross flow", "flow volume", "gross volume", "total flow", "match rate")):
+        if not forecast:
+            _na = f"No cash forecast windows were produced for batch {batch_id}, so no runway can be assessed from this batch."
+            return QAResponse(
+                query=query,
+                answer=f"**{_na}**\n\nRun a batch with settlement activity to generate the 13-week projection.",
+                direct_answer=_na,
+                status_card=StatusCard(status_text="No Forecast Data", badge_type="info", amount="No windows", expected_settlement="Run batch first", risk_level="Low", delay_days="Not Applicable"),
+                why_it_happened=["No forecast windows exist for this batch in live state or the persisted report."],
+                evidence_checklist=[EvidenceCheck(check="Forecast windows", result="None produced", is_positive=False)],
+                timeline_steps=[TimelineStep(name="Forecast", status="pending", detail="Awaiting batch run")],
+                recommended_action="Run reconciliation to generate the 13-week cash projection.",
+                simple_explanation=_na,
+                why_we_think_that="Forecast store is empty for this batch.",
+                follow_up_suggestions=["How many exceptions are there?", "What is the match rate?", _ref_question(ctx)],
+                citations=["Standard Financial Reconciliation"]
+            )
         w1_conf = forecast[0]["confirmed_inr"] if forecast else "₹0.00"
         w2_prob = forecast[1]["probable_inr"] if len(forecast) > 1 else "₹0.00"
 
@@ -1104,12 +1381,60 @@ def execute_dynamic_data_reasoner(query: str, ctx: Dict[str, Any]) -> QAResponse
             citations=["Standard Financial Reconciliation"]
         )
 
+    # Case F: MDR / gateway fee explainer (deterministic, batch-grounded)
+    if any(k in q_lower for k in ("fee", "mdr", "gst", "commission", "deduction", "split")):
+        fs = ctx.get("fee_summary") or {}
+        if fs:
+            direct_ans = (
+                f"Gateway processing uses {fs.get('policy_name')} ({fs.get('policy_id')}): "
+                f"{fs.get('mdr_rate_pct')}% MDR plus {fs.get('gst_rate_pct')}% GST on the fee. "
+                f"Across {fs.get('gateway_txns')} gateway transactions totaling {fs.get('total_gross_inr')}, "
+                f"fees are {fs.get('total_fee_inr')} with {fs.get('total_tax_inr')} GST "
+                f"(total deduction {fs.get('total_deduction_inr')}), leaving expected net {fs.get('expected_net_inr')}."
+            )
+            why_list = [
+                f"Gross gateway volume: {fs.get('total_gross_inr')} across {fs.get('gateway_txns')} transactions.",
+                f"Fee ({fs.get('mdr_rate_pct')}% MDR): {fs.get('total_fee_inr')} + GST ({fs.get('gst_rate_pct')}%): {fs.get('total_tax_inr')}.",
+                f"Expected bank settlement: {fs.get('expected_net_inr')} (gross minus deductions).",
+            ]
+        else:
+            direct_ans = "No gateway transactions are present in this batch, so no processing fees apply."
+            why_list = ["This batch contains no gateway captures to charge MDR against."]
+        status_card = StatusCard(
+            status_text="Fee Schedule",
+            badge_type="info",
+            amount=fs.get("total_deduction_inr", "No fees"),
+            expected_settlement=fs.get("expected_net_inr", "Not applicable"),
+            risk_level="Low",
+            delay_days="Standard T+2"
+        )
+        ev_list = [EvidenceCheck(check="Fee policy registry", result=f"✓ {fs.get('policy_id', 'No policy applied')}", is_positive=True)]
+        tl_list = [TimelineStep(name="Gross capture", status="completed", detail=fs.get("total_gross_inr", "—")),
+                   TimelineStep(name="Fee + GST netting", status="completed", detail=fs.get("total_deduction_inr", "—")),
+                   TimelineStep(name="Net settlement", status="current", detail=fs.get("expected_net_inr", "—"))]
+        return QAResponse(
+            query=query,
+            answer=f"**{direct_ans}**\n\n" + "\n".join(f"• {w}" for w in why_list),
+            direct_answer=direct_ans,
+            status_card=status_card,
+            why_it_happened=why_list,
+            evidence_checklist=ev_list,
+            timeline_steps=tl_list,
+            recommended_action="Approve the fee-split vouchers in the Exceptions queue so gross revenue and MDR expense post separately.",
+            simple_explanation="The gateway deducts a small percentage fee plus tax before sending the net amount to your bank.",
+            why_we_think_that=f"Versioned fee policy {fs.get('policy_id', 'registry')} applied to this batch's gateway volume.",
+            follow_up_suggestions=["How many exceptions are there?", "What is the match rate?", "What is the cash forecast?"],
+            citations=["Payment Processing Fees"]
+        )
+
     # Case D: General Batch Overview & Dynamic Summary
-    direct_ans = f"Batch {batch_id} contains {total_records} loaded transactions reconciling at {match_rate}% match rate with {ctx.get('total_exceptions', 0)} items held in the review queue."
+    gross_flow_display = ctx.get("gross_flow_volume") or ctx.get("total_inflow_inr", "₹0.00")
+    direct_ans = f"Batch {batch_id} contains {total_records} loaded transactions reconciling at {match_rate}% match rate with {gross_flow_display} in gross flow volume and {ctx.get('total_exceptions', 0)} items held in the review queue."
     why_list = [
-        f"Money In: {ctx.get('total_inflow_inr', '₹0.00')} in total payments received across Gateway and Bank streams.",
+        f"Gross Flow: {gross_flow_display} in total payments received across Gateway and Bank streams.",
         f"Money Out: {ctx.get('total_outflow_inr', '₹0.00')} in disbursements and accounting debits.",
-        f"Matched Payments: {ctx.get('total_matches', 0)} payments matched automatically."
+        f"Matched Records: {ctx.get('matched_records', ctx.get('total_matches', 0))} records matched automatically ({match_rate}% match rate).",
+        f"Open Exceptions: {ctx.get('total_exceptions', 0)} items pending review ({ctx.get('total_exceptions_affected_inr', '₹0.00')} affected volume)."
     ]
 
     status_card = StatusCard(

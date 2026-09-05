@@ -332,10 +332,12 @@ class ReconciliationEngine:
 
     @staticmethod
     def score_date(a: CanonicalTransaction, b: CanonicalTransaction, grace: int = 1, tau: float = 2.0) -> float:
-        # Enforce forward causality: bank settlement should not precede gateway capture
+        # Enforce forward causality: bank settlement should not precede gateway capture (allow 1d timezone grace)
         days_lag = (b.value_date - a.value_date).days if (a.source_kind == SourceKind.GATEWAY and b.source_kind == SourceKind.BANK) else ((a.value_date - b.value_date).days if (b.source_kind == SourceKind.GATEWAY and a.source_kind == SourceKind.BANK) else abs((a.value_date - b.value_date).days))
-        if days_lag < 0:
+        if days_lag < -1:
             return 0.0
+        if days_lag == -1:
+            return 0.95
         if days_lag <= grace:
             return 1.0
         return math.exp(-(days_lag - grace) / tau)
@@ -439,7 +441,7 @@ class ReconciliationEngine:
                 b_keys = set(b.reference_keys.payment + b.reference_keys.invoice + b.reference_keys.settlement + b.reference_keys.order + b.reference_keys.utr)
                 has_key_match = bool(keys and keys.intersection(b_keys))
                 days_delta = (b.value_date - gw.value_date).days
-                has_timing_amount_match = (abs(b.amount_minor - expected_net_paise) <= 100 or abs(b.amount_minor - gross_paise) <= 100) and (0 <= days_delta <= 7)
+                has_timing_amount_match = (abs(b.amount_minor - expected_net_paise) <= 100 or abs(b.amount_minor - gross_paise) <= 100) and (-1 <= days_delta <= 10)
                 
                 if has_key_match or has_timing_amount_match:
                     cands.append(b)
@@ -469,7 +471,7 @@ class ReconciliationEngine:
                 days_lag = (bk.value_date - gw.value_date).days
 
                 # 1. Tier 1 Exact Match (Gross == Bank Credit)
-                if diff_gross == 0 and 0 <= days_lag <= 7:
+                if diff_gross == 0 and -1 <= days_lag <= 10:
                     match_id = str(uuid.uuid4())
                     self.matches.append(MatchSchema(
                         id=match_id,
@@ -569,7 +571,7 @@ class ReconciliationEngine:
                 if not ok:
                     continue
                 gl_keys = set(gl.reference_keys.payment + gl.reference_keys.invoice + gl.reference_keys.utr)
-                if keys.intersection(gl_keys) and gl.amount_minor == bk.amount_minor:
+                if keys.intersection(gl_keys) and abs(gl.amount_minor - bk.amount_minor) <= 100:
                     match_id = str(uuid.uuid4())
                     self.matches.append(MatchSchema(
                         id=match_id,
@@ -603,7 +605,7 @@ class ReconciliationEngine:
                 if not ok:
                     continue
                 gl_keys = set(gl.reference_keys.payment + gl.reference_keys.invoice)
-                if keys.intersection(gl_keys) and gl.amount_minor == gw.amount_minor:
+                if keys.intersection(gl_keys) and abs(gl.amount_minor - gw.amount_minor) <= 100:
                     match_id = str(uuid.uuid4())
                     self.matches.append(MatchSchema(
                         id=match_id,
@@ -714,7 +716,8 @@ class ReconciliationEngine:
                 if any(g.id in self.matched_txn_ids for g in group):
                     continue
 
-                if s_key in bk_keys or s_key in desc_upper:
+                s_key_variants = {s_key, s_key.replace("-", "_"), s_key.replace("_", "-")}
+                if any(k in bk_keys or k in desc_upper for k in s_key_variants):
                     for policy in active_policies:
                         nets = [self._compute_net_amount(g, policy_id=policy.policy_id)[0] for g in group]
                         pred_net = sum(nets)
@@ -1008,13 +1011,13 @@ class ReconciliationEngine:
             runner_up_cost = min(row_costs) if row_costs else 999.0
             margin = runner_up_cost - cost_matrix[r, c]
 
-            if s >= 0.85 and margin >= 0.05:
+            if s >= 0.75 and margin >= 0.05:
                 match_id = str(uuid.uuid4())
                 self.matches.append(MatchSchema(
                     id=match_id,
                     batch_id=self.batch_id,
                     match_type=MatchTypeEnum.ONE_TO_ONE,
-                    method=MatchMethodEnum.FUZZY_SCORE,
+                    method=MatchMethodEnum.FUZZY_HUNGARIAN,
                     score=round(s, 4),
                     confidence=round(s, 4),
                     decision_tier=DecisionTier.RESOLVED_WITH_EXPLANATION,

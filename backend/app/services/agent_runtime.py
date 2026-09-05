@@ -94,6 +94,11 @@ class DeterministicVerifier:
                             claimed_sum = int(ev.value["fee_minor"]) + int(ev.value["tax_minor"])
                         except (ValueError, TypeError):
                             claimed_sum = 0
+                    elif "mdr" in ev.value and "gst" in ev.value:
+                        try:
+                            claimed_sum = int(ev.value["mdr"]) + int(ev.value["gst"]) + int(ev.value.get("surcharge", 0) or 0)
+                        except (ValueError, TypeError):
+                            claimed_sum = 0
             
             actual_diff = exception_ctx.get("impact_minor", 0)
             if evidence_found and actual_diff > 0 and abs(claimed_sum - actual_diff) > 2:
@@ -925,19 +930,36 @@ class AIAgentRuntime:
             gross = p.get("amount_minor", 0) if p else impact_minor
             policy = FeePolicyRegistry.get_default_policy()
             bd = policy.calculate(gross)
-            expected_fee = bd.fee_minor
-            expected_tax = bd.tax_minor
-            surcharge = impact_minor - (expected_fee + expected_tax)
-            if surcharge < 0:
+            
+            decl_fee = (p.get("fee_minor") or 0) if p else 0
+            decl_tax = (p.get("tax_minor") or 0) if p else 0
+            if decl_fee + decl_tax == impact_minor and impact_minor > 0:
+                expected_fee = decl_fee
+                expected_tax = decl_tax
                 surcharge = 0
-                expected_fee = impact_minor
+            else:
+                expected_fee = bd.fee_minor
+                expected_tax = bd.tax_minor
+                surcharge = impact_minor - (expected_fee + expected_tax)
+                if surcharge < 0:
+                    surcharge = 0
+                    expected_tax = max(0, impact_minor - expected_fee)
+                    expected_fee = impact_minor - expected_tax
 
             evidence = [
                 ToolEvidence(
                     tool="get_transaction_details",
                     record_id=p_id,
                     field="fee_breakup",
-                    value={"mdr": expected_fee, "gst": expected_tax, "surcharge": surcharge, "policy_id": policy.policy_id}
+                    value={
+                        "mdr": expected_fee,
+                        "gst": expected_tax,
+                        "surcharge": surcharge,
+                        "fee_minor": expected_fee,
+                        "tax_minor": expected_tax,
+                        "total_deduction_minor": expected_fee + expected_tax + surcharge,
+                        "policy_id": policy.policy_id
+                    }
                 ),
                 ToolEvidence(tool="get_reconciliation_rules", record_id=p_id, rule_id=policy.policy_id)
             ]

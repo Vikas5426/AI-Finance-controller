@@ -14,11 +14,14 @@ Core Financial Reconciliation Axioms:
 """
 
 import os
+import sys
 import csv
 import unittest
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Any
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.models.schemas import SourceKind, CanonicalTransaction, TxnDirection, DecisionTier
 from app.services.ingestion import IngestionService

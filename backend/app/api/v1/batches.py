@@ -363,22 +363,36 @@ EMPTY_ACTIVE_BATCH = {
 
 @router.get("/active")
 def get_active_batch(current_user: Dict[str, Any] = Depends(get_current_user)):
+    org_id = current_user["org_id"]
     active = STATE.get("active_batch")
-    if not active or active.get("org_id") != current_user["org_id"]:
-        return dict(EMPTY_ACTIVE_BATCH)
+    if not active or active.get("org_id") != org_id:
+        tenant_state = get_tenant_state(org_id)
+        if tenant_state.get("active_batch") and tenant_state["active_batch"].get("org_id") == org_id:
+            active = tenant_state["active_batch"]
+        else:
+            ctx = DatabaseService.load_batch_context(org_id)
+            if ctx.get("batch"):
+                active = ctx["batch"]
+                tenant_state["active_batch"] = active
+                tenant_state["quality_metrics"] = ctx.get("quality_metrics", {})
+                tenant_state["windows"] = ctx.get("windows", [])
+                tenant_state["stats"] = ctx.get("stats", {})
+            else:
+                return dict(EMPTY_ACTIVE_BATCH)
 
     # Calculate live stats directly from database if available
-    db_stats = DatabaseService.get_batch_stats(batch_id=active["id"], org_id=current_user["org_id"])
+    db_stats = DatabaseService.get_batch_stats(batch_id=active["id"], org_id=org_id)
 
-    prov = STATE.get("provenance") or {}
+    tenant_state = get_tenant_state(org_id)
+    prov = STATE.get("provenance") or tenant_state.get("provenance") or {}
     exec_mode = prov.get("execution_mode", "USER_UPLOAD")
     is_user_data = (exec_mode in ("USER_UPLOAD", "INTERNAL_TEST"))
 
-    txns = STATE.get("transactions", [])
-    matches = STATE.get("matches", [])
-    exceptions = STATE.get("exceptions", [])
-    proposals = [p for p in STATE.get("proposals", []) if p.get("org_id") == current_user["org_id"]]
-    qm = STATE.get("quality_metrics", {})
+    txns = STATE.get("transactions", []) or tenant_state.get("transactions", [])
+    matches = STATE.get("matches", []) or tenant_state.get("matches", [])
+    exceptions = STATE.get("exceptions", []) or tenant_state.get("exceptions", [])
+    proposals = [p for p in (STATE.get("proposals", []) or tenant_state.get("proposals", [])) if p.get("org_id") == org_id]
+    qm = STATE.get("quality_metrics") or tenant_state.get("quality_metrics", {})
     total_txns = db_stats.get("total_records", len(txns))
     matched_count = active.get("matched_records") if active.get("matched_records") is not None else sum(len(m.legs if hasattr(m, 'legs') else (m.get('legs', []) if isinstance(m, dict) else [])) for m in matches)
 

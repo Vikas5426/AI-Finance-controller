@@ -39,6 +39,16 @@ class AIIssuesService:
     _REPORT_CACHE: Dict[str, AIIssuesReport] = {}
 
     @classmethod
+    def clear_cache(cls, org_id: Optional[str] = None):
+        """Invalidates in-memory AI Issues report cache."""
+        if org_id:
+            keys_to_remove = [k for k in cls._REPORT_CACHE if k.startswith(f"{org_id}:")]
+            for k in keys_to_remove:
+                cls._REPORT_CACHE.pop(k, None)
+        else:
+            cls._REPORT_CACHE.clear()
+
+    @classmethod
     def generate_report(
         cls,
         org_id: str,
@@ -273,6 +283,64 @@ class AIIssuesService:
                     controller_takeaway = llm_result["controller_takeaway"]
                 if llm_result.get("overall_health") in ["CRITICAL_RISK", "UNHEALTHY", "ACTION_REQUIRED", "HEALTHY"]:
                     overall_health = llm_result["overall_health"]
+
+                llm_issues = llm_result.get("issues") or []
+                for card in issue_cards:
+                    best_match = None
+                    card_title_lower = card.title.lower()
+                    for li in llm_issues:
+                        li_type = (li.get("exception_type") or "").upper()
+                        li_title = (li.get("title") or "").lower()
+                        if li_type and (li_type in card_title_lower or cls._classify_issue_type(li_type) in card_title_lower):
+                            best_match = li
+                            break
+                        if any(w in card_title_lower for w in li_title.split() if len(w) > 3):
+                            best_match = li
+                            break
+
+                    if not best_match and len(llm_issues) == len(issue_cards):
+                        idx = issue_cards.index(card)
+                        best_match = llm_issues[idx]
+
+                    if best_match:
+                        if best_match.get("title") and len(best_match["title"]) > 4:
+                            card.title = best_match["title"]
+                        if best_match.get("what_happened"):
+                            card.what_happened = best_match["what_happened"]
+                        if best_match.get("likely_cause"):
+                            card.likely_cause = best_match["likely_cause"]
+                        if best_match.get("why_it_matters"):
+                            card.why_it_matters = best_match["why_it_matters"]
+                        if best_match.get("recommended_action"):
+                            card.recommended_action = best_match["recommended_action"]
+                        if best_match.get("owner"):
+                            card.owner = best_match["owner"]
+                        if best_match.get("next_step"):
+                            card.next_step = best_match["next_step"]
+                        if best_match.get("evidence") and isinstance(best_match["evidence"], list):
+                            card.evidence = [str(ev) for ev in best_match["evidence"] if ev]
+
+                llm_patterns = llm_result.get("systemic_patterns") or []
+                if llm_patterns and isinstance(llm_patterns, list):
+                    enriched_patterns: List[SystemicPattern] = []
+                    for p_idx, lp in enumerate(llm_patterns, start=1):
+                        p_name = lp.get("pattern_name") or f"Systemic Pattern {p_idx}"
+                        p_cause = lp.get("likely_systemic_cause") or "Operational latency between ingestion streams."
+                        p_rem = lp.get("recommended_remediation") or "Review feed synchronization windows."
+                        p_owner = lp.get("remediation_owner") or "Treasury Operations"
+                        enriched_patterns.append(SystemicPattern(
+                            pattern_id=f"PAT-0{p_idx}",
+                            pattern_name=p_name,
+                            affected_count=len(exceptions),
+                            impact_inr=round(total_impact, 2),
+                            impact_formatted=f"₹{total_impact:,.2f}",
+                            likely_systemic_cause=p_cause,
+                            recommended_remediation=p_rem,
+                            remediation_owner=p_owner,
+                            root_cause_status="IDENTIFIED"
+                        ))
+                    if enriched_patterns:
+                        systemic_patterns = enriched_patterns
         except Exception:
             pass
 

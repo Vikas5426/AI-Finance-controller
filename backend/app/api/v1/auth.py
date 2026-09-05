@@ -103,6 +103,7 @@ def register(req: RegisterRequest):
 
         user_id = str(uuid.uuid4())
         role_clean = req.role if req.role in ["admin", "approver", "analyst"] else "admin"
+        approval_limit = 100000000 if role_clean == "admin" else (50000000 if role_clean == "approver" else 500000)
         new_user = schema.User(
             id=user_id,
             org_id=settings.DEFAULT_ORG_ID,
@@ -110,7 +111,7 @@ def register(req: RegisterRequest):
             password_hash=get_password_hash(req.password),
             full_name=req.full_name.strip() or email_clean.split("@")[0].capitalize(),
             role=role_clean,
-            is_active=True
+            approval_limit_minor=approval_limit
         )
         db.add(new_user)
         db.commit()

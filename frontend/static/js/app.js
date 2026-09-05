@@ -4,7 +4,7 @@
  */
 
 const API_BASE = '/api/v1';
-const FONT_SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const FONT_SANS = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 const FONT_MONO = "'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace";
 
 function escapeHtml(str) {
@@ -94,7 +94,8 @@ const appState = {
   activeApprovalExcId: null,
   isProcessed: false,
   authToken: localStorage.getItem('fin_jwt_token') || null,
-  currentUser: JSON.parse(localStorage.getItem('fin_user_profile') || 'null')
+  currentUser: JSON.parse(localStorage.getItem('fin_user_profile') || 'null'),
+  theme: localStorage.getItem('fin_theme') || document.documentElement.getAttribute('data-theme') || 'dark'
 };
 
 function isTxnMatched(t) {
@@ -245,6 +246,37 @@ async function registerUser(fullName, email, password, role) {
 
 window.currentAuthTab = 'signin';
 
+function setAuthError(msg) {
+  const errEl = document.getElementById('auth-error');
+  const msgEl = document.getElementById('auth-error-msg');
+  if (errEl) {
+    if (msg) {
+      if (msgEl) msgEl.textContent = msg;
+      else errEl.textContent = msg;
+      errEl.hidden = false;
+    } else {
+      errEl.hidden = true;
+      if (msgEl) msgEl.textContent = '';
+    }
+  }
+}
+
+function setAuthSubmitLoading(isLoading, customLabel) {
+  const submitBtn = document.getElementById('auth-submit');
+  const spinner = document.getElementById('auth-submit-spinner');
+  const label = document.getElementById('auth-submit-label');
+  if (!submitBtn) return;
+  submitBtn.disabled = isLoading;
+  if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
+  if (label) {
+    if (isLoading) {
+      label.textContent = customLabel || (window.currentAuthTab === 'signup' ? 'Creating account...' : 'Signing in...');
+    } else {
+      label.textContent = window.currentAuthTab === 'signup' ? 'Create Account' : 'Sign In';
+    }
+  }
+}
+
 window.switchAuthTab = function (mode) {
   window.currentAuthTab = mode;
   const tabSignIn = document.getElementById('auth-tab-signin');
@@ -252,12 +284,11 @@ window.switchAuthTab = function (mode) {
   const signinHeader = document.getElementById('auth-signin-header');
   const signupHeader = document.getElementById('auth-signup-header');
   const nameGroup = document.getElementById('auth-name-group');
-  const roleGroup = document.getElementById('auth-role-group');
   const footnote = document.getElementById('auth-footnote');
-  const submitBtn = document.getElementById('auth-submit');
-  const errEl = document.getElementById('auth-error');
+  const switchPrompt = document.getElementById('auth-switch-prompt');
 
-  if (errEl) errEl.hidden = true;
+  setAuthError('');
+  setAuthSubmitLoading(false);
 
   if (mode === 'signup') {
     tabSignIn?.classList.remove('active');
@@ -265,9 +296,8 @@ window.switchAuthTab = function (mode) {
     if (signinHeader) signinHeader.style.display = 'none';
     if (signupHeader) signupHeader.style.display = 'block';
     if (nameGroup) nameGroup.style.display = 'block';
-    if (roleGroup) roleGroup.style.display = 'block';
     if (footnote) footnote.style.display = 'none';
-    if (submitBtn) submitBtn.textContent = 'Create account';
+    if (switchPrompt) switchPrompt.style.display = 'flex';
     document.getElementById('auth-fullname')?.focus();
   } else {
     tabSignUp?.classList.remove('active');
@@ -275,25 +305,15 @@ window.switchAuthTab = function (mode) {
     if (signupHeader) signupHeader.style.display = 'none';
     if (signinHeader) signinHeader.style.display = 'block';
     if (nameGroup) nameGroup.style.display = 'none';
-    if (roleGroup) roleGroup.style.display = 'none';
     if (footnote) footnote.style.display = 'block';
-    if (submitBtn) submitBtn.textContent = 'Sign in';
+    if (switchPrompt) switchPrompt.style.display = 'none';
     document.getElementById('auth-email')?.focus();
   }
 };
 
 function showAuthGate(message) {
   const gate = document.getElementById('auth-gate');
-  const errEl = document.getElementById('auth-error');
-  if (errEl) {
-    if (message) {
-      errEl.textContent = message;
-      errEl.hidden = false;
-    } else {
-      errEl.textContent = '';
-      errEl.hidden = true;
-    }
-  }
+  setAuthError(message || '');
   if (gate) {
     gate.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -326,14 +346,43 @@ async function ensureAuthenticated() {
 
 function signOut() {
   clearSession();
+  const emailInput = document.getElementById('auth-email');
+  const passInput = document.getElementById('auth-password');
+  const nameInput = document.getElementById('auth-fullname');
+  if (emailInput) emailInput.value = '';
+  if (passInput) passInput.value = '';
+  if (nameInput) nameInput.value = '';
+  if (window.switchAuthTab) window.switchAuthTab('signin');
   showAuthGate();
   showToast('Signed out.', 'info');
 }
+window.signOut = signOut;
 
 function initAuthGate() {
   const form = document.getElementById('auth-form');
-  const submitBtn = document.getElementById('auth-submit');
   if (!form) return;
+
+  // Auto-clear error when user types in inputs
+  ['auth-email', 'auth-password', 'auth-fullname'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => setAuthError(''));
+    }
+  });
+
+  // Bind avatar and badge click to sign out
+  const badgeEl = document.getElementById('user-session-badge');
+  const avatarEl = document.getElementById('header-avatar');
+  if (badgeEl) {
+    badgeEl.addEventListener('click', () => {
+      if (appState.authToken) signOut();
+    });
+  }
+  if (avatarEl) {
+    avatarEl.addEventListener('click', () => {
+      if (appState.authToken) signOut();
+    });
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -341,32 +390,24 @@ function initAuthGate() {
     const fullName = document.getElementById('auth-fullname')?.value.trim() || '';
     const email = document.getElementById('auth-email')?.value.trim() || '';
     const password = document.getElementById('auth-password')?.value || '';
-    const role = document.getElementById('auth-role')?.value || 'admin';
-    const errEl = document.getElementById('auth-error');
+    const role = 'admin';
 
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = isSignUp ? 'Creating account...' : 'Signing in...';
-    }
-    if (errEl) errEl.hidden = true;
+    setAuthError('');
+    setAuthSubmitLoading(true);
 
     const result = isSignUp 
       ? await registerUser(fullName, email, password, role)
       : await loginUser(email, password);
 
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = isSignUp ? 'Create account' : 'Sign in';
-    }
+    setAuthSubmitLoading(false);
 
     if (result.ok) {
       hideAuthGate();
       showToast(isSignUp ? `Account created! Welcome, ${appState.currentUser?.full_name || email}.` : `Signed in as ${appState.currentUser?.full_name || email}.`, 'success');
       updateOverviewVisibility();
       fetchInitialData();
-    } else if (errEl) {
-      errEl.textContent = result.error;
-      errEl.hidden = false;
+    } else {
+      setAuthError(result.error);
     }
   });
 
@@ -383,46 +424,36 @@ function initAuthGate() {
       if (eyeIcon) eyeIcon.style.display = isPw ? 'none' : 'block';
       if (eyeOffIcon) eyeOffIcon.style.display = isPw ? 'block' : 'none';
       pwToggleBtn.title = isPw ? 'Hide password' : 'Show password';
+      pwToggleBtn.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
     });
   }
 }
 
-window.quickFillLogin = async function (email, password) {
+window.quickFillLogin = async function (email, password, roleLabel) {
+  if (window.currentAuthTab === 'signup') {
+    window.switchAuthTab('signin');
+  }
+
   const emailInput = document.getElementById('auth-email');
   const passInput = document.getElementById('auth-password');
-  const submitBtn = document.getElementById('auth-submit');
-  const errEl = document.getElementById('auth-error');
 
-  if (emailInput) {
-    emailInput.value = '';
-    emailInput.value = email;
-  }
-  if (passInput) {
-    passInput.value = '';
-    passInput.value = password;
-  }
+  if (emailInput) emailInput.value = email;
+  if (passInput) passInput.value = password;
 
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Signing in...';
-  }
-  if (errEl) errEl.hidden = true;
+  setAuthError('');
+  setAuthSubmitLoading(true, roleLabel ? `Signing in as ${roleLabel}...` : 'Signing in...');
 
   const result = await loginUser(email, password);
 
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Sign in';
-  }
+  setAuthSubmitLoading(false);
 
   if (result.ok) {
     hideAuthGate();
-    showToast(`Signed in as ${appState.currentUser?.full_name || email}.`, 'success');
+    showToast(`Signed in as ${appState.currentUser?.full_name || email} (${appState.currentUser?.role || 'user'}).`, 'success');
     updateOverviewVisibility();
     fetchInitialData();
-  } else if (errEl) {
-    errEl.textContent = result.error;
-    errEl.hidden = false;
+  } else {
+    setAuthError(result.error);
   }
 };
 
@@ -835,8 +866,6 @@ function updateBreadcrumbUI(viewName, breadcrumbText) {
   const catLabel = document.getElementById('breadcrumb-category-label');
   const activeLabel = document.getElementById('current-breadcrumb-label');
   const viewBadge = document.getElementById('breadcrumb-view-badge');
-  const substepWrapper = document.getElementById('breadcrumb-substep-wrapper');
-  const substepLabel = document.getElementById('breadcrumb-substep-label');
 
   let section = 'Dashboards';
   let page = 'Overview';
@@ -879,18 +908,6 @@ function updateBreadcrumbUI(viewName, breadcrumbText) {
       viewBadge.style.display = 'inline-block';
     } else {
       viewBadge.style.display = 'none';
-    }
-  }
-
-  // Workflow Sub-step in Breadcrumbs
-  if (substepWrapper) {
-    if (viewName === 'workflow') {
-      substepWrapper.style.display = 'inline-flex';
-      if (substepLabel) {
-        substepLabel.textContent = WORKFLOW_STAGE_NAMES[appState.workflowSubStep] || `Stage ${appState.workflowSubStep}`;
-      }
-    } else {
-      substepWrapper.style.display = 'none';
     }
   }
 }
@@ -1123,20 +1140,23 @@ function renderClusterHistogram() {
 // ==============================================================================
 
 function initOverviewCharts() {
-  const isDark = appState.theme === 'dark';
-  const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-  const textColor = isDark ? '#e2e8f0' : '#1e293b';
-  const textMuted = isDark ? '#94a3b8' : '#64748b';
-  const dpr = Math.max(window.devicePixelRatio || 1, 2);
+  const currentTheme = document.documentElement.getAttribute('data-theme') || appState.theme || 'dark';
+  const isDark = currentTheme === 'dark';
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.09)';
+  const textColor = isDark ? '#ffffff' : '#09090b';
+  const textMuted = isDark ? '#f1f5f9' : '#1e293b';
+  // Ultra-crisp 3x DPR rendering for sharp canvas text on all displays
+  const dpr = Math.max(window.devicePixelRatio || 1, 3);
 
-  // Set global Chart defaults for crisp rendering
+  // Set global Chart defaults for crisp, razor-sharp rendering
   if (typeof Chart !== 'undefined') {
     Chart.defaults.devicePixelRatio = dpr;
     Chart.defaults.font.family = FONT_SANS;
-    Chart.defaults.font.weight = '500';
+    Chart.defaults.font.weight = '700';
+    Chart.defaults.color = textColor;
   }
 
-  // 1. Reconciliation Vectors Grouped Histogram (Ultra-Sharp High-DPI)
+  // 1. Reconciliation Vectors Grouped Histogram (Ultra-Sharp High-DPI & High Contrast)
   const ctxVectors = document.getElementById('chartThreatVectors')?.getContext('2d');
   if (ctxVectors) {
     if (appState.charts.vectors) appState.charts.vectors.destroy();
@@ -1189,10 +1209,10 @@ function initOverviewCharts() {
             label: 'Matched / Reconciled',
             data: vecMatched,
             backgroundColor: isDark ? '#10b981' : '#059669',
-            hoverBackgroundColor: '#34d399',
+            hoverBackgroundColor: isDark ? '#059669' : '#047857',
             borderColor: isDark ? '#34d399' : '#047857',
-            borderWidth: 1.5,
-            borderRadius: 4,
+            borderWidth: 2,
+            borderRadius: 5,
             borderSkipped: false,
             barPercentage: 0.65,
             categoryPercentage: 0.72
@@ -1200,11 +1220,11 @@ function initOverviewCharts() {
           {
             label: 'Exceptions Flagged',
             data: vecFlagged,
-            backgroundColor: isDark ? '#f59e0b' : '#d97706',
-            hoverBackgroundColor: '#fbbf24',
-            borderColor: isDark ? '#fbbf24' : '#b45309',
-            borderWidth: 1.5,
-            borderRadius: 4,
+            backgroundColor: isDark ? '#f59e0b' : '#ea580c',
+            hoverBackgroundColor: isDark ? '#d97706' : '#c2410c',
+            borderColor: isDark ? '#fbbf24' : '#c2410c',
+            borderWidth: 2,
+            borderRadius: 5,
             borderSkipped: false,
             barPercentage: 0.65,
             categoryPercentage: 0.72
@@ -1222,17 +1242,17 @@ function initOverviewCharts() {
           legend: { display: false },
           tooltip: {
             enabled: true,
-            backgroundColor: isDark ? '#12141a' : '#ffffff',
-            titleColor: isDark ? '#f8fafc' : '#0f172a',
-            bodyColor: isDark ? '#cbd5e1' : '#334155',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
+            backgroundColor: isDark ? '#18181b' : '#ffffff',
+            titleColor: isDark ? '#ffffff' : '#09090b',
+            bodyColor: isDark ? '#f1f5f9' : '#18181b',
+            borderColor: isDark ? '#52525b' : '#cbd5e1',
             borderWidth: 1,
             padding: 10,
             cornerRadius: 6,
             boxPadding: 5,
             usePointStyle: true,
-            titleFont: { family: FONT_SANS, size: 11.5, weight: '600' },
-            bodyFont: { family: FONT_SANS, size: 11, weight: '500' },
+            titleFont: { family: FONT_SANS, size: 12, weight: '700' },
+            bodyFont: { family: FONT_SANS, size: 11.5, weight: '600' },
             callbacks: {
               label: function (context) {
                 const label = context.dataset.label || '';
@@ -1248,7 +1268,7 @@ function initOverviewCharts() {
             border: { display: false },
             ticks: {
               color: textColor,
-              font: { family: FONT_SANS, size: 11, weight: '600' },
+              font: { family: FONT_SANS, size: 12, weight: '700' },
               maxRotation: 0,
               minRotation: 0,
               autoSkip: false
@@ -1263,7 +1283,7 @@ function initOverviewCharts() {
             ticks: {
               precision: 0,
               color: textMuted,
-              font: { family: FONT_MONO, size: 10, weight: '600' }
+              font: { family: FONT_MONO, size: 11.5, weight: '700' }
             }
           }
         }
@@ -1271,18 +1291,42 @@ function initOverviewCharts() {
     });
   }
 
-  // 2. Three-Way Settlement Volume Distribution (Ultra-Sharp High-DPI)
+  // 2. Three-Way Settlement Volume Distribution (Ultra-Sharp High-DPI & Smart Dynamic Scale)
   const ctxFlow = document.getElementById('chartNetworkFlow')?.getContext('2d');
   if (ctxFlow) {
     if (appState.charts.flow) appState.charts.flow.destroy();
 
     const txns = appState.allTransactions || [];
-    const gwAmt = txns.filter(t => (t.source_kind || '').toUpperCase().includes('GATEWAY')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 10000000;
-    const bkAmt = txns.filter(t => (t.source_kind || '').toUpperCase().includes('BANK')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 10000000;
-    const glAmt = txns.filter(t => (t.source_kind || '').toUpperCase().includes('LEDGER')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 10000000;
+    const gwAmtRupees = txns.filter(t => (t.source_kind || '').toUpperCase().includes('GATEWAY')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 100;
+    const bkAmtRupees = txns.filter(t => (t.source_kind || '').toUpperCase().includes('BANK')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 100;
+    const glAmtRupees = txns.filter(t => (t.source_kind || '').toUpperCase().includes('LEDGER')).reduce((s, t) => s + (t.amount_minor || 0), 0) / 100;
 
-    const flowLabels = ['Gateway PSP', 'Bank Deposits', 'General Ledger'];
-    const flowData = [parseFloat(gwAmt.toFixed(2)), parseFloat(bkAmt.toFixed(2)), parseFloat(glAmt.toFixed(2))];
+    const maxRupees = Math.max(gwAmtRupees, bkAmtRupees, glAmtRupees, 1);
+    let divisor = 1;
+    let unitSuffix = '';
+    let unitLabel = '₹ INR';
+
+    if (maxRupees >= 10000000) {
+      divisor = 10000000;
+      unitSuffix = 'Cr';
+      unitLabel = '₹ Crores';
+    } else if (maxRupees >= 100000) {
+      divisor = 100000;
+      unitSuffix = 'L';
+      unitLabel = '₹ Lakhs';
+    } else if (maxRupees >= 1000) {
+      divisor = 1000;
+      unitSuffix = 'K';
+      unitLabel = '₹ Thousands';
+    }
+
+    const flowLabels = ['Payment Gateway', 'Bank Statement', 'General Ledger'];
+    const flowData = [
+      parseFloat((gwAmtRupees / divisor).toFixed(2)),
+      parseFloat((bkAmtRupees / divisor).toFixed(2)),
+      parseFloat((glAmtRupees / divisor).toFixed(2))
+    ];
+    const rawRupees = [gwAmtRupees, bkAmtRupees, glAmtRupees];
 
     appState.charts.flow = new Chart(ctxFlow, {
       type: 'bar',
@@ -1290,15 +1334,26 @@ function initOverviewCharts() {
         labels: flowLabels,
         datasets: [
           {
-            label: 'Ingested Volume (₹ Lakhs)',
+            label: `Settled Volume (${unitLabel})`,
             data: flowData,
             backgroundColor: [
               isDark ? '#38bdf8' : '#0284c7',
               isDark ? '#10b981' : '#059669',
               isDark ? '#a855f7' : '#7c3aed'
             ],
+            hoverBackgroundColor: [
+              isDark ? '#0284c7' : '#0369a1',
+              isDark ? '#059669' : '#047857',
+              isDark ? '#7c3aed' : '#6d28d9'
+            ],
+            borderColor: [
+              isDark ? '#7dd3fc' : '#0369a1',
+              isDark ? '#34d399' : '#047857',
+              isDark ? '#c084fc' : '#6d28d9'
+            ],
+            borderWidth: 2,
             borderRadius: 6,
-            barThickness: 32
+            barThickness: 34
           }
         ]
       },
@@ -1309,15 +1364,18 @@ function initOverviewCharts() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: isDark ? '#12141a' : '#ffffff',
-            titleColor: isDark ? '#f8fafc' : '#0f172a',
-            bodyColor: isDark ? '#cbd5e1' : '#334155',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
+            backgroundColor: isDark ? '#18181b' : '#ffffff',
+            titleColor: isDark ? '#ffffff' : '#09090b',
+            bodyColor: isDark ? '#f1f5f9' : '#18181b',
+            borderColor: isDark ? '#52525b' : '#cbd5e1',
             borderWidth: 1,
             cornerRadius: 6,
+            titleFont: { family: FONT_SANS, size: 12, weight: '700' },
+            bodyFont: { family: FONT_SANS, size: 11.5, weight: '600' },
             callbacks: {
               label: function (context) {
-                return ` Volume: ₹${context.raw.toFixed(2)} Lakhs`;
+                const raw = rawRupees[context.dataIndex] || 0;
+                return ` Ingested: ₹${raw.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
               }
             }
           }
@@ -1325,14 +1383,14 @@ function initOverviewCharts() {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: textColor, font: { family: FONT_MONO, size: 10.5, weight: '600' } }
+            ticks: { color: textColor, font: { family: FONT_SANS, size: 12, weight: '700' } }
           },
           y: {
             grid: { color: gridColor, borderDash: [4, 4] },
             ticks: {
               color: textMuted,
-              font: { family: FONT_MONO, size: 9.5 },
-              callback: v => `₹${v}L`
+              font: { family: FONT_MONO, size: 11.5, weight: '700' },
+              callback: v => `₹${v}${unitSuffix}`
             }
           }
         }
@@ -1547,6 +1605,8 @@ async function fetchInitialData() {
     if (agentSelect) {
       agentSelect.innerHTML = '<option value="">No exceptions in active batch</option>';
     }
+  } else {
+    loadAIIssuesReport(appState.batchId, false);
   }
 }
 
@@ -1745,6 +1805,7 @@ async function fetchProcessedData() {
         }
       });
       const grossFlowMinor = Object.values(uniqueGwFlow).reduce((a, b) => a + b, 0);
+      appState.grossFlowMinor = grossFlowMinor;
       const elGross = document.getElementById('ov-val-gross-flow');
       if (elGross) {
         if (grossFlowMinor >= 1000000000) {
@@ -1964,12 +2025,6 @@ function setWorkflowSubStep(stepNum) {
   document.querySelectorAll('.stage-view-sub').forEach(st => st.style.display = 'none');
   const target = document.getElementById(`wf-stage-${stepNum}`);
   if (target) target.style.display = 'block';
-
-  // Update Breadcrumb Sub-step pill
-  const substepLabel = document.getElementById('breadcrumb-substep-label');
-  if (substepLabel && WORKFLOW_STAGE_NAMES && WORKFLOW_STAGE_NAMES[stepNum]) {
-    substepLabel.textContent = WORKFLOW_STAGE_NAMES[stepNum];
-  }
 
   if (stepNum === 3) {
     renderWhyPolicyCard(appState.activeCategory);
@@ -3258,42 +3313,20 @@ async function verifyAuditChain() {
 appState.qaConversationHistory = [];
 
 // UX-05: Context-Aware Dynamic Starter Questions for QA Modal
-function renderQAStarterChipsHtml() {
-  const total = appState.allTransactions ? appState.allTransactions.length : 0;
-  const excs = appState.allExceptions ? appState.allExceptions.length : 0;
-  const matchRate = total > 0 ? (((total - excs) / total) * 100).toFixed(1) : '0.0';
-  
-  const topExc = appState.allExceptions && appState.allExceptions.length > 0 ? appState.allExceptions[0] : null;
-  const topExcId = topExc ? (topExc.id || 'the top exception') : 'INV-2026-0412';
-  const topExcQuery = topExc
-    ? `Why was exception ${topExcId} flagged for ${topExc.impact_minor ? `₹${((topExc.impact_minor)/100).toLocaleString('en-IN')}` : 'review'}?`
-    : `Why didn't invoice INV-2026-0412 settle in this batch?`;
-  const topExcLabel = topExc ? `Why was ${topExcId} flagged?` : `Why didn't INV-2026-0412 settle?`;
-
+function renderQAEmptyStateHtml() {
   return `
-    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;" id="qa-starter-chips-container">
-      <button class="prompt-chip" data-query="Why is the 3-way match rate ${matchRate}% for batch ${appState.batchId || 'BATCH-ACTIVE'}?">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    <div class="qa-empty-state">
+      <div class="qa-empty-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
-        <span>Why is match rate ${matchRate}%?</span>
-      </button>
-      <button class="prompt-chip" data-query="${escapeHtml(topExcQuery)}">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-        <span>${escapeHtml(topExcLabel)}</span>
-      </button>
-      <button class="prompt-chip" data-query="Summarize all unverified exceptions and financial risk">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-          <polyline points="16 7 22 7 22 13" />
-        </svg>
-        <span>Risk & exceptions summary</span>
-      </button>
+      </div>
+      <div class="qa-empty-text">Ask anything about transactions, exceptions, or reconciliation metrics.</div>
+      <div class="qa-suggest-pills" id="qa-starter-chips-container">
+        <button class="prompt-chip" data-query="What is the gross flow volume and batch summary?">Gross flow &amp; summary</button>
+        <button class="prompt-chip" data-query="What is the match rate and how many transactions were processed?">Match rate</button>
+        <button class="prompt-chip" data-query="How many exceptions are there and what is the affected amount?">Open exceptions</button>
+      </div>
     </div>
   `;
 }
@@ -3307,7 +3340,6 @@ function closeQAModal(e) {
   const fab = document.getElementById('floating-chatbot-btn');
   if (modal) {
     modal.classList.remove('open');
-    modal.classList.remove('qa-fullscreen-mode');
   }
   if (fab) {
     fab.classList.remove('chat-open');
@@ -3329,50 +3361,11 @@ function toggleQAModal(e) {
       if (!appState.qaConversationHistory || appState.qaConversationHistory.length === 0) {
         const container = document.getElementById('qa-messages-container');
         if (container) {
-          container.innerHTML = `
-            <div class="qa-welcome-card">
-              <div class="qa-welcome-title">Financial Assistant Active</div>
-              <div class="qa-welcome-text">
-                Ask any question about payments, exceptions, gateway fees, or general ledger records.
-              </div>
-            </div>
-            <div class="qa-chips-section-title">Common Questions</div>
-            ${renderQAStarterChipsHtml()}
-          `;
+          container.innerHTML = renderQAEmptyStateHtml();
         }
       }
       bindPromptChips();
       setTimeout(() => document.getElementById('qa-user-input')?.focus(), 60);
-    }
-  }
-}
-
-function toggleQAExpand(e) {
-  if (e) {
-    if (typeof e.preventDefault === 'function') e.preventDefault();
-    if (typeof e.stopPropagation === 'function') e.stopPropagation();
-  }
-  const modal = document.getElementById('qa-modal');
-  const icon = document.getElementById('qa-expand-icon');
-  if (modal) {
-    modal.classList.toggle('qa-fullscreen-mode');
-    const isFull = modal.classList.contains('qa-fullscreen-mode');
-    if (icon) {
-      if (isFull) {
-        icon.innerHTML = `
-          <polyline points="4 14 10 14 10 20"/>
-          <polyline points="20 10 14 10 14 4"/>
-          <line x1="14" y1="10" x2="21" y2="3"/>
-          <line x1="3" y1="21" x2="10" y2="14"/>
-        `;
-      } else {
-        icon.innerHTML = `
-          <polyline points="15 3 21 3 21 9"/>
-          <polyline points="9 21 3 21 3 15"/>
-          <line x1="21" y1="3" x2="14" y2="10"/>
-          <line x1="3" y1="21" x2="10" y2="14"/>
-        `;
-      }
     }
   }
 }
@@ -3408,16 +3401,7 @@ function clearQAChat(e) {
   appState.qaConversationHistory = [];
   const container = document.getElementById('qa-messages-container');
   if (container) {
-    container.innerHTML = `
-      <div class="qa-welcome-card">
-        <div class="qa-welcome-title">Financial Assistant Active</div>
-        <div class="qa-welcome-text">
-          Ask any question about payments, exceptions, gateway fees, or general ledger records.
-        </div>
-      </div>
-      <div class="qa-chips-section-title">Common Questions</div>
-      ${renderQAStarterChipsHtml()}
-    `;
+    container.innerHTML = renderQAEmptyStateHtml();
     bindPromptChips();
     showToast('Chat history cleared.', 'info');
   }
@@ -3425,11 +3409,50 @@ function clearQAChat(e) {
 
 async function sendQAMessage() {
   const input = document.getElementById('qa-user-input');
+  const submitBtn = document.getElementById('qa-submit-btn');
   const query = input ? input.value.trim() : '';
-  if (!query) return;
+  if (!query || input?.disabled) return;
 
   const container = document.getElementById('qa-messages-container');
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Check for navigation / action commands (One Entry for Everything)
+  const lowerQuery = query.toLowerCase().trim();
+  if (/^(go\s+to|open|view|show)\s+(exceptions|exception|queue)$/i.test(lowerQuery) || lowerQuery === 'exceptions') {
+    switchView('exceptions');
+    closeQAModal();
+    showToast('Navigated to Exceptions Queue', 'info');
+    if (input) input.value = '';
+    return;
+  }
+  if (/^(go\s+to|open|view|show)\s+(audit|audit\s+trail|logs|sox)$/i.test(lowerQuery) || lowerQuery === 'audit') {
+    switchView('audit');
+    closeQAModal();
+    showToast('Navigated to Audit Trail', 'info');
+    if (input) input.value = '';
+    return;
+  }
+  if (/^(go\s+to|open|view|show)\s+(overview|dashboard|home)$/i.test(lowerQuery) || lowerQuery === 'overview') {
+    switchView('overview');
+    closeQAModal();
+    showToast('Navigated to Overview Dashboard', 'info');
+    if (input) input.value = '';
+    return;
+  }
+  if (/^(go\s+to|open|view|show)\s+(reconciliation|recon|workbench)$/i.test(lowerQuery) || lowerQuery === 'recon') {
+    switchView('recon');
+    closeQAModal();
+    showToast('Navigated to Reconciliation Workbench', 'info');
+    if (input) input.value = '';
+    return;
+  }
+  if (/^(go\s+to|open|view|show)\s+(issues|ai\s+issues|copilot|ai)$/i.test(lowerQuery) || lowerQuery === 'issues') {
+    switchView('issues');
+    closeQAModal();
+    showToast('Navigated to AI Issues', 'info');
+    if (input) input.value = '';
+    return;
+  }
 
   container.insertAdjacentHTML('beforeend', `
     <div class="qa-msg-user">
@@ -3442,6 +3465,9 @@ async function sendQAMessage() {
 
   if (input) input.value = '';
   container.scrollTop = container.scrollHeight;
+  // Prevent double-send while the assistant is answering.
+  if (input) input.disabled = true;
+  if (submitBtn) submitBtn.disabled = true;
 
   const loadId = `load_${Date.now()}`;
   container.insertAdjacentHTML('beforeend', `
@@ -3449,31 +3475,65 @@ async function sendQAMessage() {
       <div class="qa-thinking-dots">
         <span></span><span></span><span></span>
       </div>
-      <span>Analyzing live reconciliation & ledger rules...</span>
+      <span>Consulting reconciliation records...</span>
     </div>
   `);
   container.scrollTop = container.scrollHeight;
 
   try {
+    // Dynamic batch overview and live dashboard metrics
+    const grossFlowEl = document.getElementById('ov-val-gross-flow');
+    const grossFlowText = grossFlowEl ? grossFlowEl.textContent.trim() : '';
+    const matchRateEl = document.getElementById('ov-val-match-rate');
+    const matchRateText = matchRateEl ? matchRateEl.textContent.trim() : '';
+
+    let liveGrossMinor = appState.grossFlowMinor;
+    if (typeof liveGrossMinor !== 'number' || liveGrossMinor === 0) {
+      const gwMap = {};
+      (appState.allTransactions || []).forEach(t => {
+        if (t.source_kind === 'GATEWAY') {
+          if (!gwMap[t.external_id]) {
+            gwMap[t.external_id] = (t.gross_minor !== undefined && t.gross_minor !== null) ? t.gross_minor : (t.amount_minor || 0);
+          }
+        }
+      });
+      liveGrossMinor = Object.values(gwMap).reduce((a, b) => a + b, 0);
+    }
+
+    const liveDashboardMetrics = {
+      gross_flow_volume: grossFlowText,
+      gross_flow_minor: liveGrossMinor,
+      match_rate: matchRateText,
+      total_records: (appState.allTransactions || []).length,
+      total_exceptions: (appState.allExceptions || []).length,
+      batch_id: appState.batchId || ''
+    };
+
     const res = await authFetch(`${API_BASE}/qa/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         query: query,
-        active_context: appState.qaContext || {},
+        active_context: {
+          ...(appState.qaContext || {}),
+          dashboard_metrics: liveDashboardMetrics
+        },
         conversation_history: appState.qaConversationHistory || []
       })
     });
 
     const data = await res.json().catch(() => ({}));
     document.getElementById(loadId)?.remove();
+    if (input) input.disabled = false;
+    if (submitBtn) submitBtn.disabled = false;
+    input?.focus();
 
     if (!res.ok) {
       const errDetail = data?.detail || (res.status === 401
         ? 'Your login session has expired. Please sign in again using the Sign In button at top right.'
         : `Service returned status ${res.status}. Please check your connection or batch status.`);
       container.insertAdjacentHTML('beforeend', `
-        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.45;">
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.45;">
           <strong>⚠️ Notice:</strong> ${escapeHtml(errDetail)}
         </div>
       `);
@@ -3497,60 +3557,42 @@ async function sendQAMessage() {
       if (colonIdx > 0 && colonIdx < 35) {
         const prefix = clean.substring(0, colonIdx);
         const rest = clean.substring(colonIdx + 1);
-        return `<li style="margin-bottom: 0.35rem;"><strong style="color: var(--text-primary);">${escapeHtml(prefix)}:</strong>${escapeHtml(rest)}</li>`;
+        return `<li><strong>${escapeHtml(prefix)}:</strong>${escapeHtml(rest)}</li>`;
       }
-      return `<li style="margin-bottom: 0.35rem;">${escapeHtml(clean)}</li>`;
+      return `<li>${escapeHtml(clean)}</li>`;
     }).join('');
-
-    let cardHtml = '';
-    if (data.status_card) {
-      const badgeCls = data.status_card.badge_type === 'success' ? 'badge-green' : (data.status_card.badge_type === 'danger' ? 'badge-coral' : 'badge-amber');
-      cardHtml = `
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--border-subtle);">
-          <span class="badge-min ${badgeCls}" style="font-weight: 600; text-transform: none; letter-spacing: 0;">${escapeHtml(data.status_card.status_text)}</span>
-          <span style="font-weight: 700; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-primary);">${escapeHtml(data.status_card.amount || '')}</span>
-        </div>
-      `;
-    }
 
     const actionText = data.recommended_action ? String(data.recommended_action).replace(/^(Next Action:?\s*)/i, '').trim() : '';
     const nextActionHtml = actionText ? `
-      <div style="margin-top: 0.65rem; padding: 0.55rem 0.75rem; background: rgba(56, 189, 248, 0.08); border-left: 3px solid var(--accent-cyan); border-radius: 4px; font-size: 0.78rem; color: var(--text-primary); line-height: 1.45;">
-        <strong style="color: var(--accent-cyan); display: inline-block; margin-right: 0.3rem;">💡 Next Step:</strong>${escapeHtml(actionText)}
+      <div class="qa-next-step">
+        <strong>Next step:</strong> ${escapeHtml(actionText)}
       </div>
     ` : '';
 
     container.insertAdjacentHTML('beforeend', `
       <div class="qa-msg-assistant">
         <div class="qa-card-assistant">
-          <div class="qa-assistant-header">
-            <div class="qa-assistant-badge">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-              </svg>
-              <span>AI Assistant</span>
-            </div>
-            <div class="qa-assistant-meta">
-              <span class="qa-model-pill">Groq LPU</span>
-              <span class="qa-time-stamp">${timeStr}</span>
-              <button class="qa-copy-btn" onclick="copyQAResponse(this)" title="Copy answer">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              </button>
-            </div>
-          </div>
-          ${cardHtml}
           <div class="qa-direct-answer">${escapeHtml(data.direct_answer || data.answer)}</div>
-          ${findings ? `<ul style="margin: 0.4rem 0 0.5rem 1.1rem; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.45;">${findings}</ul>` : ''}
+          ${findings ? `<ul class="qa-findings">${findings}</ul>` : ''}
           ${nextActionHtml}
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; margin-top: 0.35rem;">
+            <span class="qa-time-stamp">${timeStr}</span>
+            <button class="qa-ctrl-btn" onclick="copyQAResponse(this)" title="Copy answer" style="width: 20px; height: 20px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     `);
+    bindPromptChips();
 
     container.scrollTop = container.scrollHeight;
   } catch (err) {
     document.getElementById(loadId)?.remove();
+    if (input) input.disabled = false;
+    if (submitBtn) submitBtn.disabled = false;
     container.insertAdjacentHTML('beforeend', `
-      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.45;">
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.45;">
         <strong>⚠️ Connection Issue:</strong> ${escapeHtml(err.message || 'Unable to connect to AI Controller. Please verify you are logged in.')}
       </div>
     `);
@@ -4784,19 +4826,8 @@ async function loadAIIssuesReport(batchId, showProgress = true, forceRefresh = f
 
   const targetBatch = batchId || appState.batchId;
 
-  if (!appState.isProcessed && !targetBatch) {
-    if (emptyWorkspace) emptyWorkspace.style.display = 'flex';
-    if (cleanState) cleanState.style.display = 'none';
-    if (listSection) listSection.style.display = 'none';
-    if (systemicSection) systemicSection.style.display = 'none';
-    if (impactSection) impactSection.style.display = 'none';
-    if (takeawaySection) takeawaySection.style.display = 'none';
-    if (loadingBanner) loadingBanner.style.display = 'none';
-    return;
-  }
-
-  // Reuse existing in-memory report if batch matches and not forceRefresh
-  if (!forceRefresh && appState.aiIssuesReport && (appState.aiIssuesReport.batch_id === targetBatch || !targetBatch)) {
+  // Reuse existing in-memory report if batch matches and not forceRefresh and not an empty placeholder
+  if (!forceRefresh && appState.aiIssuesReport && (appState.aiIssuesReport.batch_id === targetBatch || !targetBatch) && appState.aiIssuesReport.batch_id !== 'NO-ACTIVE-BATCH') {
     renderAIIssuesReport(appState.aiIssuesReport);
     return;
   }
@@ -4806,11 +4837,9 @@ async function loadAIIssuesReport(batchId, showProgress = true, forceRefresh = f
     return _activeAIIssuesPromise;
   }
 
-  if (emptyWorkspace) emptyWorkspace.style.display = 'none';
-
   if (showProgress && loadingBanner) {
     loadingBanner.style.display = 'flex';
-    if (stageText) stageText.textContent = 'Retrieving financial issues report...';
+    if (stageText) stageText.textContent = 'Synthesizing verified financial issues...';
   }
 
   _activeAIIssuesPromise = (async () => {
@@ -4825,6 +4854,10 @@ async function loadAIIssuesReport(batchId, showProgress = true, forceRefresh = f
       if (res.ok) {
         const data = await res.json();
         appState.aiIssuesReport = data;
+        if (!appState.batchId && data.batch_id && data.batch_id !== 'NO-ACTIVE-BATCH') {
+          appState.batchId = data.batch_id;
+          appState.isProcessed = true;
+        }
         renderAIIssuesReport(data);
       } else {
         console.warn('AI Issues report fetch error:', res.status);
@@ -4879,6 +4912,9 @@ function renderAIIssuesReport(report) {
     navBadge.style.color = total > 0 ? 'var(--accent-coral)' : 'var(--accent-emerald)';
   }
 
+  // Synchronize Breadcrumb Badge
+  updateBreadcrumbUI(appState.currentView);
+
   // Update Filter Badges
   setElemText('filter-badge-all', total.toLocaleString());
   setElemText('filter-badge-critical', critical.toLocaleString());
@@ -4915,13 +4951,23 @@ function renderAIIssuesReport(report) {
     }
   }
 
-  // Handle Clean Batch (0 issues)
+  // Handle Empty Workspace vs Clean Batch (0 issues) vs Populated Issues
   const cleanState = document.getElementById('ai-issues-clean-state');
   const emptyWorkspace = document.getElementById('ai-issues-empty-workspace');
   const listSection = document.getElementById('ai-issues-list-section');
   const systemicSection = document.getElementById('ai-issues-systemic-section');
   const impactSection = document.getElementById('ai-issues-financial-impact-section');
   const takeawaySection = document.getElementById('ai-issues-takeaway-section');
+
+  if (!report || report.batch_id === 'NO-ACTIVE-BATCH' || (!report.batch_id && total === 0)) {
+    if (emptyWorkspace) emptyWorkspace.style.display = 'flex';
+    if (cleanState) cleanState.style.display = 'none';
+    if (listSection) listSection.style.display = 'none';
+    if (systemicSection) systemicSection.style.display = 'none';
+    if (impactSection) impactSection.style.display = 'none';
+    if (takeawaySection) takeawaySection.style.display = 'none';
+    return;
+  }
 
   if (emptyWorkspace) emptyWorkspace.style.display = 'none';
 

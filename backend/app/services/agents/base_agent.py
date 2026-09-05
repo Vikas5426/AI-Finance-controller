@@ -110,13 +110,20 @@ class AgentTelemetryTracker:
         metadata: Optional[Dict[str, Any]] = None
     ):
         cls._stats["total_agent_calls"] += 1
-        is_llm = provider in ("GROQ", "GEMINI", "OPENAI")
-        if provider == "GROQ":
+        p = (provider or "").upper()
+        is_groq = p == "GROQ" or p.startswith("GROQ_")
+        is_gemini = p == "GEMINI" or p.startswith("GEMINI_")
+        is_openai = p == "OPENAI" or p.startswith("OPENAI_")
+        is_llm = is_groq or is_gemini or is_openai
+        if is_groq:
             cls._stats["groq_calls"] += 1
-        elif provider == "GEMINI":
+        elif is_gemini:
             cls._stats["gemini_calls"] += 1
-        else:
+        elif not is_llm:
             cls._stats["deterministic_fallback_calls"] += 1
+        # Other LLM providers (e.g. OPENAI/ANTHROPIC) count toward
+        # avg_llm_latency via total - deterministic, without polluting
+        # the per-vendor groq/gemini counters.
 
         cls._stats["total_tokens_est"] += tokens_est
         total = cls._stats["total_agent_calls"]
@@ -124,7 +131,7 @@ class AgentTelemetryTracker:
         cls._stats["avg_latency_ms"] = round(((curr_avg * (total - 1)) + latency_ms) / total, 2)
 
         if is_llm:
-            llm_calls = cls._stats["groq_calls"] + cls._stats["gemini_calls"]
+            llm_calls = cls._stats["total_agent_calls"] - cls._stats["deterministic_fallback_calls"]
             curr_llm_avg = cls._stats.get("avg_llm_latency_ms", 0.0)
             cls._stats["avg_llm_latency_ms"] = round(((curr_llm_avg * (llm_calls - 1)) + latency_ms) / max(1, llm_calls), 2)
         else:
@@ -175,7 +182,7 @@ class BaseReasoningAgent:
         if self.groq_api_key:
             try:
                 from groq import Groq
-                self._groq_client = Groq(api_key=self.groq_api_key, timeout=12.0)
+                self._groq_client = Groq(api_key=self.groq_api_key, timeout=25.0)
             except Exception as e:
                 logger.warning(f"[{self.agent_name}] Failed to initialize Groq client: {e}")
 
@@ -183,7 +190,7 @@ class BaseReasoningAgent:
         if self.groq_api_key_secondary:
             try:
                 from groq import Groq
-                self._groq_client_secondary = Groq(api_key=self.groq_api_key_secondary, timeout=12.0)
+                self._groq_client_secondary = Groq(api_key=self.groq_api_key_secondary, timeout=25.0)
             except Exception as e:
                 logger.warning(f"[{self.agent_name}] Failed to initialize secondary Groq client: {e}")
 
@@ -191,7 +198,7 @@ class BaseReasoningAgent:
         if settings.GEMINI_API_KEY:
             try:
                 from google import genai
-                self._gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+                self._gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={"timeout": 60000})
             except Exception:
                 pass
 
@@ -293,7 +300,7 @@ class BaseReasoningAgent:
                     "temperature": temperature,
                     "top_p": 1,
                     "max_completion_tokens": max_tokens,
-                    "timeout": 12.0
+                    "timeout": 25.0
                 }
                 if "openai" in g_model:
                     try:
@@ -418,7 +425,10 @@ class BaseReasoningAgent:
                         retry_sec
                     )
                 else:
-                    logger.warning(f"[{self.agent_name}] Gemini fallback failed: {e}")
+                    if "DEADLINE_EXCEEDED" in err_str or "504" in err_str:
+                        logger.info(f"[{self.agent_name}] Gemini request reached timeout deadline, routing to deterministic reasoner")
+                    else:
+                        logger.warning(f"[{self.agent_name}] Gemini fallback failed: {e}")
 
         # 3. Controlled Deterministic Fallback
         latency_ms = round((time.time() - start_t) * 1000, 2)

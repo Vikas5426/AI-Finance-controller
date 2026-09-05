@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css?v=10">
+  <link rel="stylesheet" href="/static/css/styles.css?v=12">
   <link rel="icon" type="image/png" href="/static/img/favicon.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
 </head>
@@ -26,84 +26,56 @@
        itself in as the Approver using a password embedded in app.js, which meant
        anyone loading the page held checker authority.
        ============================================================================== -->
-  <div class="auth-gate" id="auth-gate" aria-modal="true" role="dialog" aria-labelledby="auth-gate-title">
+  <div class="auth-gate" id="auth-gate" aria-modal="true" role="dialog" aria-labelledby="auth-brand-name">
     <form class="auth-card" id="auth-form" autocomplete="on">
       <div class="auth-brand">
         <div class="auth-brand-mark">
-          <img class="brand-logo-img" src="/static/img/logo_white.png" alt="Recon Logo">
+          <img class="brand-logo-img" src="/static/img/logo_white.png" alt="Recon">
         </div>
-        <div>
-          <div class="auth-brand-name">Recon</div>
-          <div class="auth-brand-sub">Autonomous 3-Way Settlement Engine</div>
-        </div>
+        <span class="auth-brand-name" id="auth-brand-name">Recon</span>
       </div>
 
       <div class="auth-tab-bar" id="auth-tab-bar">
-        <button type="button" class="auth-tab-btn active" id="auth-tab-signin" onclick="switchAuthTab('signin')">Sign in</button>
-        <button type="button" class="auth-tab-btn" id="auth-tab-signup" onclick="switchAuthTab('signup')">Create account</button>
-      </div>
-
-      <div id="auth-signin-header">
-        <h1 class="auth-title" id="auth-gate-title">Welcome back</h1>
-        <p class="auth-subtitle">Dual-control reconciliation and exception approvals require an authenticated session.</p>
-      </div>
-
-      <div id="auth-signup-header" style="display: none;">
-        <h1 class="auth-title">Create an account</h1>
-        <p class="auth-subtitle">Join your organization's three-way financial reconciliation team.</p>
+        <button type="button" class="auth-tab-btn active" id="auth-tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="auth-tab-signup" onclick="switchAuthTab('signup')">Create Account</button>
       </div>
 
       <div class="auth-field-group" id="auth-name-group" style="display: none;">
-        <label class="auth-label" for="auth-fullname">Full Name</label>
         <div class="auth-input-wrapper">
-          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M20 21a8 8 0 1 0-16 0"/>
+          <svg class="auth-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
           </svg>
           <input class="auth-input with-left-icon" id="auth-fullname" name="fullname" type="text" autocomplete="name"
-            placeholder="Jane Doe" />
+            placeholder="Full Name" />
         </div>
       </div>
 
       <div class="auth-field-group">
-        <label class="auth-label" for="auth-email">Work Email</label>
         <div class="auth-input-wrapper">
-          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <svg class="auth-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="16" x="2" y="4" rx="2"/>
             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
           </svg>
           <input class="auth-input with-left-icon" id="auth-email" name="email" type="email" autocomplete="username"
-            placeholder="you@company.com" required />
-        </div>
-      </div>
-
-      <div class="auth-field-group" id="auth-role-group" style="display: none;">
-        <label class="auth-label" for="auth-role">Organization Role</label>
-        <div class="auth-input-wrapper">
-          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          <select class="auth-input with-left-icon select-custom" id="auth-role" name="role">
-            <option value="admin" selected>Administrator (Full Access)</option>
-          </select>
+            placeholder="Email" required />
         </div>
       </div>
 
       <div class="auth-field-group">
-        <label class="auth-label" for="auth-password">Password</label>
         <div class="auth-input-wrapper">
-          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <svg class="auth-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
           <input class="auth-input with-left-icon with-right-icon" id="auth-password" name="password" type="password"
-            autocomplete="current-password" placeholder="••••••••••••" required />
+            autocomplete="current-password" placeholder="Password" required />
           <button type="button" class="auth-pw-toggle-btn" id="auth-pw-toggle" aria-label="Toggle password visibility" title="Show password">
-            <svg id="auth-pw-icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg id="auth-pw-icon-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
-            <svg id="auth-pw-icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <svg id="auth-pw-icon-eye-off" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
               <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
               <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
               <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
@@ -113,23 +85,36 @@
         </div>
       </div>
 
-      <div class="auth-error" id="auth-error" role="alert" hidden></div>
+      <div class="auth-error" id="auth-error" role="alert" hidden>
+        <svg class="auth-error-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span class="auth-error-msg" id="auth-error-msg"></span>
+      </div>
 
-      <button class="btn btn-primary auth-submit" id="auth-submit" type="submit">Sign in</button>
+      <button class="auth-submit" id="auth-submit" type="submit">
+        <span class="auth-submit-spinner" id="auth-submit-spinner" style="display: none;"></span>
+        <span class="auth-submit-label" id="auth-submit-label">Sign in</span>
+      </button>
+
+      <div class="auth-switch-prompt" id="auth-switch-prompt" style="display: none;">
+        <span>Already have an account?</span>
+        <button type="button" class="auth-switch-link" onclick="switchAuthTab('signin')">Sign in</button>
+      </div>
 
       <div class="auth-footnote" id="auth-footnote">
-        <div class="auth-quick-header">
-          <span>Quick Demo Access</span>
+        <div class="auth-divider">
+          <span>or</span>
         </div>
-        <div class="auth-quick-actions single-action">
-          <button type="button" class="auth-quick-btn auth-quick-btn-single" onclick="quickFillLogin('admin@acme.co', 'Admin@2026!')" title="Sign in as Administrator with Full Access">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M20 21a8 8 0 1 0-16 0"/>
-            </svg>
-            <span>Sign in as Admin (Full Access)</span>
-          </button>
-        </div>
+        <button type="button" class="auth-demo-btn" id="auth-demo-login-btn" onclick="quickFillLogin('admin@acme.co', 'Admin@2026!', 'Administrator')" title="Instant demo login with full access">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span class="auth-demo-text">Demo Access</span>
+          <span class="auth-demo-badge">Full Access</span>
+        </button>
       </div>
     </form>
   </div>
@@ -310,17 +295,17 @@
               <span id="current-breadcrumb-label">Overview</span>
               <span class="breadcrumb-view-badge" id="breadcrumb-view-badge" style="display: none;"></span>
             </span>
-
-            <!-- Contextual Workflow Sub-Step (rendered during Reconciliation) -->
-            <span class="breadcrumb-substep-wrapper" id="breadcrumb-substep-wrapper" style="display: none;">
-              <span class="breadcrumb-sep" aria-hidden="true">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </span>
-              <span class="breadcrumb-item breadcrumb-substep" id="breadcrumb-substep-label">Stage 1: Ingest Feeds</span>
-            </span>
           </nav>
+        </div>
+
+        <!-- Unified Global Search & AI Command Bar: One Entry Point for Anything & Everything -->
+        <div class="top-nav-search-bar" id="top-nav-search-bar" onclick="toggleQAModal(event)" role="button" tabindex="0" title="Ask AI or search anything (⌘K)">
+          <svg class="top-nav-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span class="top-nav-search-placeholder">Ask AI or search anything...</span>
+          <kbd class="top-nav-search-kbd">⌘K</kbd>
         </div>
 
         <div class="top-nav-actions">
@@ -1545,15 +1530,15 @@
               </div>
               <div class="situation-badges-wrap">
                 <span class="badge-min" id="ai-issues-audit-status-badge" style="background: rgba(16,185,129,0.12); color: var(--accent-emerald);">
-                  Audit Integrity: PASS ✓
+                  Audit Integrity: SHA-256 Validated ✓
                 </span>
-                <span class="badge-min" id="ai-issues-health-status-badge" style="background: rgba(239,68,68,0.12); color: var(--accent-coral);">
-                  Financial Health: UNHEALTHY
+                <span class="badge-min" id="ai-issues-health-status-badge" style="background: rgba(255,255,255,0.06); color: var(--text-secondary);">
+                  Financial Health: Evaluating...
                 </span>
               </div>
             </div>
             <div class="situation-body" id="ai-issues-situation-text">
-              The latest reconciliation batch is being analyzed...
+              Synthesizing latest multi-stream reconciliation batch findings...
             </div>
             <div class="situation-footnote">
               <span class="label-muted">Audit Integrity verifies SHA-256 block ledger immutability · Financial Health reflects transaction balancing status.</span>
@@ -1885,32 +1870,15 @@
       <div class="qa-header">
         <div class="qa-header-left">
           <div class="qa-avatar-badge">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
           </div>
-          <div class="qa-title-group">
-            <div class="qa-title-row">
-              <span class="qa-header-title">AI Assistant</span>
-              <span class="qa-status-pill">
-                <span class="qa-status-dot"></span>
-                <span>Active</span>
-              </span>
-            </div>
-            <div class="qa-header-subtitle">Reconciliation & Financial Inquiries</div>
-          </div>
+          <span class="qa-header-title">Recon AI</span>
         </div>
 
         <div class="qa-header-actions">
-          <button class="qa-ctrl-btn" id="qa-expand-btn" onclick="toggleQAExpand(event)" title="Toggle size" aria-label="Expand or dock view">
-            <svg id="qa-expand-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 3 21 3 21 9"/>
-              <polyline points="9 21 3 21 3 15"/>
-              <line x1="21" y1="3" x2="14" y2="10"/>
-              <line x1="3" y1="21" x2="10" y2="14"/>
-            </svg>
-          </button>
-          <button class="qa-ctrl-btn" id="qa-clear-btn" onclick="clearQAChat(event)" title="Clear Chat History" aria-label="Clear chat">
+          <button class="qa-ctrl-btn" id="qa-clear-btn" onclick="clearQAChat(event)" title="Clear conversation" aria-label="Clear chat">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"/>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -1927,35 +1895,26 @@
 
       <!-- Messages Stream Container -->
       <div class="qa-messages-scroll" id="qa-messages-container">
-        <!-- Initial Simple Welcome -->
-        <div class="qa-welcome-card">
-          <div class="qa-welcome-title">Financial Assistant Active</div>
-          <div class="qa-welcome-text">
-            Ask any question about payments, exceptions, gateway fees, or general ledger records.
+        <!-- Minimal Aesthetic Empty State -->
+        <div class="qa-empty-state">
+          <div class="qa-empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
           </div>
-        </div>
-
-        <div class="qa-chips-section-title">Common Questions</div>
-        <div class="qa-starter-chips" id="qa-starter-chips-container">
-          <button class="prompt-chip" data-query="How many exceptions are there?">
-            <span>Exceptions breakdown?</span>
-          </button>
-          <button class="prompt-chip" data-query="Why didn't invoice INV-2026-0412 settle in this batch?">
-            <span>Why didn't INV-2026-0412 settle?</span>
-          </button>
-          <button class="prompt-chip" data-query="Explain the MDR fee splits">
-            <span>MDR fee rules</span>
-          </button>
-          <button class="prompt-chip" data-query="Summarize audit hash chain status and SOX compliance">
-            <span>Audit & SOX status</span>
-          </button>
+          <div class="qa-empty-text">Ask anything about transactions, exceptions, or reconciliation metrics.</div>
+          <div class="qa-suggest-pills" id="qa-starter-chips-container">
+            <button class="prompt-chip" data-query="What is the gross flow volume and batch summary?">Gross flow &amp; summary</button>
+            <button class="prompt-chip" data-query="What is the match rate and how many transactions were processed?">Match rate</button>
+            <button class="prompt-chip" data-query="How many exceptions are there and what is the affected amount?">Open exceptions</button>
+          </div>
         </div>
       </div>
 
       <!-- Input Bar Section -->
       <div class="qa-input-bar">
         <div class="qa-input-wrapper">
-          <input type="text" id="qa-user-input" class="qa-input-field" placeholder="Ask a question..." autocomplete="off">
+          <input type="text" id="qa-user-input" class="qa-input-field" placeholder="Ask AI anything..." autocomplete="off">
           <div class="qa-input-actions">
             <kbd class="qa-kbd-pill" title="Press Enter to send">↵</kbd>
             <button class="qa-send-btn" id="qa-submit-btn" title="Send message" aria-label="Send">
@@ -2056,7 +2015,7 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=13"></script>
+  <script src="/static/js/app.js?v=15"></script>
 </body>
 
 </html>

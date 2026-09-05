@@ -5,11 +5,11 @@ from typing import Any, Dict, List, Optional
 DEFAULT_RULES = [
     {
         "id": "R-FEE-RAZORPAY-STD",
-        "name": "Standard Razorpay Fee Discrepancy",
+        "name": "Standard Gateway MDR Fee & Tax Discrepancy",
         "when": [
             {"field": "source_kind", "op": "eq", "value": "GATEWAY"},
-            {"field": "abs_diff_minor", "op": "between", "value": [1, 50000]},
-            {"field": "diff_pct_of_gross", "op": "between", "value": [0.0190, 0.0240]}
+            {"field": "abs_diff_minor", "op": "between", "value": [1, 500000]},
+            {"field": "diff_pct_of_gross", "op": "between", "value": [0.0120, 0.0350]}
         ],
         "then": {
             "classification": "FEE_DISCREPANCY",
@@ -36,7 +36,7 @@ DEFAULT_RULES = [
         "id": "R-TIMING-CUTOFF",
         "name": "Month-End Timing Cutoff Grace",
         "when": [
-            {"field": "days_lag", "op": "between", "value": [1, 3]},
+            {"field": "days_lag", "op": "between", "value": [1, 5]},
             {"field": "is_period_boundary", "op": "eq", "value": True}
         ],
         "then": {

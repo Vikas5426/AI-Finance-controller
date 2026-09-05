@@ -1,0 +1,443 @@
+[
+  {
+    "record_index": 1,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_001",
+    "gross_minor": 50000,
+    "expected_fee_minor": 1000,
+    "expected_tax_minor": 180,
+    "net_minor": 48820,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 2,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_002",
+    "gross_minor": 100000,
+    "expected_fee_minor": 2000,
+    "expected_tax_minor": 360,
+    "net_minor": 97640,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 3,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_003",
+    "gross_minor": 250000,
+    "expected_fee_minor": 5000,
+    "expected_tax_minor": 900,
+    "net_minor": 244100,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 4,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_004",
+    "gross_minor": 500000,
+    "expected_fee_minor": 10000,
+    "expected_tax_minor": 1800,
+    "net_minor": 488200,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 5,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_005",
+    "gross_minor": 750000,
+    "expected_fee_minor": 15000,
+    "expected_tax_minor": 2700,
+    "net_minor": 732300,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 6,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_006",
+    "gross_minor": 1000000,
+    "expected_fee_minor": 20000,
+    "expected_tax_minor": 3600,
+    "net_minor": 976400,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 7,
+    "cohort": "STANDARD_MDR_18_GST",
+    "payment_id": "pay_STD_007",
+    "gross_minor": 1200000,
+    "expected_fee_minor": 24000,
+    "expected_tax_minor": 4320,
+    "net_minor": 1171680,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 8,
+    "cohort": "ENTERPRISE_MDR_18_GST",
+    "payment_id": "pay_ENT_008",
+    "gross_minor": 2000000,
+    "expected_fee_minor": 30000,
+    "expected_tax_minor": 5400,
+    "net_minor": 1964600,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 9,
+    "cohort": "ENTERPRISE_MDR_18_GST",
+    "payment_id": "pay_ENT_009",
+    "gross_minor": 3500000,
+    "expected_fee_minor": 52500,
+    "expected_tax_minor": 9450,
+    "net_minor": 3438050,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 10,
+    "cohort": "ENTERPRISE_MDR_18_GST",
+    "payment_id": "pay_ENT_010",
+    "gross_minor": 5000000,
+    "expected_fee_minor": 75000,
+    "expected_tax_minor": 13500,
+    "net_minor": 4911500,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 11,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "GST_RATE_12_PCT_ERROR",
+    "payment_id": "pay_TAX_011",
+    "gross_minor": 1000000,
+    "fee_minor": 20000,
+    "actual_tax_minor": 2400,
+    "expected_tax_minor": 3600,
+    "tax_discrepancy_minor": -1200,
+    "net_minor": 977600,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 12,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "MISSING_GST_ZERO_TAX",
+    "payment_id": "pay_TAX_012",
+    "gross_minor": 500000,
+    "fee_minor": 10000,
+    "actual_tax_minor": 0,
+    "expected_tax_minor": 1800,
+    "tax_discrepancy_minor": -1800,
+    "net_minor": 490000,
+    "expected_exception": "AMOUNT_MISMATCH"
+  },
+  {
+    "record_index": 13,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "EXCESSIVE_TAX_28_PCT",
+    "payment_id": "pay_TAX_013",
+    "gross_minor": 1500000,
+    "fee_minor": 30000,
+    "actual_tax_minor": 8400,
+    "expected_tax_minor": 5400,
+    "tax_discrepancy_minor": 3000,
+    "net_minor": 1461600,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 14,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "PAISE_ROUNDING_ERROR",
+    "payment_id": "pay_TAX_014",
+    "gross_minor": 850000,
+    "fee_minor": 17000,
+    "actual_tax_minor": 2975,
+    "expected_tax_minor": 3060,
+    "tax_discrepancy_minor": -85,
+    "net_minor": 830025,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 15,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "VAT_UAE_RATE_IN_INDIA",
+    "payment_id": "pay_TAX_015",
+    "gross_minor": 600000,
+    "fee_minor": 12000,
+    "actual_tax_minor": 600,
+    "expected_tax_minor": 2160,
+    "tax_discrepancy_minor": -1560,
+    "net_minor": 587400,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 16,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "DOUBLE_TAX_SURCHARGE",
+    "payment_id": "pay_TAX_016",
+    "gross_minor": 1200000,
+    "fee_minor": 24000,
+    "actual_tax_minor": 4560,
+    "expected_tax_minor": 4320,
+    "tax_discrepancy_minor": 240,
+    "net_minor": 1171440,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 17,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "REVERSE_CHARGE_MDR_CONFUSION",
+    "payment_id": "pay_TAX_017",
+    "gross_minor": 700000,
+    "fee_minor": 14000,
+    "actual_tax_minor": 0,
+    "expected_tax_minor": 2520,
+    "tax_discrepancy_minor": -2520,
+    "net_minor": 686000,
+    "expected_exception": "AMOUNT_MISMATCH"
+  },
+  {
+    "record_index": 18,
+    "cohort": "TAX_DISCREPANCY",
+    "error_type": "EXEMPT_SERVICE_OVERTAXED",
+    "payment_id": "pay_TAX_018",
+    "gross_minor": 400000,
+    "fee_minor": 8000,
+    "actual_tax_minor": 1440,
+    "expected_tax_minor": 1440,
+    "tax_discrepancy_minor": 0,
+    "net_minor": 390560,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 19,
+    "cohort": "GATEWAY_FEE_OVER_UNDERCHARGE",
+    "error_type": "MDR_OVERCHARGE_2_5_PCT",
+    "payment_id": "pay_FEE_019",
+    "gross_minor": 1000000,
+    "actual_fee_minor": 25000,
+    "expected_fee_minor": 20000,
+    "fee_variance_minor": 5000,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 20,
+    "cohort": "GATEWAY_FEE_OVER_UNDERCHARGE",
+    "error_type": "MDR_OVERCHARGE_3_0_PCT",
+    "payment_id": "pay_FEE_020",
+    "gross_minor": 1500000,
+    "actual_fee_minor": 45000,
+    "expected_fee_minor": 30000,
+    "fee_variance_minor": 15000,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 21,
+    "cohort": "GATEWAY_FEE_OVER_UNDERCHARGE",
+    "error_type": "MDR_UNDERCHARGE_1_0_PCT",
+    "payment_id": "pay_FEE_021",
+    "gross_minor": 800000,
+    "actual_fee_minor": 8000,
+    "expected_fee_minor": 16000,
+    "fee_variance_minor": -8000,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 22,
+    "cohort": "GATEWAY_FEE_OVER_UNDERCHARGE",
+    "error_type": "UNCONTRACTED_FLAT_SURCHARGE",
+    "payment_id": "pay_FEE_022",
+    "gross_minor": 1200000,
+    "actual_fee_minor": 26500,
+    "expected_fee_minor": 24000,
+    "fee_variance_minor": 2500,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 23,
+    "cohort": "GATEWAY_FEE_OVER_UNDERCHARGE",
+    "error_type": "CHARGEBACK_FEE_SURCHARGE",
+    "payment_id": "pay_FEE_023",
+    "gross_minor": 2500000,
+    "actual_fee_minor": 65000,
+    "expected_fee_minor": 50000,
+    "fee_variance_minor": 15000,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 24,
+    "cohort": "GATEWAY_FEE_OVER_UNDERCHARGE",
+    "error_type": "MINIMUM_FEE_FLOOR_APPLIED",
+    "payment_id": "pay_FEE_024",
+    "gross_minor": 20000,
+    "actual_fee_minor": 500,
+    "expected_fee_minor": 400,
+    "fee_variance_minor": 100,
+    "expected_exception": "FEE_VARIANCE"
+  },
+  {
+    "record_index": 25,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_025",
+    "gross_minor": 150000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 150000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 26,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_026",
+    "gross_minor": 320000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 320000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 27,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_027",
+    "gross_minor": 480000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 480000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 28,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_028",
+    "gross_minor": 650000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 650000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 29,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_029",
+    "gross_minor": 890000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 890000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 30,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_030",
+    "gross_minor": 1150000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 1150000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 31,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_031",
+    "gross_minor": 1420000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 1420000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 32,
+    "cohort": "CLEAN_EXACT_MATCH",
+    "payment_id": "pay_CLEAN_032",
+    "gross_minor": 1800000,
+    "fee_minor": 0,
+    "tax_minor": 0,
+    "net_minor": 1800000,
+    "expected_tier": "RESOLVED"
+  },
+  {
+    "record_index": 33,
+    "cohort": "PERIOD_CUTOFF",
+    "payment_id": "pay_CUT_033",
+    "gross_minor": 236000,
+    "net_minor": 230431,
+    "expected_exception": "PERIOD_CUTOFF"
+  },
+  {
+    "record_index": 34,
+    "cohort": "PERIOD_CUTOFF",
+    "payment_id": "pay_CUT_034",
+    "gross_minor": 472000,
+    "net_minor": 460861,
+    "expected_exception": "PERIOD_CUTOFF"
+  },
+  {
+    "record_index": 35,
+    "cohort": "PERIOD_CUTOFF",
+    "payment_id": "pay_CUT_035",
+    "gross_minor": 708000,
+    "net_minor": 691292,
+    "expected_exception": "PERIOD_CUTOFF"
+  },
+  {
+    "record_index": 36,
+    "cohort": "PERIOD_CUTOFF",
+    "payment_id": "pay_CUT_036",
+    "gross_minor": 944000,
+    "net_minor": 921722,
+    "expected_exception": "PERIOD_CUTOFF"
+  },
+  {
+    "record_index": 37,
+    "cohort": "PERIOD_CUTOFF",
+    "payment_id": "pay_CUT_037",
+    "gross_minor": 1180000,
+    "net_minor": 1152152,
+    "expected_exception": "PERIOD_CUTOFF"
+  },
+  {
+    "record_index": 38,
+    "cohort": "DUPLICATE_WEBHOOK",
+    "expected_exception": "DUPLICATE_RECORD"
+  },
+  {
+    "record_index": 40,
+    "cohort": "DUPLICATE_BANK_DEPOSIT",
+    "expected_exception": "DUPLICATE_RECORD"
+  },
+  {
+    "record_index": 42,
+    "cohort": "UNSETTLED_GATEWAY",
+    "expected_exception": "UNSETTLED_GATEWAY_RECORD"
+  },
+  {
+    "record_index": 43,
+    "cohort": "UNSETTLED_GATEWAY",
+    "expected_exception": "UNSETTLED_GATEWAY_RECORD"
+  },
+  {
+    "record_index": 44,
+    "cohort": "UNALLOCATED_BANK_CREDIT",
+    "expected_exception": "UNALLOCATED_BANK_CREDIT"
+  },
+  {
+    "record_index": 45,
+    "cohort": "UNALLOCATED_BANK_CREDIT",
+    "expected_exception": "UNALLOCATED_BANK_CREDIT"
+  },
+  {
+    "record_index": 46,
+    "cohort": "MISSING_LEDGER_ENTRY",
+    "expected_exception": "MISSING_LEDGER"
+  },
+  {
+    "record_index": [
+      47,
+      48,
+      49
+    ],
+    "cohort": "N_TO_1_BATCH_SETTLEMENT",
+    "settlement_key": "SETL_BATCH_BUNDLE_88",
+    "combined_net_minor": 1952800,
+    "expected_tier": "RESOLVED_WITH_EXPLANATION"
+  },
+  {
+    "record_index": 50,
+    "cohort": "UNBALANCED_JOURNAL_ENTRY",
+    "expected_imbalance_rs": 300.0
+  }
+]
